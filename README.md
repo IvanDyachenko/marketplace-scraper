@@ -1,2 +1,1 @@
-# e-commerce-crawler
-E-commerce crawler
+# e-commerce crawler

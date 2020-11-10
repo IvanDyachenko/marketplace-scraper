@@ -8,25 +8,23 @@ import tofu.fs2Instances._
 import ecommerce.env.Environment
 import ecommerce.modules.Crawler
 import ecommerce.clients.EcommerceClient
-import ecommerce.services.{CrawlService, EcommerceService}
+import ecommerce.services.CrawlService
 
 object Main extends AppLogic with IOApp {
 
   override def run(args: List[String]): IO[ExitCode] =
-    init.use { case (env, crawler) => crawler.run.compile.drain.run(env).as(ExitCode.Success) }
+    init.use { case (env, program) => program.run.compile.drain.run(env).as(ExitCode.Success) }
 }
 
 trait AppLogic {
+  type AppF[+A]    = ContextT[IO, Environment, A]
+  type InitF[+A]   = Resource[IO, A]
+  type StreamF[+A] = Stream[AppF, A]
 
-  type App[+A]     = ContextT[IO, Environment, A]
-  type Init[+A]    = Resource[IO, A]
-  type StreamF[+A] = Stream[App, A]
-
-  def init: Init[(Environment[App], Crawler[StreamF])] =
+  def init: InitF[(Environment[AppF], Crawler[StreamF])] =
     for {
-      implicit0(ecommerceClient: EcommerceClient[App])       <- EcommerceClient.make[Init, App]
-      implicit0(ecommerceService: EcommerceService[StreamF]) <- EcommerceService.make[Init, App, StreamF]
-      implicit0(crawlService: CrawlService[StreamF])         <- CrawlService.make[Init, App, StreamF]
-      crawler                                                <- Crawler.make[Init, App, StreamF]
+      implicit0(ecommerceClient: EcommerceClient[AppF]) <- EcommerceClient.make[InitF, AppF]
+      implicit0(crawlService: CrawlService[StreamF])    <- CrawlService.make[InitF, AppF, StreamF]
+      crawler                                           <- Crawler.make[InitF, AppF, StreamF]
     } yield Environment(ecommerceClient) -> crawler
 }

@@ -8,7 +8,6 @@ import tofu.syntax.streams.evals._
 import tofu.syntax.streams.broadcast._
 
 import ecommerce.services.CrawlService
-import ecommerce.services.EcommerceService
 
 @derive(embed)
 trait Crawler[S[_]] {
@@ -17,17 +16,13 @@ trait Crawler[S[_]] {
 
 object Crawler {
 
-  def make[I[_]: Monad, F[_], S[_]: Evals[*[_], F]](implicit
-    crawlService: CrawlService[S],
-    ecommerceService: EcommerceService[S]
-  ): I[Crawler[S]] = ???
+  def make[I[_]: Monad, F[_], S[_]: Evals[*[_], F]](implicit crawlService: CrawlService[S]): I[Crawler[S]] = ???
 
-  private final class Impl[F[_]: Monad, S[_]: Broadcast: Evals[*[_], F]](implicit
-    crawlService: CrawlService[S],
-    ecommerceService: EcommerceService[S]
-  ) extends Crawler[S] {
+  private final class Impl[F[_]: Monad, S[_]: Broadcast: Evals[*[_], F]](implicit crawlService: CrawlService[S])
+      extends Crawler[S] {
+
     def run: S[Unit] =
-      ecommerceService.requestStream
+      crawlService.flow
         .broadcastThrough(10)(crawlService.crawl)
         .evalMap(_ => Monad[F].unit)
   }

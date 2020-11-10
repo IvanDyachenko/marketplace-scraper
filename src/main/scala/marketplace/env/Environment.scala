@@ -1,14 +1,14 @@
-package ecommerce.env
+package marketplace.env
 
 import tofu.WithLocal
 import tofu.optics.Contains
 import tofu.optics.macros.ClassyOptics
 
-import ecommerce.clients.EcommerceClient
+import marketplace.clients.MarketplaceClient
 
 @ClassyOptics
 final case class Environment[F[_]](
-  ecommerceClient: EcommerceClient[F]
+  marketplaceClient: MarketplaceClient[F]
 )
 
 object Environment {

@@ -1,14 +1,14 @@
-package ecommerce
+package marketplace
 
 import cats.effect.{ExitCode, IO, IOApp, Resource}
 import tofu.concurrent.ContextT
 import fs2.Stream
 import tofu.fs2Instances._
 
-import ecommerce.env.Environment
-import ecommerce.modules.Crawler
-import ecommerce.clients.EcommerceClient
-import ecommerce.services.CrawlService
+import marketplace.env.Environment
+import marketplace.clients.MarketplaceClient
+import marketplace.modules.Crawler
+import marketplace.services.CrawlService
 
 object Main extends AppLogic with IOApp {
 
@@ -23,8 +23,8 @@ trait AppLogic {
 
   def init: InitF[(Environment[AppF], Crawler[StreamF])] =
     for {
-      implicit0(ecommerceClient: EcommerceClient[AppF]) <- EcommerceClient.make[InitF, AppF]
-      implicit0(crawlService: CrawlService[StreamF])    <- CrawlService.make[InitF, AppF, StreamF]
-      crawler                                           <- Crawler.make[InitF, AppF, StreamF]
-    } yield Environment(ecommerceClient) -> crawler
+      implicit0(marketplaceClient: MarketplaceClient[AppF]) <- MarketplaceClient.make[InitF, AppF]
+      implicit0(crawlService: CrawlService[StreamF])        <- CrawlService.make[InitF, AppF, StreamF]
+      crawler                                               <- Crawler.make[InitF, AppF, StreamF]
+    } yield Environment(marketplaceClient) -> crawler
 }

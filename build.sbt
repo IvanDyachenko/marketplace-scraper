@@ -3,7 +3,7 @@ ThisBuild / scalaVersion := scala2_13
 
 lazy val projectSettings = Seq(
   organization := "io.ivandyachenko",
-  homepage := Some(url("https://github.com/IvanDyachenko/e-commerce-crawler")),
+  homepage := Some(url("https://github.com/IvanDyachenko/marketplace-crawler")),
   developers := List(
     Developer("IvanDyachenko", "Ivan Dyachenko", "vandyachen@gmail.com", url("https://ivandyachenko.io"))
   ),
@@ -11,9 +11,9 @@ lazy val projectSettings = Seq(
   scalafmtOnCompile := true
 )
 
-lazy val `e-commerce-crawler` = (project in file("."))
+lazy val `marketplace-crawler` = (project in file("."))
   .settings(
-    name := "e-commerce-crawler",
+    name := "marketplace-crawler",
     projectSettings,
     compilerOptions,
     compilerDependencies,

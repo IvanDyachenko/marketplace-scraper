@@ -1,4 +1,4 @@
-package ecommerce.modules
+package marketplace.modules
 
 import cats.Monad
 import derevo.derive
@@ -7,7 +7,7 @@ import tofu.streams.{Broadcast, Evals}
 import tofu.syntax.streams.evals._
 import tofu.syntax.streams.broadcast._
 
-import ecommerce.services.CrawlService
+import marketplace.services.CrawlService
 
 @derive(embed)
 trait Crawler[S[_]] {

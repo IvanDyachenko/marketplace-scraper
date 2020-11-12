@@ -5,8 +5,6 @@ import tofu.syntax.monadic._
 import tofu.logging.{Logging, Logs}
 import tofu.optics.macros.ClassyOptics
 
-import marketplace.context.CrawlerContext.CrawlerF
-
 @ClassyOptics
 case class Loggers[F[_]](
   requests: Logging[F]

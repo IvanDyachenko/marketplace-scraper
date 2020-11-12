@@ -16,7 +16,7 @@ trait Crawler[S[_]] {
 
 object Crawler {
 
-  def make[I[_]: Monad, F[_], S[_]: Evals[*[_], F]](implicit crawlService: CrawlService[S]): I[Crawler[S]] = ???
+  def make[I[_]: Monad, F[_]: Monad, S[_]: Evals[*[_], F]](implicit crawlService: CrawlService[S]): I[Crawler[S]] = ???
 
   private final class Impl[F[_]: Monad, S[_]: Broadcast: Evals[*[_], F]](implicit crawlService: CrawlService[S])
       extends Crawler[S] {

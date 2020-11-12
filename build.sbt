@@ -1,16 +1,6 @@
 ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / scalaVersion := scala2_13
 
-lazy val projectSettings = Seq(
-  organization := "io.ivandyachenko",
-  homepage := Some(url("https://github.com/IvanDyachenko/marketplace-crawler")),
-  developers := List(
-    Developer("IvanDyachenko", "Ivan Dyachenko", "vandyachen@gmail.com", url("https://ivandyachenko.io"))
-  ),
-  scalaVersion := scala2_13,
-  scalafmtOnCompile := true
-)
-
 lazy val `marketplace-crawler` = (project in file("."))
   .settings(
     name := "marketplace-crawler",
@@ -20,6 +10,16 @@ lazy val `marketplace-crawler` = (project in file("."))
     coreDependencies,
     testDependencies
   )
+
+lazy val projectSettings = Seq(
+  organization := "io.ivandyachenko",
+  homepage := Some(url("https://github.com/IvanDyachenko/marketplace-crawler")),
+  developers := List(
+    Developer("IvanDyachenko", "Ivan Dyachenko", "vandyachen@gmail.com", url("https://ivandyachenko.io"))
+  ),
+  scalaVersion := scala2_13,
+  scalafmtOnCompile := true
+)
 
 lazy val compilerDependencies =
   libraryDependencies ++= List(
@@ -40,7 +40,7 @@ lazy val coreDependencies =
     "ru.tinkoff"         %% "tofu-optics-core"         % tofuVersion,
     "ru.tinkoff"         %% "tofu-optics-macro"        % tofuVersion,
     "ru.tinkoff"         %% "tofu-enums"               % tofuVersion,
-    "ru.tinkoff"         %% "tofu-fs2-interop" % tofuVersion,
+    "ru.tinkoff"         %% "tofu-fs2-interop"         % tofuVersion,
     "ru.tinkoff"         %% "tofu-logging"             % tofuVersion,
     "org.manatki"        %% "derevo-cats-tagless"      % derevoVersion,
     "io.circe"           %% "circe-core"               % circeVersion,

@@ -1,6 +1,7 @@
 package marketplace.modules
 
 import cats.Monad
+import tofu.syntax.monadic._
 import derevo.derive
 import tofu.higherKind.derived.embed
 import tofu.streams.{Broadcast, Evals}
@@ -16,7 +17,10 @@ trait Crawler[S[_]] {
 
 object Crawler {
 
-  def make[I[_]: Monad, F[_]: Monad, S[_]: Evals[*[_], F]](implicit crawlService: CrawlService[S]): I[Crawler[S]] = ???
+  def make[I[_]: Monad, F[_]: Monad, S[_]: Broadcast: Evals[*[_], F]](implicit
+    crawlService: CrawlService[S]
+  ): I[Crawler[S]] =
+    (new Impl[F, S]: Crawler[S]).pure[I]
 
   private final class Impl[F[_]: Monad, S[_]: Broadcast: Evals[*[_], F]](implicit crawlService: CrawlService[S])
       extends Crawler[S] {

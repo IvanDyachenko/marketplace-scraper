@@ -1,11 +1,11 @@
 package marketplace.services
 
 import cats.{FlatMap, Monad}
+import tofu.syntax.monadic._
+import tofu.streams.Evals
+import tofu.syntax.streams.evals._
 import tofu.higherKind.Embed
 import tofu.data.derived.ContextEmbed
-import tofu.syntax.monadic._
-import tofu.syntax.streams.evals._
-import tofu.streams.Evals
 
 import marketplace.models.{MarketplaceRequest, MarketplaceResponse}
 import marketplace.clients.MarketplaceClient
@@ -20,7 +20,7 @@ object CrawlService extends ContextEmbed[CrawlService] {
   def apply[F[_]](implicit ev: CrawlService[F]): ev.type = ev
 
   def make[I[_]: Monad, F[_], S[_]: Evals[*[_], F]](implicit client: MarketplaceClient[F]): I[CrawlService[S]] =
-    Monad[I].pure(new Impl[F, S]: CrawlService[S])
+    (new Impl[F, S]: CrawlService[S]).pure[I]
 //  Monad[I].pure(FunctorK[CrawlService].mapK(new Impl[F])(LiftStream[S, F].liftF))
 
   private final class Impl[F[_], S[_]: Evals[*[_], F]](implicit client: MarketplaceClient[F]) extends CrawlService[S] {

@@ -27,6 +27,7 @@ lazy val compilerDependencies =
     compilerPlugin(("org.typelevel" %% "kind-projector" % kindProjectorVersion).cross(CrossVersion.full))
   )
 
+githubOwner := "ivandyachenko"
 githubTokenSource :=
   TokenSource.Or(TokenSource.GitConfig("github.token"), TokenSource.Environment("GITHUB_TOKEN"))
 

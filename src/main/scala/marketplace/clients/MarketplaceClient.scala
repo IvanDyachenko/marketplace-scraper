@@ -1,11 +1,12 @@
 package marketplace.clients
 
 import cats.Monad
+import cats.effect.{Resource, Sync}
 import tofu.syntax.monadic._
-import cats.effect.Sync
 import derevo.derive
 import tofu.data.derived.ContextEmbed
 import tofu.higherKind.derived.representableK
+import org.http4s.client.Client
 
 import marketplace.context.HasLoggers
 import marketplace.models.{MarketplaceRequest, MarketplaceResponse}
@@ -17,8 +18,10 @@ trait MarketplaceClient[F[_]] {
 
 object MarketplaceClient extends ContextEmbed[MarketplaceClient] {
 
-  def make[I[_]: Monad, F[_]: Sync: HasLoggers]: I[MarketplaceClient[F]] =
-    new MarketplaceClient[F] {
-      override def send(request: MarketplaceRequest): F[MarketplaceResponse] = ???
-    }.pure[I]
+  def make[I[_]: Monad, F[_]: Sync: HasLoggers](implicit client: Client[F]): Resource[I, MarketplaceClient[F]] =
+    new Impl[F].pure[Resource[I, *]]
+
+  private final class Impl[F[_]](implicit client: Client[F]) extends MarketplaceClient[F] {
+    def send(request: MarketplaceRequest): F[MarketplaceResponse] = ???
+  }
 }

@@ -1,23 +1,28 @@
 package marketplace.context
 
-import cats.{Applicative, Defer}
+import cats.{Applicative, Defer, Monad}
 import cats.effect.{ConcurrentEffect, Resource, Sync}
 import tofu.{WithContext, WithLocal}
-import tofu.optics.Contains
-import tofu.optics.macros.ClassyOptics
+import tofu.lift.Lift
 import tofu.logging.{Loggable, LoggableContext, Logs}
+import tofu.optics.Contains
+import tofu.optics.macros.{promote, ClassyOptics}
+
+import marketplace.config.CrawlerConfig
 
 @ClassyOptics
 final case class CrawlerContext[F[_]](
+  @promote config: CrawlerConfig,
   loggers: Loggers[F]
 )
 
 object CrawlerContext {
 
-  def make[F[+_]: ConcurrentEffect]: Resource[F, CrawlerContext[CrawlerF[F, *]]] =
+  def make[I[_]: Defer: Monad: Lift[F, *[_]], F[+_]: ConcurrentEffect]: Resource[I, CrawlerContext[CrawlerF[F, *]]] =
     for {
-      loggers <- Resource.liftF(Loggers.make[F])
-    } yield CrawlerContext(loggers)
+      config  <- Resource.liftF(CrawlerConfig.make[I])
+      loggers <- Loggers.make[I, F]
+    } yield CrawlerContext(config, loggers)
 
   implicit def loggable[F[+_]]: Loggable[CrawlerContext[F]] =
     Loggable.empty

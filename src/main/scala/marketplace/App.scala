@@ -37,8 +37,8 @@ trait AppLogic[F[+_]] {
   def init: InitF[(CrawlerContext[AppF], Crawler[StreamF])] =
     for {
       ctx                                                   <- CrawlerContext.make[I, F]
-      implicit0(httpClient: Client[AppF])                   <- buildHttp4sClient[I].map(translateHttp4sClient[I, AppF](_))
-      implicit0(marketplaceClient: MarketplaceClient[AppF]) <- MarketplaceClient.make[I, AppF]
+      httpClient                                            <- buildHttp4sClient[I].map(translateHttp4sClient[I, AppF](_))
+      implicit0(marketplaceClient: MarketplaceClient[AppF]) <- MarketplaceClient.make[I, AppF](httpClient)
       implicit0(crawlService: CrawlService[StreamF])        <- CrawlService.make[InitF, AppF, StreamF]
       crawler                                               <- Crawler.make[InitF, AppF, StreamF]
     } yield (ctx, crawler)

@@ -27,6 +27,11 @@ lazy val compilerDependencies =
     compilerPlugin(("org.typelevel" %% "kind-projector" % kindProjectorVersion).cross(CrossVersion.full))
   )
 
+githubTokenSource :=
+  TokenSource.Or(TokenSource.GitConfig("github.token"), TokenSource.Environment("GITHUB_TOKEN"))
+
+resolvers += Resolver.githubPackages("ivandyachenko")
+
 lazy val coreDependencies =
   libraryDependencies ++= List(
     "org.rudogma"        %% "supertagged"              % supertaggedVersion,
@@ -51,6 +56,7 @@ lazy val coreDependencies =
     "org.asynchttpclient" % "async-http-client"        % asyncHttpClientVersion,
     "org.http4s"         %% "http4s-async-http-client" % http4sVersion,
     "co.fs2"             %% "fs2-core"                 % fs2Version,
+    "io.ivandyachenko"   %% "beru4s"                   % beru4sVersion,
     "ch.qos.logback"      % "logback-classic"          % logbackVersion
   )
 
@@ -94,6 +100,7 @@ lazy val circeDerivationVersion = "0.13.0-M4"
 lazy val http4sVersion          = "0.21.8"
 lazy val asyncHttpClientVersion = "2.12.1"
 lazy val fs2Version             = "2.4.4"
+lazy val beru4sVersion          = "0.1.2"
 lazy val logbackVersion         = "1.2.3"
 
 lazy val scalacticVersion               = "3.2.0"

@@ -37,13 +37,13 @@ trait AppLogic[F[+_]] {
   def init: InitF[(CrawlerContext[AppF], Crawler[StreamF])] =
     for {
       ctx                                                   <- CrawlerContext.make[I, F]
-      httpClientI                                           <- buildHttp4sClient[I]
-      implicit0(httpClient: Client[AppF])                    = translateHttp4sClient[I, AppF](httpClientI)
+      implicit0(httpClient: Client[AppF])                   <- buildHttp4sClient[I].map(translateHttp4sClient[I, AppF](_))
       implicit0(marketplaceClient: MarketplaceClient[AppF]) <- MarketplaceClient.make[I, AppF]
       implicit0(crawlService: CrawlService[StreamF])        <- CrawlService.make[InitF, AppF, StreamF]
       crawler                                               <- Crawler.make[InitF, AppF, StreamF]
     } yield (ctx, crawler)
 
+  // Should be fixed in https://github.com/TinkoffCreditSystems/tofu/pull/422
   private object Execute {
     def apply[F[_]](implicit F: Execute[F]): F.type = F
   }

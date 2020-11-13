@@ -12,17 +12,15 @@ import marketplace.config.CrawlerConfig
 
 @ClassyOptics
 final case class CrawlerContext[F[_]](
-  @promote config: CrawlerConfig,
-  loggers: Loggers[F]
+  @promote config: CrawlerConfig
 )
 
 object CrawlerContext {
 
   def make[I[_]: Defer: Monad: Lift[F, *[_]], F[+_]: ConcurrentEffect]: Resource[I, CrawlerContext[CrawlerF[F, *]]] =
     for {
-      config  <- Resource.liftF(CrawlerConfig.make[I])
-      loggers <- Loggers.make[I, F]
-    } yield CrawlerContext(config, loggers)
+      config <- Resource.liftF(CrawlerConfig.make[I])
+    } yield CrawlerContext(config)
 
   implicit def loggable[F[+_]]: Loggable[CrawlerContext[F]] =
     Loggable.empty

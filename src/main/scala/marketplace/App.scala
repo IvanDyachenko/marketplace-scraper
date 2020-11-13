@@ -3,7 +3,6 @@ package marketplace
 import cats.effect.{ConcurrentEffect, ExitCode, IO, IOApp, Resource}
 import fs2.Stream
 import tofu.fs2Instances._
-//import tofu.logging.Logging
 
 import marketplace.context._
 import marketplace.modules.Crawler
@@ -20,15 +19,16 @@ object Main extends AppLogic[IO] with IOApp {
 
 trait AppLogic[F[+_]] {
 
-  type InitF[+A]   = Resource[F, A]
+  type I[+A]       = F[A]
   type AppF[+A]    = CrawlerF[F, A]
+  type InitF[+A]   = Resource[F, A]
   type StreamF[+A] = Stream[AppF, A]
 
   protected implicit def concEff: ConcurrentEffect[F]
 
   def init: InitF[(CrawlerContext[AppF], Crawler[StreamF])] =
     for {
-      ctx                                                   <- CrawlerContext.make[F]
+      ctx                                                   <- CrawlerContext.make[I, F]
       implicit0(marketplaceClient: MarketplaceClient[AppF]) <- MarketplaceClient.make[InitF, AppF]
       implicit0(crawlService: CrawlService[StreamF])        <- CrawlService.make[InitF, AppF, StreamF]
       crawler                                               <- Crawler.make[InitF, AppF, StreamF]

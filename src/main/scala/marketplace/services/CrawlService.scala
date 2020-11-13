@@ -31,6 +31,7 @@ object CrawlService extends ContextEmbed[CrawlService] {
   }
 
   implicit val embed: Embed[CrawlService] = new Embed[CrawlService] {
+
     override def embed[F[_]: FlatMap](ft: F[CrawlService[F]]): CrawlService[F] =
       new CrawlService[F] {
 

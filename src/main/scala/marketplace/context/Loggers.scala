@@ -4,8 +4,8 @@ import cats.{Defer, Monad}
 import cats.effect.{Resource, Sync}
 import tofu.syntax.monadic._
 import tofu.lift.Lift
-import tofu.logging.{Logging, Logs}
 import tofu.optics.macros.ClassyOptics
+import tofu.logging.{Logging, Logs}
 
 @ClassyOptics
 case class Loggers[F[_]](
@@ -24,15 +24,3 @@ object Loggers {
   ): Resource[I, Loggers[CrawlerF[F, *]]] =
     Resource.liftF(Loggers.make[F]).mapK(L.liftF)
 }
-
-//class CrawlerLog[label]
-//
-//object CrawlerLog {
-//
-//  type Of[F[_], label] = ServiceLogging[F, CrawlerLog[label]]
-//
-//  implicit def extractLogging[F[_]: FlatMap, label](implicit
-//    lens: (Loggers[F] Contains Logging[F]) with Label[label],
-//    wc: WithContext[F, Loggers[F]]
-//  ): Of[F, label] = Embed.of(wc.ask(lens.get)).to
-//}

@@ -4,6 +4,8 @@ ThisBuild / scalaVersion := scala2_13
 lazy val `marketplace-crawler` = (project in file("."))
   .settings(
     name := "marketplace-crawler",
+    githubOwner := "ivandyachenko",
+    githubTokenSource := TokenSource.Or(TokenSource.GitConfig("github.token"), TokenSource.Environment("GITHUB_TOKEN")),
     projectSettings,
     compilerOptions,
     compilerDependencies,
@@ -28,8 +30,7 @@ lazy val compilerDependencies =
   )
 
 githubOwner := "ivandyachenko"
-githubTokenSource :=
-  TokenSource.Or(TokenSource.GitConfig("github.token"), TokenSource.Environment("GITHUB_TOKEN"))
+githubTokenSource := TokenSource.Or(TokenSource.GitConfig("github.token"), TokenSource.Environment("GITHUB_TOKEN"))
 
 resolvers += Resolver.githubPackages("ivandyachenko")
 

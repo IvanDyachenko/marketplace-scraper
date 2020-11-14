@@ -6,13 +6,16 @@ import tofu.lift.Unlift
 import tofu.syntax.monadic._
 import fs2.Stream
 import tofu.fs2Instances._
+import org.http4s.client.Client
+//import org.http4s.client.blaze.BlazeClientBuilder
+import org.asynchttpclient.Dsl
+import org.asynchttpclient.proxy.ProxyServer
+import org.http4s.client.asynchttpclient.AsyncHttpClient
 
 import marketplace.context._
 import marketplace.modules.Crawler
 import marketplace.clients.MarketplaceClient
 import marketplace.services.CrawlService
-import org.http4s.client.Client
-import org.http4s.client.blaze.BlazeClientBuilder
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -43,13 +46,20 @@ trait AppLogic[F[+_]] {
       crawler                                               <- Crawler.make[InitF, AppF, StreamF]
     } yield (ctx, crawler)
 
-  // Should be fixed in https://github.com/TinkoffCreditSystems/tofu/pull/422
-  private object Execute {
-    def apply[F[_]](implicit F: Execute[F]): F.type = F
-  }
+//  // Should be fixed in https://github.com/TinkoffCreditSystems/tofu/pull/422
+//  private object Execute {
+//    def apply[F[_]](implicit F: Execute[F]): F.type = F
+//  }
 
-  private def buildHttp4sClient[F[_]: Execute: ConcurrentEffect]: Resource[F, Client[F]] =
-    Resource.liftF(Execute[F].executionContext) >>= (BlazeClientBuilder[F](_).resource)
+//  private def buildHttp4sClient[F[_]: Execute: ConcurrentEffect]: Resource[F, Client[F]] =
+//    Resource.liftF(Execute[F].executionContext) >>= (BlazeClientBuilder[F](_).resource)
+
+  private def buildHttp4sClient[F[_]: Execute: ConcurrentEffect]: Resource[F, Client[F]] = {
+    val proxyServer      = new ProxyServer.Builder("127.0.0.1", 8888).build() // ToDo: add HttpConfig to CrawlerConfig
+    val httpClientConfig = Dsl.config().setProxyServer(proxyServer).build()
+
+    AsyncHttpClient.resource(httpClientConfig)
+  }
 
   // https://scastie.scala-lang.org/Odomontois/F29lLrY2RReZrcUJ1zIEEg/25
   private def translateHttp4sClient[F[_]: Sync, G[_]: Sync](client: Client[F])(implicit U: Unlift[F, G]): Client[G] =

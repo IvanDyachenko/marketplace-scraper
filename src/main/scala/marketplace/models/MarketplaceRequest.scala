@@ -1,5 +1,10 @@
 package marketplace.models
 
-sealed trait MarketplaceRequest
+import beru4s.models.{Request => BeruRequest}
 
-case class DummyMarketplaceRequest(dummy: "you") extends MarketplaceRequest
+sealed trait MarketplaceRequest {
+  type A
+  def request: A
+}
+
+final case class BeruMarketplaceRequest(request: BeruRequest) extends MarketplaceRequest { type A = BeruRequest }

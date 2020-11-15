@@ -20,7 +20,9 @@ lazy val projectSettings = Seq(
     Developer("IvanDyachenko", "Ivan Dyachenko", "vandyachen@gmail.com", url("https://ivandyachenko.io"))
   ),
   scalaVersion := scala2_13,
-  scalafmtOnCompile := true
+  scalafmtOnCompile := true,
+  fork in Global := true, // https://github.com/sbt/sbt/issues/2274
+  cancelable in Global := true
 )
 
 lazy val compilerDependencies =

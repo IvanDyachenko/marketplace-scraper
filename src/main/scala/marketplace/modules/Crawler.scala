@@ -3,7 +3,9 @@ package marketplace.modules
 import cats.Monad
 import cats.effect.{Concurrent, Resource}
 import cats.tagless.FunctorK
+import tofu.syntax.context._
 import tofu.syntax.monadic._
+import tofu.syntax.embed._
 import derevo.derive
 import tofu.data.derived.ContextEmbed
 import tofu.higherKind.derived.representableK
@@ -20,12 +22,17 @@ trait Crawler[S[_]] {
 
 object Crawler extends ContextEmbed[CrawlService] {
 
-  def make[I[_]: Monad, F[_]: Monad: Concurrent, S[_]: LiftStream[*[_], F]: HasConfig](
-    crawlService: CrawlService[Stream[F, *]] // FixMe
+  def make[I[_]: Monad, F[_]: Monad: Concurrent, S[_]: Monad: LiftStream[*[_], F]: HasConfig](
+    crawlService: CrawlService[Stream[F, *]]
   ): Resource[I, Crawler[S]] =
-    Resource.liftF(FunctorK[Crawler].mapK(new Impl[F](crawlService))(LiftStream[S, F].liftF).pure[I])
+    Resource.liftF(
+      context[S]
+        .map(conf => FunctorK[Crawler].mapK(new Impl[F](crawlService, conf.maxConcurrent))(LiftStream[S, F].liftF))
+        .embed
+        .pure[I]
+    )
 
-  private final class Impl[F[_]: Monad: Concurrent](crawlService: CrawlService[Stream[F, *]], maxConcurrent: Int = 10)
+  private final class Impl[F[_]: Monad: Concurrent](crawlService: CrawlService[Stream[F, *]], maxConcurrent: Int)
       extends Crawler[Stream[F, *]] {
 
     def run: Stream[F, Unit] =

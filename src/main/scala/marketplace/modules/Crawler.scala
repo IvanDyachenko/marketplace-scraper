@@ -1,37 +1,37 @@
 package marketplace.modules
 
 import cats.Monad
-import tofu.syntax.embed._
+import cats.effect.{Concurrent, Resource}
+import cats.tagless.FunctorK
 import tofu.syntax.monadic._
-import tofu.syntax.context._
 import derevo.derive
-import tofu.higherKind.derived.embed
-import tofu.streams.{Broadcast, Evals}
-import tofu.syntax.streams.evals._
-import tofu.syntax.streams.broadcast._
+import tofu.data.derived.ContextEmbed
+import tofu.higherKind.derived.representableK
+import fs2.Stream
+import tofu.fs2.LiftStream
 
 import marketplace.context.HasConfig
 import marketplace.services.CrawlService
 
-@derive(embed)
+@derive(representableK)
 trait Crawler[S[_]] {
   def run: S[Unit]
 }
 
-object Crawler {
+object Crawler extends ContextEmbed[CrawlService] {
 
-  def make[I[_]: Monad, F[_]: Monad, S[_]: Monad: Broadcast: Evals[*[_], F]: HasConfig](implicit
-    crawlService: CrawlService[S]
-  ): I[Crawler[S]] =
-    context[S].map(config => new Impl[F, S](config.broadcast): Crawler[S]).embed.pure[I]
+  def make[I[_]: Monad, F[_]: Monad: Concurrent: HasConfig, S[_]: LiftStream[*[_], F]](
+    crawlService: CrawlService[Stream[F, *]] // FixMe
+  ): Resource[I, Crawler[S]] =
+    Resource.liftF(FunctorK[Crawler].mapK(new Impl[F](crawlService))(LiftStream[S, F].liftF).pure[I])
 
-  private final class Impl[F[_]: Monad, S[_]: Broadcast: Evals[*[_], F]](maxConcurrent: Int)(implicit
-    crawlService: CrawlService[S]
-  ) extends Crawler[S] {
+  private final class Impl[F[_]: Monad: Concurrent](crawlService: CrawlService[Stream[F, *]], maxConcurrent: Int = 10)
+      extends Crawler[Stream[F, *]] {
 
-    def run: S[Unit] =
-      crawlService.flow
-        .broadcastThrough(maxConcurrent)(crawlService.crawl)
+    def run: Stream[F, Unit] =
+      crawlService.flow.balanceAvailable
+        .parEvalMapUnordered(maxConcurrent)(crawlService.crawl(_).pure[F])
+        .parJoinUnbounded
         .evalMap(_ => Monad[F].unit)
   }
 }

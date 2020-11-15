@@ -1,6 +1,6 @@
 package marketplace
 
-import cats.effect.{ConcurrentEffect, ContextShift, ExitCode, IO, IOApp, Resource, Sync}
+import cats.effect.{ConcurrentEffect, ContextShift, ExitCode, IO, IOApp, Resource, Sync, Timer}
 import tofu.Execute
 import tofu.lift.Unlift
 import tofu.syntax.monadic._
@@ -36,14 +36,15 @@ trait AppLogic[F[+_]] {
 
   protected implicit def concEff: ConcurrentEffect[F]
   protected implicit def contextShift: ContextShift[F]
+  protected implicit def timer: Timer[F]
 
   def init: InitF[(CrawlerContext[AppF], Crawler[StreamF])] =
     for {
       ctx                                                   <- CrawlerContext.make[I, F]
       httpClient                                            <- buildHttp4sClient[I].map(translateHttp4sClient[I, AppF](_))
       implicit0(marketplaceClient: MarketplaceClient[AppF]) <- MarketplaceClient.make[I, AppF](httpClient)
-      implicit0(crawlService: CrawlService[StreamF])        <- CrawlService.make[InitF, AppF, StreamF]
-      crawler                                               <- Crawler.make[InitF, AppF, StreamF]
+      crawlService                                          <- CrawlService.make[InitF, AppF, StreamF]
+      crawler                                               <- Crawler.make[I, AppF, StreamF](crawlService)
     } yield (ctx, crawler)
 
 //  // Should be fixed in https://github.com/TinkoffCreditSystems/tofu/pull/422
@@ -56,7 +57,13 @@ trait AppLogic[F[+_]] {
 
   private def buildHttp4sClient[F[_]: Execute: ConcurrentEffect]: Resource[F, Client[F]] = {
     val proxyServer      = new ProxyServer.Builder("127.0.0.1", 8888).build() // ToDo: add HttpConfig to CrawlerConfig
-    val httpClientConfig = Dsl.config().setProxyServer(proxyServer).build()
+    val httpClientConfig = Dsl
+      .config()
+      .setMaxConnections(400)
+      .setMaxConnectionsPerHost(200)
+      .setFollowRedirect(false)
+      .setProxyServer(proxyServer)
+      .build()
 
     AsyncHttpClient.resource(httpClientConfig)
   }

@@ -31,20 +31,19 @@ trait AppLogic[F[+_]] {
 
   type I[+A]       = F[A]
   type AppF[+A]    = CrawlerF[F, A]
-  type InitF[+A]   = Resource[F, A]
   type StreamF[+A] = Stream[AppF, A]
 
   protected implicit def concEff: ConcurrentEffect[F]
   protected implicit def contextShift: ContextShift[F]
   protected implicit def timer: Timer[F]
 
-  def init: InitF[(CrawlerContext[AppF], Crawler[StreamF])] =
+  def init: Resource[F, (CrawlerContext[AppF], Crawler[StreamF])] =
     for {
-      ctx                                                   <- CrawlerContext.make[I, F]
-      httpClient                                            <- buildHttp4sClient[I].map(translateHttp4sClient[I, AppF](_))
-      implicit0(marketplaceClient: MarketplaceClient[AppF]) <- MarketplaceClient.make[I, AppF](httpClient)
-      crawlService                                          <- CrawlService.make[InitF, AppF, StreamF]
-      crawler                                               <- Crawler.make[I, AppF, StreamF](crawlService)
+      ctx               <- CrawlerContext.make[I, F]
+      httpClient        <- buildHttp4sClient[I].map(translateHttp4sClient[I, AppF](_))
+      marketplaceClient <- MarketplaceClient.make[I, AppF](httpClient)
+      crawlService      <- CrawlService.make[I, AppF, StreamF](marketplaceClient)
+      crawler           <- Crawler.make[I, AppF, StreamF](crawlService)
     } yield (ctx, crawler)
 
 //  // Should be fixed in https://github.com/TinkoffCreditSystems/tofu/pull/422

@@ -20,7 +20,7 @@ trait Crawler[S[_]] {
 
 object Crawler extends ContextEmbed[CrawlService] {
 
-  def make[I[_]: Monad, F[_]: Monad: Concurrent: HasConfig, S[_]: LiftStream[*[_], F]](
+  def make[I[_]: Monad, F[_]: Monad: Concurrent, S[_]: LiftStream[*[_], F]: HasConfig](
     crawlService: CrawlService[Stream[F, *]] // FixMe
   ): Resource[I, Crawler[S]] =
     Resource.liftF(FunctorK[Crawler].mapK(new Impl[F](crawlService))(LiftStream[S, F].liftF).pure[I])

@@ -7,10 +7,10 @@ import tofu.optics.macros.ClassyOptics
 case class HttpConfig(proxyHost: String, proxyPort: Int)
 
 @ClassyOptics
-case class CrawlerConfig(httpConfig: HttpConfig, broadcast: Int)
+case class CrawlerConfig(httpConfig: HttpConfig, maxConcurrent: Int)
 
 object CrawlerConfig {
 
   def make[I[_]: Monad]: I[CrawlerConfig] =
-    CrawlerConfig(HttpConfig("127.0.0.1", 8888), 10).pure[I]
+    CrawlerConfig(HttpConfig("127.0.0.1", 8888), 50).pure[I]
 }

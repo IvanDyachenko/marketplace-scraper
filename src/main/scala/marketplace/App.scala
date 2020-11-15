@@ -12,6 +12,7 @@ import org.asynchttpclient.Dsl
 import org.asynchttpclient.proxy.ProxyServer
 import org.http4s.client.asynchttpclient.AsyncHttpClient
 
+import marketplace.config._
 import marketplace.context._
 import marketplace.modules.Crawler
 import marketplace.clients.MarketplaceClient
@@ -40,11 +41,31 @@ trait AppLogic[F[+_]] {
   def init: Resource[F, (CrawlerContext[AppF], Crawler[StreamF])] =
     for {
       ctx               <- CrawlerContext.make[I, F]
-      httpClient        <- buildHttp4sClient[I].map(translateHttp4sClient[I, AppF](_))
+      httpClient        <- buildHttp4sClient[I](ctx.config.httpConfig).map(translateHttp4sClient[I, AppF](_))
       marketplaceClient <- MarketplaceClient.make[I, AppF](httpClient)
       crawlService      <- CrawlService.make[I, AppF, StreamF](marketplaceClient)
       crawler           <- Crawler.make[I, AppF, StreamF](crawlService)
     } yield (ctx, crawler)
+
+  // https://scastie.scala-lang.org/Odomontois/F29lLrY2RReZrcUJ1zIEEg/25
+  private def translateHttp4sClient[F[_]: Sync, G[_]: Sync](client: Client[F])(implicit U: Unlift[F, G]): Client[G] =
+    Client(req => Resource.suspend(U.unlift.map(gf => client.run(req.mapK(gf)).mapK(U.liftF).map(_.mapK(U.liftF)))))
+
+  private def buildHttp4sClient[F[_]: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] = {
+    val HttpConfig(proxyHost, proxyPort, maxConnections, maxConnectionsPerHost) = httpConfig
+
+    val proxyServer = new ProxyServer.Builder(proxyHost, proxyPort).build()
+
+    val httpClientConfig = Dsl
+      .config()
+      .setMaxConnections(maxConnections)
+      .setMaxConnectionsPerHost(maxConnectionsPerHost)
+      .setFollowRedirect(false)
+      .setProxyServer(proxyServer)
+      .build()
+
+    AsyncHttpClient.resource(httpClientConfig)
+  }
 
 //  // Should be fixed in https://github.com/TinkoffCreditSystems/tofu/pull/422
 //  private object Execute {
@@ -53,21 +74,4 @@ trait AppLogic[F[+_]] {
 
 //  private def buildHttp4sClient[F[_]: Execute: ConcurrentEffect]: Resource[F, Client[F]] =
 //    Resource.liftF(Execute[F].executionContext) >>= (BlazeClientBuilder[F](_).resource)
-
-  private def buildHttp4sClient[F[_]: Execute: ConcurrentEffect]: Resource[F, Client[F]] = {
-    val proxyServer      = new ProxyServer.Builder("127.0.0.1", 8888).build() // ToDo: add HttpConfig to CrawlerConfig
-    val httpClientConfig = Dsl
-      .config()
-      .setMaxConnections(400)
-      .setMaxConnectionsPerHost(200)
-      .setFollowRedirect(false)
-      .setProxyServer(proxyServer)
-      .build()
-
-    AsyncHttpClient.resource(httpClientConfig)
-  }
-
-  // https://scastie.scala-lang.org/Odomontois/F29lLrY2RReZrcUJ1zIEEg/25
-  private def translateHttp4sClient[F[_]: Sync, G[_]: Sync](client: Client[F])(implicit U: Unlift[F, G]): Client[G] =
-    Client(req => Resource.suspend(U.unlift.map(gf => client.run(req.mapK(gf)).mapK(U.liftF).map(_.mapK(U.liftF)))))
 }

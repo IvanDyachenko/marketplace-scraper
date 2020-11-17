@@ -36,7 +36,7 @@ object Main extends TaskApp {
   def init: Resource[Task, (CrawlerContext, Crawler[S])] =
     for {
       ctx               <- CrawlerContext.make[I]
-      xa                <- ClickhouseXa.make[I, F](ctx.config.clickhouseConfig)
+      xa                <- ClickhouseXa.make[I](ctx.config.clickhouseConfig)
       txr                = Txr.contextual[F](xa)
       elh               <- doobieLogging.makeEmbeddableLogHandler[I, F, txr.DB]("doobie")
       httpClient        <- buildHttp4sClient[I](ctx.config.httpConfig).map(translateHttp4sClient[I, F](_))

@@ -1,4 +1,5 @@
 object Versions {
+  lazy val monix           = "3.3.0"
   lazy val tofu            = "0.8.0"
   lazy val derevo          = "0.11.5"
   lazy val supertagged     = "2.0-RC2"
@@ -8,6 +9,8 @@ object Versions {
   lazy val fs2             = "2.4.4"
   lazy val http4s          = "0.21.8"
   lazy val asyncHttpClient = "2.12.1"
+  lazy val doobie          = "0.9.0"
+  lazy val clickhouseJDBC  = "0.2.4"
   lazy val beru4s          = "0.1.2"
   lazy val logback         = "1.2.3"
 

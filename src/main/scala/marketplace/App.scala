@@ -1,9 +1,12 @@
 package marketplace
 
-import cats.effect.{ConcurrentEffect, ContextShift, ExitCode, IO, IOApp, Resource, Sync, Timer}
+import monix.eval.{Task, TaskApp}
+import cats.effect.{ConcurrentEffect, ExitCode, Resource, Sync}
+import tofu.syntax.monadic._
 import tofu.Execute
 import tofu.lift.Unlift
-import tofu.syntax.monadic._
+import tofu.doobie.transactor.Txr
+import tofu.doobie.instances.implicits._
 import fs2.Stream
 import tofu.fs2Instances._
 import org.http4s.client.Client
@@ -12,39 +15,34 @@ import org.asynchttpclient.Dsl
 import org.asynchttpclient.proxy.ProxyServer
 import org.http4s.client.asynchttpclient.AsyncHttpClient
 
+import marketplace.db._
 import marketplace.config._
 import marketplace.context._
-import marketplace.modules.Crawler
-import marketplace.clients.MarketplaceClient
-import marketplace.services.CrawlService
+import marketplace.clients._
+import marketplace.modules._
+import marketplace.services._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object Main extends AppLogic[IO] with IOApp {
+object Main extends TaskApp {
 
-  protected def concEff: ConcurrentEffect[IO] = implicitly
-
-  override def run(args: List[String]): IO[ExitCode] =
+  override def run(args: List[String]): Task[ExitCode] =
     init.use { case (ctx, program) => program.run.compile.drain.run(ctx).as(ExitCode.Success) }
-}
 
-trait AppLogic[F[+_]] {
+  type I[+A] = Task[A]
+  type F[+A] = CrawlerF[A]
+  type S[+A] = Stream[F, A]
 
-  type I[+A]       = F[A]
-  type AppF[+A]    = CrawlerF[F, A]
-  type StreamF[+A] = Stream[AppF, A]
-
-  protected implicit def concEff: ConcurrentEffect[F]
-  protected implicit def contextShift: ContextShift[F]
-  protected implicit def timer: Timer[F]
-
-  def init: Resource[F, (CrawlerContext[AppF], Crawler[StreamF])] =
+  def init: Resource[Task, (CrawlerContext, Crawler[S])] =
     for {
-      ctx               <- CrawlerContext.make[I, F]
-      httpClient        <- buildHttp4sClient[I](ctx.config.httpConfig).map(translateHttp4sClient[I, AppF](_))
-      marketplaceClient <- MarketplaceClient.make[I, AppF](httpClient)
-      crawlService      <- CrawlService.make[I, AppF, StreamF](marketplaceClient)
-      crawler           <- Crawler.make[I, AppF, StreamF](crawlService)
+      ctx               <- CrawlerContext.make[I]
+      xa                <- ClickhouseXa.make[I, F](ctx.config.clickhouseConfig)
+      txr                = Txr.contextual[F](xa)
+      elh               <- doobieLogging.makeEmbeddableLogHandler[I, F, txr.DB]("doobie")
+      httpClient        <- buildHttp4sClient[I](ctx.config.httpConfig).map(translateHttp4sClient[I, F](_))
+      marketplaceClient <- MarketplaceClient.make[I, F](httpClient)
+      crawlService      <- CrawlService.make[I, F, S](marketplaceClient)
+      crawler           <- Crawler.make[I, F, S](crawlService)
     } yield (ctx, crawler)
 
   // https://scastie.scala-lang.org/Odomontois/F29lLrY2RReZrcUJ1zIEEg/25

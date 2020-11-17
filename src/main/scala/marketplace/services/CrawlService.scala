@@ -1,12 +1,12 @@
 package marketplace.services
 
 import cats.{FlatMap, Monad}
-import cats.effect.Resource
-import tofu.syntax.context._
 import tofu.syntax.monadic._
-import tofu.syntax.embed._
+import cats.effect.Resource
 import tofu.higherKind.Embed
 import tofu.data.derived.ContextEmbed
+import tofu.syntax.embed._
+import tofu.syntax.context._
 import tofu.streams.{Emits, Evals}
 import tofu.syntax.streams.evals._
 

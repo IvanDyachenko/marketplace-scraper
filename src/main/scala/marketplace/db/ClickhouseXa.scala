@@ -10,7 +10,7 @@ object ClickhouseXa {
 
   def make[F[_]: Async: ContextShift](config: ClickhouseConfig): Resource[F, HikariTransactor[F]] =
     for {
-      ce <- ExecutionContexts.fixedThreadPool[F](16)
+      ce <- ExecutionContexts.fixedThreadPool[F](config.threadPoolSize)
       be <- Blocker[F]
       xa <- HikariTransactor.newHikariTransactor[F](
               driverClassName = "ru.yandex.clickhouse.ClickHouseDriver",

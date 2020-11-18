@@ -1,10 +1,11 @@
 package marketplace
 
 import monix.eval.{Task, TaskApp}
-import cats.effect.{ConcurrentEffect, ExitCode, Resource, Sync}
+import cats.effect.{Blocker, ConcurrentEffect, ExitCode, Resource, Sync}
 import tofu.syntax.monadic._
+import cats.tagless.syntax.functorK._
 import tofu.Execute
-import tofu.lift.Unlift
+import tofu.lift.{Lift, Unlift}
 import tofu.doobie.transactor.Txr
 import tofu.doobie.instances.implicits._
 import fs2.Stream
@@ -14,6 +15,7 @@ import org.http4s.client.Client
 import org.asynchttpclient.Dsl
 import org.asynchttpclient.proxy.ProxyServer
 import org.http4s.client.asynchttpclient.AsyncHttpClient
+import tofu.logging.Logs
 
 import marketplace.db._
 import marketplace.config._

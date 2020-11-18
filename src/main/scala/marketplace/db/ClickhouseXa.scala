@@ -20,6 +20,5 @@ object ClickhouseXa {
               connectEC = ce,
               blocker = be
             )
-
     } yield xa
 }

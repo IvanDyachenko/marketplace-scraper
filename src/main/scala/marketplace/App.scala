@@ -23,6 +23,7 @@ import marketplace.context._
 import marketplace.clients._
 import marketplace.modules._
 import marketplace.services._
+import marketplace.repositories._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -35,16 +36,22 @@ object Main extends TaskApp {
   type F[+A] = CrawlerF[A]
   type S[+A] = Stream[F, A]
 
+  private implicit val logs: Logs[I, F] = Logs.withContext[I, F]
+
   def init: Resource[Task, (CrawlerContext, Crawler[S])] =
     for {
-      ctx               <- CrawlerContext.make[I]
-      xa                <- ClickhouseXa.make[I](ctx.config.clickhouseConfig)
-      txr                = Txr.contextual[F](xa)
-      elh               <- doobieLogging.makeEmbeddableLogHandler[I, F, txr.DB]("doobie")
-      httpClient        <- buildHttp4sClient[I](ctx.config.httpConfig).map(translateHttp4sClient[I, F](_))
-      marketplaceClient <- MarketplaceClient.make[I, F](httpClient)
-      crawlService      <- CrawlService.make[I, F, S](marketplaceClient)
-      crawler           <- Crawler.make[I, F, S](crawlService)
+      implicit0(be: Blocker)                             <- Blocker[I]
+      ctx                                                <- CrawlerContext.make[I]
+      xa                                                 <- ClickhouseXa.make[I](ctx.config.clickhouseConfig)
+      txr                                                 = Txr.contextual[F](xa)
+      elh                                                <- doobieLogging.makeEmbeddableLogHandler[I, F, txr.DB]("doobie")
+      httpClient                                         <- buildHttp4sClient[I](ctx.config.httpConfig).map(translateHttp4sClient[I, F](_))
+      implicit0(l: Logs[I, txr.DB])                       = logs.mapK(Lift[F, txr.DB].liftF)
+      marketplaceRepo                                    <- MarketplaceRepo.make[I, txr.DB](elh)
+      marketplaceRepoF                                    = marketplaceRepo.mapK(txr.trans)
+      implicit0(marketplaceClient: MarketplaceClient[F]) <- MarketplaceClient.make[I, F](httpClient)
+      crawlService                                       <- CrawlService.make[I, F, S](marketplaceRepoF)
+      crawler                                            <- Crawler.make[I, F, S](crawlService)
     } yield (ctx, crawler)
 
   // https://scastie.scala-lang.org/Odomontois/F29lLrY2RReZrcUJ1zIEEg/25

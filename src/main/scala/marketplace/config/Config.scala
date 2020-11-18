@@ -14,7 +14,7 @@ object HttpConfig {
     ConfigSource.default.at("http").loadF[F, HttpConfig](blocker)
 }
 
-final case class ClickhouseConfig(url: String, user: String, pass: String)
+final case class ClickhouseConfig(url: String, user: String, pass: String, threadPoolSize: Int)
 
 object ClickhouseConfig {
   lazy val load: ClickhouseConfig = ConfigSource.default.at("clickhouse").loadOrThrow[ClickhouseConfig]

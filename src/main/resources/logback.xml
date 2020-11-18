@@ -5,6 +5,9 @@
     <encoder>
       <pattern>%white(%d{HH:mm:ss.SSS}) %highlight(%-5level) %cyan(%logger{50}) - %msg %n</pattern>
     </encoder>
+    <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+      <layout class="tofu.logging.ELKLayout"/>
+    </encoder>
   </appender>
 
   <root level="${LEVEL}">

@@ -1,8 +1,15 @@
 # Mar🐈place crawler ![Scala CI](https://github.com/IvanDyachenko/marketplace-crawler/workflows/Scala%20CI/badge.svg)
 
-### Getting started
+### How to
 
-#### ClickHouse cheat sheet
+#### Mitmproxy
+
+Start [mitmproxy in regular mode](https://docs.mitmproxy.org/stable/concepts-modes/#regular-proxy):
+```bash
+mitmproxy --verbose --server --mode regular --listen-port 8888 --allow-hosts 'mobile.market.yandex.net:443' --no-http2
+```
+
+#### ClickHouse
 
 Run containers in the background:
 ```bash

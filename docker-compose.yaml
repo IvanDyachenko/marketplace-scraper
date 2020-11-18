@@ -1,0 +1,19 @@
+version: "3.8"
+services:
+
+  ch-server:
+    image: yandex/clickhouse-server:latest
+    ports:
+      - 8123:8123
+      - 9000:9000
+    ulimits:
+      nofile: 262144
+
+  ch-client:
+    image: yandex/clickhouse-client:latest
+    entrypoint:
+      - /bin/sleep
+    command:
+      - infinity
+    depends_on:
+      - ch-server

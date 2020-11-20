@@ -9,17 +9,17 @@ import tofu.data.derived.ContextEmbed
 import tofu.higherKind.derived.representableK
 import doobie.ConnectionIO
 import doobie.util.log.LogHandler
-//import doobie.implicits._
+import doobie.implicits._
 import tofu.doobie.LiftConnectionIO
 import tofu.doobie.log.EmbeddableLogHandler
 import tofu.logging.{Logging, Logs}
 import tofu.syntax.logging._
 
-import marketplace.models.MarketplaceResponse
+import marketplace.models.Response
 
 @derive(representableK)
 trait MarketplaceRepo[DB[_]] {
-  def add(response: MarketplaceResponse): DB[Unit]
+  def add(resp: Response): DB[Unit]
 }
 
 object MarketplaceRepo extends ContextEmbed[MarketplaceRepo] {
@@ -34,12 +34,11 @@ object MarketplaceRepo extends ContextEmbed[MarketplaceRepo] {
     }
 
   private final class Impl(implicit lh: LogHandler) extends MarketplaceRepo[ConnectionIO] {
-    override def add(response: MarketplaceResponse): ConnectionIO[Unit] =
-      ???
+    def add(response: Response): ConnectionIO[Unit] = ().pure[ConnectionIO]
   }
 
   final class LoggingMid[DB[_]: Apply: Logging] extends MarketplaceRepo[Mid[DB, *]] {
-    def add(response: MarketplaceResponse): Mid[DB, Unit] =
-      info"Send response data to ClickHouse" *> _
+    def add(resp: Response): Mid[DB, Unit] =
+      trace"Send ${resp} to ClickHouse" *> _
   }
 }

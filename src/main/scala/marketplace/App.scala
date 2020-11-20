@@ -1,24 +1,18 @@
 package marketplace
 
 import monix.eval.{Task, TaskApp}
-import cats.effect.{Blocker, ConcurrentEffect, ExitCode, Resource, Sync}
-import tofu.syntax.monadic._
+import cats.effect.{Blocker, ExitCode, Resource}
+//import tofu.syntax.monadic._
 import cats.tagless.syntax.functorK._
-import tofu.Execute
-import tofu.lift.{Lift, Unlift}
+import tofu.lift.{Lift}
 import tofu.doobie.transactor.Txr
 import tofu.doobie.instances.implicits._
 import fs2.Stream
 import tofu.fs2Instances._
-import org.http4s.client.Client
-//import org.http4s.client.blaze.BlazeClientBuilder
-import org.asynchttpclient.Dsl
-import org.asynchttpclient.proxy.ProxyServer
-import org.http4s.client.asynchttpclient.AsyncHttpClient
 import tofu.logging.Logs
 
 import marketplace.db._
-import marketplace.config._
+//import marketplace.config._
 import marketplace.context._
 import marketplace.clients._
 import marketplace.modules._
@@ -40,45 +34,17 @@ object Main extends TaskApp {
 
   def init: Resource[Task, (CrawlerContext, Crawler[S])] =
     for {
-      implicit0(be: Blocker)                             <- Blocker[I]
-      ctx                                                <- CrawlerContext.make[I]
-      xa                                                 <- ClickhouseXa.make[I](ctx.config.clickhouseConfig)
-      txr                                                 = Txr.contextual[F](xa)
-      elh                                                <- doobieLogging.makeEmbeddableLogHandler[I, F, txr.DB]("doobie")
-      httpClient                                         <- buildHttp4sClient[I](ctx.config.httpConfig).map(translateHttp4sClient[I, F](_))
-      implicit0(l: Logs[I, txr.DB])                       = logs.mapK(Lift[F, txr.DB].liftF)
-      marketplaceRepo                                    <- MarketplaceRepo.make[I, txr.DB](elh)
-      marketplaceRepoF                                    = marketplaceRepo.mapK(txr.trans)
-      implicit0(marketplaceClient: MarketplaceClient[F]) <- MarketplaceClient.make[I, F](httpClient)
-      crawlService                                       <- CrawlService.make[I, F, S](marketplaceRepoF)
-      crawler                                            <- Crawler.make[I, F, S](crawlService)
+      implicit0(blocker: Blocker)  <- Blocker[I]
+      ctx                          <- CrawlerContext.make[I]
+      xa                           <- ClickhouseXa.make[I](ctx.config.clickhouseConfig)
+      txr                           = Txr.contextual[F](xa)
+      elh                          <- doobieLogging.makeEmbeddableLogHandler[I, F, txr.DB]("doobie")
+      httpClient                   <- HttpClient.make[I, F](ctx.config.httpConfig)
+      crawlService                 <- CrawlService.make[I, F, S](httpClient)
+      implicit0(l: Logs[I, txr.DB]) = logs.mapK(Lift[F, txr.DB].liftF)
+      marketplaceRepo              <- MarketplaceRepo.make[I, txr.DB](elh)
+      marketplaceRepoF              = marketplaceRepo.mapK(txr.trans)
+      marketplaceService           <- MarketplaceService.make[I, F](marketplaceRepoF)
+      crawler                      <- Crawler.make[I, F, S](crawlService, marketplaceService)
     } yield (ctx, crawler)
-
-  // https://scastie.scala-lang.org/Odomontois/F29lLrY2RReZrcUJ1zIEEg/25
-  private def translateHttp4sClient[F[_]: Sync, G[_]: Sync](client: Client[F])(implicit U: Unlift[F, G]): Client[G] =
-    Client(req => Resource.suspend(U.unlift.map(gf => client.run(req.mapK(gf)).mapK(U.liftF).map(_.mapK(U.liftF)))))
-
-  private def buildHttp4sClient[F[_]: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] = {
-    val HttpConfig(proxyHost, proxyPort, maxConnections, maxConnectionsPerHost) = httpConfig
-
-    val proxyServer = new ProxyServer.Builder(proxyHost, proxyPort).build()
-
-    val httpClientConfig = Dsl
-      .config()
-      .setMaxConnections(maxConnections)
-      .setMaxConnectionsPerHost(maxConnectionsPerHost)
-      .setFollowRedirect(false)
-      .setProxyServer(proxyServer)
-      .build()
-
-    AsyncHttpClient.resource(httpClientConfig)
-  }
-
-//  // Should be fixed in https://github.com/TinkoffCreditSystems/tofu/pull/422
-//  private object Execute {
-//    def apply[F[_]](implicit F: Execute[F]): F.type = F
-//  }
-
-//  private def buildHttp4sClient[F[_]: Execute: ConcurrentEffect]: Resource[F, Client[F]] =
-//    Resource.liftF(Execute[F].executionContext) >>= (BlazeClientBuilder[F](_).resource)
 }

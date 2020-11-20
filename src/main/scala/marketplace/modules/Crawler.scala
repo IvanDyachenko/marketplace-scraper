@@ -13,7 +13,7 @@ import fs2.Stream
 import tofu.fs2.LiftStream
 
 import marketplace.context.HasConfig
-import marketplace.services.CrawlService
+import marketplace.services.{CrawlService, MarketplaceService}
 
 @derive(representableK)
 trait Crawler[S[_]] {
@@ -23,17 +23,21 @@ trait Crawler[S[_]] {
 object Crawler extends ContextEmbed[CrawlService] {
 
   def make[I[_]: Monad, F[_]: Monad: Concurrent, S[_]: Monad: LiftStream[*[_], F]: HasConfig](
-    crawlService: CrawlService[Stream[F, *]]
+    crawlService: CrawlService[Stream[F, *]],
+    marketplaceService: MarketplaceService[F]
   ): Resource[I, Crawler[S]] =
-    Resource.liftF(
+    Resource.liftF {
       context[S]
-        .map(conf => FunctorK[Crawler].mapK(new Impl[F](crawlService, conf.maxConcurrent))(LiftStream[S, F].liftF))
+        .map(conf => FunctorK[Crawler].mapK(new Impl[F](crawlService, marketplaceService, conf.maxConcurrent))(LiftStream[S, F].liftF))
         .embed
         .pure[I]
-    )
+    }
 
-  private final class Impl[F[_]: Monad: Concurrent](crawlService: CrawlService[Stream[F, *]], maxConcurrent: Int)
-      extends Crawler[Stream[F, *]] {
+  private final class Impl[F[_]: Monad: Concurrent](
+    crawlService: CrawlService[Stream[F, *]],
+    marketplaceService: MarketplaceService[F],
+    maxConcurrent: Int
+  ) extends Crawler[Stream[F, *]] {
 
     def run: Stream[F, Unit] =
       crawlService.flow.balanceAvailable

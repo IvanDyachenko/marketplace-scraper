@@ -38,7 +38,7 @@ object MarketplaceRepo extends ContextEmbed[MarketplaceRepo] {
   }
 
   final class LoggingMid[DB[_]: Apply: Logging] extends MarketplaceRepo[Mid[DB, *]] {
-    def add(resp: Response): Mid[DB, Unit] =
-      trace"Send ${resp} to ClickHouse" *> _
+    def add(response: Response): Mid[DB, Unit] =
+      trace"Send ${response} to ClickHouse" *> _
   }
 }

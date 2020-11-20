@@ -10,10 +10,6 @@ lazy val `marketplace-crawler` =
     .settings(organization := "io.ivandyachenko")
     .settings(homepage := Some(url("https://github.com/ivandyachenko/marketplace-crawler")))
     .settings(
-      githubOwner := "ivandyachenko",
-      githubTokenSource := TokenSource.Or(TokenSource.GitConfig("github.token"), TokenSource.Environment("GITHUB_TOKEN"))
-    )
-    .settings(
       projectSettings,
       projectDependencies,
       testDependencies,
@@ -27,11 +23,6 @@ lazy val projectSettings = Seq(
   fork in Global := true, // https://github.com/sbt/sbt/issues/2274
   cancelable in Global := true
 )
-
-githubOwner := "ivandyachenko"
-githubTokenSource := TokenSource.Or(TokenSource.GitConfig("github.token"), TokenSource.Environment("GITHUB_TOKEN"))
-
-resolvers += Resolver.githubPackages("ivandyachenko")
 
 lazy val projectDependencies =
   libraryDependencies ++= List(
@@ -64,7 +55,6 @@ lazy val projectDependencies =
     "ru.yandex.clickhouse"   % "clickhouse-jdbc"          % Versions.clickhouseJDBC,
     "com.github.pureconfig" %% "pureconfig"               % Versions.pureconfig,
     "com.github.pureconfig" %% "pureconfig-cats-effect"   % Versions.pureconfig,
-    "io.ivandyachenko"      %% "beru4s"                   % Versions.beru4s,
     "ch.qos.logback"         % "logback-classic"          % Versions.logback
   )
 

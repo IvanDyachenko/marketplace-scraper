@@ -1,7 +1,7 @@
 package marketplace.clients
 
-import cats.{Monad}
-import tofu.syntax.monadic._
+import cats.Monad
+import cats.syntax.all._
 import cats.effect.{ConcurrentEffect, Resource, Sync}
 import tofu.Execute
 import tofu.lift.Unlift
@@ -9,10 +9,15 @@ import derevo.derive
 import tofu.data.derived.ContextEmbed
 import tofu.higherKind.derived.representableK
 import tofu.logging.{Logging, Logs}
-import org.http4s.client.Client
+import tofu.syntax.logging._
+import org.http4s.{Uri, Method, Request => Http4sRequest, InvalidMessageBodyFailure, Header}
+import org.http4s.Status.{ClientError, Successful}
+import org.http4s.client.{Client, UnexpectedStatus}
+import org.http4s.client.dsl.Http4sClientDsl._
 import org.http4s.client.asynchttpclient.AsyncHttpClient
 import org.asynchttpclient.Dsl
 import org.asynchttpclient.proxy.ProxyServer
+import org.http4s.circe.jsonEncoderOf
 
 import marketplace.config.HttpConfig
 import marketplace.models.{Request, Response}
@@ -32,8 +37,39 @@ object HttpClient extends ContextEmbed[HttpClient] {
       Resource.liftF(logs.forService[HttpClient[F]].map(implicit l => new Impl[F](translateHttp4sClient[I, F](http4sClient))))
     }
 
-  class Impl[F[_]: Logging](client: Client[F]) extends HttpClient[F] {
-    def send(request: Request): F[Response] = ???
+  class Impl[F[_]: Sync: Logging](http4sClient: Client[F]) extends HttpClient[F] {
+
+    def send(request: Request): F[Response] =
+      buildHttp4sRequest(request).flatMap { http4sRequest =>
+        http4sClient
+          .toKleisli { http4sResponse =>
+            http4sResponse match {
+              case Successful(_) | ClientError(_) =>
+                val headers = http4sResponse.headers.toList.map(h => marketplace.models.Header(h.name.value, h.value))
+                http4sResponse.attemptAs[String].map(bodyText => Response(headers, bodyText)).leftWiden[Throwable].rethrowT
+              case unexpected                     =>
+                UnexpectedStatus(unexpected.status).raiseError[F, Response]
+            }
+          }
+          .run(http4sRequest)
+          .recoverWith { case err: InvalidMessageBodyFailure =>
+            errorCause"Received invalid response during execution of request to ${request}" (err) *>
+              HttpClientDecodingError(err.details.dropWhile(_ != '{')).raiseError[F, Response]
+          }
+          .flatTap(response => debug"Received ${response} during execution of request to ${request}")
+      }
+
+    private def buildHttp4sRequest(request: Request): F[Http4sRequest[F]] = {
+      val uri =
+        Uri
+          .unsafeFromString(request.uri)
+          .addPath(request.path)
+          .withMultiValueQueryParams(request.queryParams)
+
+      val headers = request.headers.map(h => Header(h.name, h.value))
+
+      Method.POST(request, uri, headers: _*)(Sync[F], jsonEncoderOf(Request.circeEncoder))
+    }
   }
 
   private def fromHttp4sClient[F[_]: Monad: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] = {

@@ -13,6 +13,7 @@ import fs2.Stream
 import tofu.fs2.LiftStream
 
 import marketplace.context.HasConfig
+import marketplace.config.CrawlerConfig
 import marketplace.services.{CrawlService, MarketplaceService}
 
 @derive(representableK)
@@ -28,7 +29,13 @@ object Crawler extends ContextEmbed[CrawlService] {
   ): Resource[I, Crawler[S]] =
     Resource.liftF {
       context[S]
-        .map(conf => FunctorK[Crawler].mapK(new Impl[F](crawlService, marketplaceService, conf.maxConcurrent))(LiftStream[S, F].liftF))
+        .map { conf =>
+          val CrawlerConfig(maxOpen, maxConc, prefetchN) = conf
+
+          val impl = new Impl[F](crawlService, marketplaceService, maxOpen, maxConc, prefetchN)
+
+          FunctorK[Crawler].mapK(impl)(LiftStream[S, F].liftF)
+        }
         .embed
         .pure[I]
     }
@@ -36,13 +43,17 @@ object Crawler extends ContextEmbed[CrawlService] {
   private final class Impl[F[_]: Monad: Concurrent](
     crawlService: CrawlService[Stream[F, *]],
     marketplaceService: MarketplaceService[F],
-    maxConcurrent: Int
+    maxOpen: Int,
+    maxConcurrent: Int,
+    prefetchNumber: Int
   ) extends Crawler[Stream[F, *]] {
 
     def run: Stream[F, Unit] =
-      crawlService.flow.balanceAvailable
+      crawlService.flow
+        .prefetchN(prefetchNumber)
+        .balanceAvailable
         .parEvalMapUnordered(maxConcurrent)(crawlService.crawl(_).pure[F])
-        .parJoinUnbounded
+        .parJoin(maxOpen)
         .evalMap(_ => Monad[F].unit)
   }
 }

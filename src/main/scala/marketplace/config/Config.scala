@@ -23,7 +23,7 @@ object ClickhouseConfig {
     ConfigSource.default.at("clickhouse").loadF[F, ClickhouseConfig](blocker)
 }
 
-final case class CrawlerConfig(maxConcurrent: Int)
+final case class CrawlerConfig(maxOpen: Int, maxConcurrent: Int, prefetchNumber: Int)
 
 object CrawlerConfig {
   lazy val load: CrawlerConfig = ConfigSource.default.at("crawler").loadOrThrow[CrawlerConfig]

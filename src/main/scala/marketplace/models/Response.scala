@@ -1,7 +1,10 @@
 package marketplace.models
 
-import derevo.derive
-import tofu.logging.derivation.loggable
+import org.http4s.Headers
+import tofu.logging.Loggable
 
-@derive(loggable)
 final case class Response(headers: Headers, bodyText: String)
+
+object Response {
+  implicit val loggable: Loggable[Response] = Loggable.stringValue.contramap(resp => "'response'")
+}

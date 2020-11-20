@@ -10,7 +10,7 @@ import tofu.data.derived.ContextEmbed
 import tofu.higherKind.derived.representableK
 import tofu.logging.{Logging, Logs}
 import tofu.syntax.logging._
-import org.http4s.{Uri, Method, Request => Http4sRequest, InvalidMessageBodyFailure, Header}
+import org.http4s.{Method, Request => Http4sRequest, InvalidMessageBodyFailure}
 import org.http4s.Status.{ClientError, Successful}
 import org.http4s.client.{Client, UnexpectedStatus}
 import org.http4s.client.dsl.Http4sClientDsl._
@@ -45,8 +45,7 @@ object HttpClient extends ContextEmbed[HttpClient] {
           .toKleisli { http4sResponse =>
             http4sResponse match {
               case Successful(_) | ClientError(_) =>
-                val headers = http4sResponse.headers.toList.map(h => marketplace.models.Header(h.name.value, h.value))
-                http4sResponse.attemptAs[String].map(bodyText => Response(headers, bodyText)).leftWiden[Throwable].rethrowT
+                http4sResponse.attemptAs[String].map(bodyText => Response(http4sResponse.headers, bodyText)).leftWiden[Throwable].rethrowT
               case unexpected                     =>
                 UnexpectedStatus(unexpected.status).raiseError[F, Response]
             }
@@ -60,15 +59,11 @@ object HttpClient extends ContextEmbed[HttpClient] {
       }
 
     private def buildHttp4sRequest(request: Request): F[Http4sRequest[F]] = {
-      val uri =
-        Uri
-          .unsafeFromString(request.uri)
-          .addPath(request.path)
-          .withMultiValueQueryParams(request.queryParams)
+      val uri = request.uri
+        .addPath(request.path)
+        .withQueryParams[String, String](request.queryParams)
 
-      val headers = request.headers.map(h => Header(h.name, h.value))
-
-      Method.POST(request, uri, headers: _*)(Sync[F], jsonEncoderOf(Request.circeEncoder))
+      Method.POST(request, uri, request.headers.toList: _*)(Sync[F], jsonEncoderOf(Request.circeEncoder))
     }
   }
 

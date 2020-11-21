@@ -58,13 +58,8 @@ object HttpClient extends ContextEmbed[HttpClient] {
           .flatTap(response => debug"Received ${response} during execution of request to ${request}")
       }
 
-    private def buildHttp4sRequest(request: Request): F[Http4sRequest[F]] = {
-      val uri = request.uri
-        .addPath(request.path)
-        .withQueryParams[String, String](request.queryParams)
-
-      Method.POST(request, uri, request.headers.toList: _*)(Sync[F], jsonEncoderOf(Request.circeEncoder))
-    }
+    private def buildHttp4sRequest(request: Request): F[Http4sRequest[F]] =
+      Method.POST(request, request.uri, request.headers.toList: _*)(Sync[F], jsonEncoderOf(Request.circeEncoder))
   }
 
   private def fromHttp4sClient[F[_]: Monad: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] = {
@@ -77,6 +72,8 @@ object HttpClient extends ContextEmbed[HttpClient] {
       .setMaxConnections(maxConnections)
       .setMaxConnectionsPerHost(maxConnectionsPerHost)
       .setFollowRedirect(false)
+      .setKeepAlive(true)
+      .setMaxRequestRetry(0)
       .setProxyServer(proxyServer)
       .build()
 

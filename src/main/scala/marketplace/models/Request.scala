@@ -11,8 +11,8 @@ import marketplace.models.yandex.market.{Request => YaMarketRequest}
 
 trait Request {
   def uri: Uri
-  def headers: Headers
   def path: Uri.Path
+  def headers: Headers
   def queryParams: Map[String, String]
 }
 

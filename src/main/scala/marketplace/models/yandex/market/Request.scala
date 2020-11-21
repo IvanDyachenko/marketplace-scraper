@@ -13,9 +13,12 @@ import Request._
 import marketplace.models.yandex.market.requests.GetCategoryModels
 
 trait Request extends BaseRequest {
-  val uri: Uri                         =
-    Uri.unsafeFromString(s"https://mobile.market.yandex.net/market/blue/")
-  val headers: Headers                 =
+  def uri: Uri = Uri
+    .unsafeFromString(s"https://mobile.market.yandex.net/market/blue/")
+    .addPath(path)
+    .withQueryParams(queryParams)
+
+  val headers: Headers =
     Headers.of(
       Host("mobile.market.yandex.net"),
       `User-Agent`(AgentProduct("Beru", Some("323")), List(AgentComment("iPhone; iOS 14.0.1; Scale/3.00"))),
@@ -24,6 +27,7 @@ trait Request extends BaseRequest {
       `X-App-Version`("3.2.3"),
       `X-Region-Id`(geoId)
     )
+
   def path: Uri.Path
   def uuid: User.UUID
   def geoId: Region.GeoId

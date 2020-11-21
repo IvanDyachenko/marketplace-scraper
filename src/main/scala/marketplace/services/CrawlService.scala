@@ -8,12 +8,12 @@ import tofu.data.derived.ContextEmbed
 import tofu.syntax.embed._
 import tofu.syntax.context._
 import tofu.streams.{Emits, Evals}
-//import tofu.syntax.streams.emits._
 import tofu.syntax.streams.evals._
 
 import marketplace.context.HasConfig
 import marketplace.clients.HttpClient
 import marketplace.models.{Request, Response}
+import marketplace.repositories.CrawlRepo
 
 trait CrawlService[S[_]] {
   def flow: S[Request]
@@ -23,15 +23,19 @@ trait CrawlService[S[_]] {
 object CrawlService extends ContextEmbed[CrawlService] {
   def apply[S[_]](implicit ev: CrawlService[S]): ev.type = ev
 
-  def make[I[_]: Monad, F[_]: Monad, S[_]: Monad: Evals[*[_], F]: HasConfig](httpClient: HttpClient[F]): Resource[I, CrawlService[S]] =
-    Resource.liftF(context[S].map(conf => new Impl[F, S](httpClient): CrawlService[S]).embed.pure[I])
+  def make[I[_]: Monad, F[_]: Monad, S[_]: Monad: Evals[*[_], F]: HasConfig](
+    httpClient: HttpClient[F],
+    crawlRepo: CrawlRepo[F]
+  ): Resource[I, CrawlService[S]] =
+    Resource.liftF(context[S].map(conf => new Impl[F, S](httpClient, crawlRepo): CrawlService[S]).embed.pure[I])
 
-  private final class Impl[F[_]: Monad, S[_]: Monad: Emits: Evals[*[_], F]](httpClient: HttpClient[F]) extends CrawlService[S] {
+  private final class Impl[F[_]: Monad, S[_]: Monad: Emits: Evals[*[_], F]](httpClient: HttpClient[F], crawlRepo: CrawlRepo[F])
+      extends CrawlService[S] {
 
     def flow: S[Request] = ???
 
     def crawl: S[Request] => S[Response] =
-      _.evalMap(req => httpClient.send(req))
+      _.evalMap(req => httpClient.send(req).flatTap(resp => crawlRepo.add(req, resp)))
   }
 
   implicit val embed: Embed[CrawlService] = new Embed[CrawlService] {

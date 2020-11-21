@@ -17,11 +17,13 @@ final case class GetCategoryModels(
   pageNumber: Page.Number,
   pageCount: Page.Count
 ) extends Request {
-  val apiVersion: ApiVersion                    = ApiVersion.`2.1.6`
-  val path: Uri.Path                            = s"${apiVersion.show}/categories/${categoryId}/search"
-  val sections: Sections                        =
-    List(Section.Medicine)
-  val fields: Fields                            =
+  val apiVersion: ApiVersion = ApiVersion.`2.1.6`
+
+  val path: Uri.Path = s"market/blue/${apiVersion.show}/categories/${categoryId}/search"
+
+  val sections: Sections = List(Section.Medicine)
+
+  val fields: Fields =
     List(
       Field.ModelVendor,
       Field.ModelCategory,
@@ -42,7 +44,8 @@ final case class GetCategoryModels(
       Field.OfferBundleSettings,
       Field.ShopAll
     )
-  val rearrFactors: RearrFactors                =
+
+  val rearrFactors: RearrFactors =
     List(
       RearrFactor.CommonlyPurchasedOrdered(),
       RearrFactor.MarketRebranded(1),
@@ -54,6 +57,7 @@ final case class GetCategoryModels(
       RearrFactor.MarketPromoBlueCheapestAsGift4(1),
       RearrFactor.BuyerPriceNominalInclPromo(1)
     )
+
   override val queryParams: Map[String, String] =
     super.queryParams ++ Map(
       QueryParam[Page.Count].key.value  -> QueryParamEncoder[Page.Count].encode(pageCount).value,

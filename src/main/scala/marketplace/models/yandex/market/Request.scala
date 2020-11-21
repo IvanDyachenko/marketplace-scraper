@@ -8,19 +8,18 @@ import org.http4s.headers.{`User-Agent`, AgentComment, AgentProduct, Host}
 
 import marketplace.models.{Request => BaseRequest}
 import marketplace.models.yandex.market.headers._
-
-import Request._
 import marketplace.models.yandex.market.requests.GetCategoryModels
 
+import Request._
+
 trait Request extends BaseRequest {
-  def uri: Uri = Uri
-    .unsafeFromString(s"https://mobile.market.yandex.net/market/blue/")
-    .addPath(path)
-    .withQueryParams(queryParams)
+  def uri: Uri       = Uri(Some(Uri.Scheme.https), Some(Uri.Authority(host = host))).addPath(path).withQueryParams(queryParams)
+  val host: Uri.Host = Uri.RegName("mobile.market.yandex.net")
+  def path: Uri.Path
 
   val headers: Headers =
     Headers.of(
-      Host("mobile.market.yandex.net"),
+      Host(host.value),
       `User-Agent`(AgentProduct("Beru", Some("323")), List(AgentComment("iPhone; iOS 14.0.1; Scale/3.00"))),
       `X-Device-Type`("SMARTPHONE"),
       `X-Platform`("IOS"),
@@ -28,12 +27,12 @@ trait Request extends BaseRequest {
       `X-Region-Id`(geoId)
     )
 
-  def path: Uri.Path
   def uuid: User.UUID
   def geoId: Region.GeoId
   def fields: Fields
   def sections: Sections
   def rearrFactors: RearrFactors
+
   def queryParams: Map[String, String] =
     Map(
       QueryParam[User.UUID].key.value    -> QueryParamEncoder[User.UUID].encode(uuid).value,

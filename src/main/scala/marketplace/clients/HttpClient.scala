@@ -11,7 +11,7 @@ import tofu.higherKind.derived.representableK
 import tofu.logging.{Logging, Logs}
 import tofu.syntax.logging._
 import org.http4s.{Method, Request => Http4sRequest, InvalidMessageBodyFailure}
-import org.http4s.Status.{ClientError, Successful}
+import org.http4s.Status.Successful
 import org.http4s.client.{Client, UnexpectedStatus}
 import org.http4s.client.dsl.Http4sClientDsl._
 import org.http4s.client.asynchttpclient.AsyncHttpClient
@@ -44,10 +44,11 @@ object HttpClient extends ContextEmbed[HttpClient] {
         http4sClient
           .toKleisli { http4sResponse =>
             http4sResponse match {
-              case Successful(_) | ClientError(_) =>
+              case Successful(_) =>
                 http4sResponse.attemptAs[String].map(bodyText => Response(http4sResponse.headers, bodyText)).leftWiden[Throwable].rethrowT
-              case unexpected                     =>
-                UnexpectedStatus(unexpected.status).raiseError[F, Response]
+              case unexpected    =>
+                error"Received unexpected ${unexpected.status.show}-status during execution of request to ${request}" *>
+                  UnexpectedStatus(unexpected.status).raiseError[F, Response]
             }
           }
           .run(http4sRequest)

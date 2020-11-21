@@ -8,6 +8,10 @@ services:
       - 9000:9000
     ulimits:
       nofile: 262144
+    volumes:
+      - ./clickhouse/server/users.xml:/etc/clickhouse-server/users.xml
+      - ./clickhouse/server/data:/var/lib/clickhouse/data
+      - ./clickhouse/server/initdb.d/yandex_market_category_models.sql:/docker-entrypoint-initdb.d/yandex_market_category_models.sql
 
   ch-client:
     image: yandex/clickhouse-client:latest

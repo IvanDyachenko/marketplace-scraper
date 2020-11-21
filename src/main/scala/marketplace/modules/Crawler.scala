@@ -14,7 +14,7 @@ import tofu.fs2.LiftStream
 
 import marketplace.context.HasConfig
 import marketplace.config.CrawlerConfig
-import marketplace.services.{CrawlService, MarketplaceService}
+import marketplace.services.CrawlService
 
 @derive(representableK)
 trait Crawler[S[_]] {
@@ -24,15 +24,14 @@ trait Crawler[S[_]] {
 object Crawler extends ContextEmbed[CrawlService] {
 
   def make[I[_]: Monad, F[_]: Monad: Concurrent, S[_]: Monad: LiftStream[*[_], F]: HasConfig](
-    crawlService: CrawlService[Stream[F, *]],
-    marketplaceService: MarketplaceService[F]
+    crawlService: CrawlService[Stream[F, *]]
   ): Resource[I, Crawler[S]] =
     Resource.liftF {
       context[S]
         .map { conf =>
           val CrawlerConfig(maxOpen, maxConc, prefetchN) = conf
 
-          val impl = new Impl[F](crawlService, marketplaceService, maxOpen, maxConc, prefetchN)
+          val impl = new Impl[F](crawlService, maxOpen, maxConc, prefetchN)
 
           FunctorK[Crawler].mapK(impl)(LiftStream[S, F].liftF)
         }
@@ -42,7 +41,6 @@ object Crawler extends ContextEmbed[CrawlService] {
 
   private final class Impl[F[_]: Monad: Concurrent](
     crawlService: CrawlService[Stream[F, *]],
-    marketplaceService: MarketplaceService[F],
     maxOpen: Int,
     maxConcurrent: Int,
     prefetchNumber: Int
@@ -54,6 +52,6 @@ object Crawler extends ContextEmbed[CrawlService] {
         .balanceAvailable
         .parEvalMapUnordered(maxConcurrent)(crawlService.crawl(_).pure[F])
         .parJoin(maxOpen)
-        .evalMap(_ => Monad[F].unit)
+        .evalMap(_ => ().pure[F])
   }
 }

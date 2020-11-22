@@ -2,7 +2,6 @@ package marketplace.repositories
 
 import cats.{Apply, Monad}
 import cats.implicits._
-//import tofu.syntax.monadic._
 import cats.effect.Resource
 import tofu.higherKind.Mid
 import derevo.derive

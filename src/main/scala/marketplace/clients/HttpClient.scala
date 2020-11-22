@@ -47,7 +47,7 @@ object HttpClient extends ContextEmbed[HttpClient] {
               case Successful(_) =>
                 http4sResponse.attemptAs[String].map(bodyText => Response(http4sResponse.headers, bodyText)).leftWiden[Throwable].rethrowT
               case unexpected    =>
-                error"Received unexpected ${unexpected.status.show}-status during execution of request to ${request}" *>
+                error"Received ${unexpected.status.show} status during execution of request to ${request}" *>
                   UnexpectedStatus(unexpected.status).raiseError[F, Response]
             }
           }

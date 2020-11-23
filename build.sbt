@@ -52,9 +52,9 @@ lazy val `marketplace-crawler` =
 
 lazy val projectSettings = Seq(
   scalaVersion := scala2_13,
+  fork in Global := true, // https://github.com/sbt/sbt/issues/2274
+  cancelable in Global := true,
   scalafmtOnCompile := true
-//  fork in Global := true, // https://github.com/sbt/sbt/issues/2274
-//  cancelable in Global := true
 )
 
 lazy val projectDependencies =

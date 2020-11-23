@@ -1,4 +1,4 @@
-# Mar🐈place crawler ![Scala CI](https://github.com/IvanDyachenko/marketplace-crawler/workflows/Scala%20CI/badge.svg)
+# Mar🐈place crawler ![Scala CI/CD](https://github.com/IvanDyachenko/marketplace-crawler/workflows/Scala%20CI/CD/badge.svg)
 
 ### How to
 

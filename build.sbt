@@ -1,3 +1,5 @@
+import com.typesafe.sbt.packager.docker.Cmd
+
 ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / scalaVersion := scala2_13
 
@@ -16,12 +18,43 @@ lazy val `marketplace-crawler` =
       compilerOptions,
       compilerDependencies
     )
+    .enablePlugins(DockerPlugin)
+    .enablePlugins(AshScriptPlugin)
+    .enablePlugins(JavaAppPackaging)
+    .settings(
+      packageName in Docker := "marketplace-docker",
+      version in Docker := sys.env.getOrElse("GITHUB_SHA", default = "latest"),
+      maintainer in Docker := "Ivan Dyachenko <vandyachen@gmail.com>",
+      dockerBaseImage := "openjdk:8",
+      dockerExposedPorts := Seq(9000),
+      dockerUsername := Some("ivandyachenko"),
+      dockerBuildOptions ++= Seq(
+        "--secret",
+        s"id=mitmproxycert,src=${sys.env.get("GITHUB_WORKSPACE").get}/mitmproxy-ca-cert.pem"
+      ),
+      dockerCommands ~= { cmds =>
+        val imageConfig = Cmd("# syntax = docker/dockerfile:1.0-experimental")
+        imageConfig +: cmds
+      },
+      dockerCommands ++= Seq(
+        Cmd("USER", "root"),
+        Cmd(
+          "RUN",
+          "--mount=type=secret,id=mitmproxycert",
+          "${JAVA_HOME}/bin/keytool -noprompt -importcert -trustcacerts",
+          "-keystore ${JAVA_HOME}/jre/lib/security/cacerts",
+          "-storepass changeit",
+          "-alias mitmproxycert",
+          "-file /run/secrets/mitmproxycert"
+        )
+      )
+    )
 
 lazy val projectSettings = Seq(
   scalaVersion := scala2_13,
-  scalafmtOnCompile := true,
-  fork in Global := true, // https://github.com/sbt/sbt/issues/2274
-  cancelable in Global := true
+  scalafmtOnCompile := true
+//  fork in Global := true, // https://github.com/sbt/sbt/issues/2274
+//  cancelable in Global := true
 )
 
 lazy val projectDependencies =

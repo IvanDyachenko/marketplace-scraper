@@ -1,0 +1,42 @@
+name: Scala CI/CD
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Cache sbt
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.ivy2/cache
+          ~/.sbt
+          ~/.m2
+        key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt') }}
+
+    - name: Set up JDK 1.8
+      uses: actions/setup-java@v1
+      with:
+        java-version: 1.8
+
+    - name: Run tests
+      run: sbt test
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+    - name: Build and push Docker image
+      env:
+        DOCKER_BUILDKIT: 1
+        MITMPROXY_CA_CERT: ${{ secrets.MITMPROXY_CA_CERT }}
+      run: |
+        echo "$MITMPROXY_CA_CERT" > $GITHUB_WORKSPACE/mitmproxy-ca-cert.pem
+        sbt clean update docker:publish

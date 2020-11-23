@@ -2,6 +2,23 @@
 
 ### How to
 
+#### Docker
+
+Pull an image by `tag` (which equals to the corresponding `GITHUB_SHA`):
+```bash
+docker pull ivandyachenko/marketplace-crawler:<GITHUB_SHA>
+```
+
+Run the image via bare Docker:
+```bash
+docker run                         \
+  --network="host"                 \
+  --memory 200m                    \
+  --env PROXY_HOST=$MITMPROXY_HOST \
+  --env PROXY_PORT=$MITMPROXY_PORT \
+  --name crawler ivandyachenko/marketplace-crawler:<GITHUB_SHA>
+```
+
 #### Mitmproxy
 
 Start [mitmproxy in regular mode](https://docs.mitmproxy.org/stable/concepts-modes/#regular-proxy):

@@ -9,10 +9,10 @@ services:
     ulimits:
       nofile: 262144
     volumes:
-      - "./data/ch/data:/var/lib/clickhouse"
-      - "./data/ch/log:/var/log/clickhouse-server"
-      - "./ch/init.sql:/docker-entrypoint-initdb.d/init.sql"
-      - "./ch/config/users.xml:/etc/clickhouse-server/users.xml"
+      - "./.data/clickhouse/data:/var/lib/clickhouse"
+      - "./.data/clickhouse/log:/var/log/clickhouse-server"
+      - "./.clickhouse/init.sql:/docker-entrypoint-initdb.d/init.sql"
+      - "./.clickhouse/config/users.xml:/etc/clickhouse-server/users.xml"
 
   ch-client:
     image: yandex/clickhouse-client:latest

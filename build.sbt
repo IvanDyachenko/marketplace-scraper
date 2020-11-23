@@ -22,7 +22,7 @@ lazy val `marketplace-crawler` =
     .enablePlugins(AshScriptPlugin)
     .enablePlugins(JavaAppPackaging)
     .settings(
-      packageName in Docker := "marketplace-docker",
+      packageName in Docker := "marketplace-crawler",
       version in Docker := sys.env.getOrElse("GITHUB_SHA", default = "latest"),
       maintainer in Docker := "Ivan Dyachenko <vandyachen@gmail.com>",
       dockerBaseImage := "openjdk:8",

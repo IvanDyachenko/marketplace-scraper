@@ -3,6 +3,7 @@ package marketplace.modules
 import cats.Monad
 import cats.effect.{Concurrent, Resource}
 import cats.tagless.FunctorK
+import tofu.WithContext
 import tofu.syntax.context._
 import tofu.syntax.monadic._
 import tofu.syntax.embed._
@@ -12,7 +13,6 @@ import tofu.higherKind.derived.representableK
 import fs2.Stream
 import tofu.fs2.LiftStream
 
-import marketplace.context.HasConfig
 import marketplace.config.CrawlerConfig
 import marketplace.services.CrawlService
 
@@ -23,7 +23,7 @@ trait Crawler[S[_]] {
 
 object Crawler extends ContextEmbed[CrawlService] {
 
-  def make[I[_]: Monad, F[_]: Monad: Concurrent, S[_]: Monad: LiftStream[*[_], F]: HasConfig](
+  def make[I[_]: Monad, F[_]: Monad: Concurrent, S[_]: Monad: LiftStream[*[_], F]: WithContext[*[_], CrawlerConfig]](
     crawlService: CrawlService[Stream[F, *]]
   ): Resource[I, Crawler[S]] =
     Resource.liftF {

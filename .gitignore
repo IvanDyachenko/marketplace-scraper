@@ -242,4 +242,7 @@ tags
 # Persistent undo
 [._]*.un~
 
+### Docker ###
+.data/
+
 # End of https://www.toptal.com/developers/gitignore/api/macos,emacs,scala,jetbrains+all,vim,metals,sbt,bloop,helm,java

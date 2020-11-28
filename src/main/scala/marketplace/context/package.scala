@@ -3,10 +3,10 @@ package marketplace
 import tofu.WithContext
 import tofu.env.Env
 
-import marketplace.config.CrawlerConfig
+import marketplace.config.ConfigContext
 
 package object context {
-  type CrawlerF[+A] = Env[CrawlerContext, A]
+  type CrawlerF[+A] = Env[AppContext, A]
 
-  type HasConfig[F[_]] = F WithContext CrawlerConfig
+  type HasConfig[F[_]] = F WithContext ConfigContext
 }

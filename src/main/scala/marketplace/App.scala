@@ -30,10 +30,10 @@ object Main extends TaskApp {
 
   private implicit val logs: Logs[I, F] = Logs.withContext[I, F]
 
-  def init: Resource[Task, (CrawlerContext, Crawler[S])] =
+  def init: Resource[Task, (AppContext, Crawler[S])] =
     for {
       implicit0(be: Blocker)         <- Blocker[I]
-      ctx                            <- CrawlerContext.make[I]
+      ctx                            <- AppContext.make[I]
       httpClient                     <- HttpClient.make[I, F](ctx.config.httpConfig)
       chXa                           <- ClickhouseXa.make[I](ctx.config.clickhouseConfig)
       chTxr                           = Txr.contextual[F](chXa)

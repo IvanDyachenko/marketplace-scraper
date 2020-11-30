@@ -7,19 +7,21 @@ import tofu.higherKind.Mid
 import derevo.derive
 import tofu.data.derived.ContextEmbed
 import tofu.higherKind.derived.representableK
-import doobie.ConnectionIO
-import doobie.util.log.LogHandler
 import doobie.implicits._
+import doobie.ConnectionIO
+import doobie.util.Put
+import doobie.util.log.LogHandler
 import tofu.doobie.LiftConnectionIO
 import tofu.doobie.log.EmbeddableLogHandler
 import tofu.logging.{Logging, Logs}
 import tofu.syntax.logging._
 
-import marketplace.models.{Request, Response}
+import marketplace.clients.models.HttpResponse
+import marketplace.models.{Request => HttpRequest}
 
 @derive(representableK)
 trait CrawlRepo[DB[_]] {
-  def add(req: Request, resp: Response): DB[Unit]
+  def add[R: Put](request: HttpRequest, response: HttpResponse[R]): DB[Unit]
 }
 
 object CrawlRepo extends ContextEmbed[CrawlRepo] {
@@ -35,22 +37,22 @@ object CrawlRepo extends ContextEmbed[CrawlRepo] {
     }
 
   private final class Impl(implicit lh: LogHandler) extends CrawlRepo[ConnectionIO] {
-    def add(req: Request, resp: Response): ConnectionIO[Unit] =
+    def add[R: Put](request: HttpRequest, response: HttpResponse[R]): ConnectionIO[Unit] =
       sql"""
            |INSERT INTO yandex.market_category_models
            |(uri, host, path, body_text)
            |VALUES
            |(
-           |    ${req.uri.toString},
-           |    ${req.host.toString},
-           |    ${req.path.toString},
-           |    ${resp.bodyText}
+           |    ${request.uri.toString},
+           |    ${request.host.toString},
+           |    ${request.path.toString},
+           |    ${response.result}
            |)
          """.stripMargin.update.run.void
   }
 
   final class LoggingMid[DB[_]: Apply: Logging] extends CrawlRepo[Mid[DB, *]] {
-    def add(req: Request, resp: Response): Mid[DB, Unit] =
+    def add[R: Put](request: HttpRequest, response: HttpResponse[R]): Mid[DB, Unit] =
       trace"Send data to ClickHouse" *> _
   }
 }

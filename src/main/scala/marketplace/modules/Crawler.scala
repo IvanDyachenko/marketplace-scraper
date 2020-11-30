@@ -14,6 +14,7 @@ import fs2.Stream
 import tofu.fs2.LiftStream
 
 import marketplace.config.CrawlerConfig
+import marketplace.clients.models.HttpResponse
 import marketplace.services.CrawlService
 
 @derive(representableK)
@@ -29,9 +30,9 @@ object Crawler extends ContextEmbed[CrawlService] {
     Resource.liftF {
       context[S]
         .map { conf =>
-          val CrawlerConfig(maxOpen, maxConc, prefetchN) = conf
+          val CrawlerConfig(maxOpen, maxConcurrent, prefetchNumber) = conf
 
-          val impl = new Impl[F](crawlService, maxOpen, maxConc, prefetchN)
+          val impl = new Impl[F](crawlService, maxOpen, maxConcurrent, prefetchNumber)
 
           FunctorK[Crawler].mapK(impl)(LiftStream[S, F].liftF)
         }
@@ -50,8 +51,13 @@ object Crawler extends ContextEmbed[CrawlService] {
       crawlService.flow
         .prefetchN(prefetchNumber)
         .balanceAvailable
-        .parEvalMapUnordered(maxConcurrent)(crawlService.crawl(_).pure[F])
+        .parEvalMapUnordered(maxConcurrent) { requests =>
+          crawlService.crawl(jsonMeta.put, jsonDecoder)(requests).pure[F]
+        }
         .parJoin(maxOpen)
         .evalMap(_ => ().pure[F])
+
+    private implicit val jsonMeta    = HttpResponse.jsonDoobieMeta
+    private implicit val jsonDecoder = HttpResponse.jsonCirceDecoder
   }
 }

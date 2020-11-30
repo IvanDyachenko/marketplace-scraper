@@ -18,6 +18,8 @@ trait Request {
 }
 
 object Request {
+  implicit val circeEncoder: Encoder[Request] = Encoder.instance { case yaMarketRequest: YaMarketRequest => yaMarketRequest.asJson }
+
   implicit val loggable: Loggable[Request] = new DictLoggable[Request] {
     def logShow(a: Request): String = s"{a.host}/${a.path.show}"
 
@@ -28,6 +30,4 @@ object Request {
         i.foldTop(a.headers.toList)(h => i.addString(h.name.value, h.value)) |+|
         i.foldTop(a.queryParams.toList)(q => i.addString(q._1, q._2))
   }
-
-  implicit val circeEncoder: Encoder[Request] = Encoder.instance { case yaMarketRequest: YaMarketRequest => yaMarketRequest.asJson }
 }

@@ -1,4 +1,4 @@
-package marketplace.clients
+package marketplace.clients.models
 
 import derevo.derive
 import tofu.logging.derivation.loggable

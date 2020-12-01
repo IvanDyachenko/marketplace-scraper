@@ -21,7 +21,7 @@ import org.asynchttpclient.Dsl
 import org.asynchttpclient.proxy.ProxyServer
 
 import marketplace.config.HttpConfig
-import marketplace.clients.models.{HttpResponse, HttpClientDecodingError}
+import marketplace.clients.models.{HttpClientDecodingError, HttpResponse}
 import marketplace.models.{Request => HttpRequest}
 
 @derive(representableK)

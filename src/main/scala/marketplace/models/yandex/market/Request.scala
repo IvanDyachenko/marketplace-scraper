@@ -44,6 +44,7 @@ trait Request extends BaseRequest {
 }
 
 object Request {
+  implicit val circeEncoder: Encoder[Request] = Encoder.instance { case categoryModels: GetCategoryModels => categoryModels.asJson }
 
   /** Параметры категории, которые необходимо показать в выходных данных.
     */
@@ -86,6 +87,4 @@ object Request {
     }
   }
   type RearrFactors = RearrFactors.Type
-
-  implicit val circeEncoder: Encoder[Request] = Encoder.instance { case categoryModels: GetCategoryModels => categoryModels.asJson }
 }

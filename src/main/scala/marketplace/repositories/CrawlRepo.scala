@@ -51,7 +51,7 @@ object CrawlRepo extends ContextEmbed[CrawlRepo] {
          """.stripMargin.update.run.void
   }
 
-  final class LoggingMid[DB[_]: Apply: Logging] extends CrawlRepo[Mid[DB, *]] {
+  private final class LoggingMid[DB[_]: Apply: Logging] extends CrawlRepo[Mid[DB, *]] {
     def add[R: Put](request: HttpRequest, response: HttpResponse[R]): Mid[DB, Unit] =
       trace"Send data to ClickHouse" *> _
   }

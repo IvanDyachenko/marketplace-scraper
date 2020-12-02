@@ -22,8 +22,8 @@ object AppContext {
   implicit def loggable[F[+_]]: Loggable[AppContext] =
     Loggable.empty
 
-  implicit def loggableContext[F[+_]: Applicative: Defer]: LoggableContext[CrawlerF[+*]] =
-    LoggableContext.of[CrawlerF[+*]].instance[AppContext](WithContext.apply, loggable)
+  implicit def loggableContext[F[+_]: Applicative: Defer]: LoggableContext[AppF[+*]] =
+    LoggableContext.of[AppF[+*]].instance[AppContext](WithContext.apply, loggable)
 
   implicit def contextTSubContext[F[_]: Applicative: Defer, C](implicit
     lens: AppContext Contains C,

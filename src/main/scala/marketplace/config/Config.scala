@@ -31,3 +31,12 @@ object CrawlerConfig {
   def loadF[F[_]: Sync: ContextShift](implicit blocker: Blocker): F[CrawlerConfig] =
     ConfigSource.default.at("crawler").loadF[F, CrawlerConfig](blocker)
 }
+
+final case class ParserConfig(maxOpen: Int, maxConcurrent: Int)
+
+object ParserConfig {
+  lazy val load: ParserConfig = ConfigSource.default.at("crawler").loadOrThrow[ParserConfig]
+
+  def loadF[F[_]: Sync: ContextShift](implicit blocker: Blocker): F[ParserConfig] =
+    ConfigSource.default.at("parser").loadF[F, ParserConfig](blocker)
+}

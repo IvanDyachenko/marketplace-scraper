@@ -29,8 +29,7 @@ object Crawl extends ContextEmbed[Crawl] {
     Resource.liftF(context[S].map(conf => new Impl[F, S](httpClient): Crawl[S]).embed.pure[I])
 
   private final class Impl[F[_]: Monad, S[_]: Monad: Evals[*[_], F]](httpClient: HttpClient[F]) extends Crawl[S] {
-    def flow: S[HttpRequest] =
-      ???
+    def flow: S[HttpRequest] = ???
 
     def crawl[R: Decoder]: S[HttpRequest] => S[HttpResponse[R]] =
       _.evalMap(req => httpClient.send[R](req))

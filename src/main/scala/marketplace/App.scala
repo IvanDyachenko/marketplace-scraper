@@ -12,6 +12,7 @@ import marketplace.modules._
 import marketplace.services._
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import tofu.WithRun
 
 object Main extends TaskApp {
 
@@ -24,14 +25,16 @@ object Main extends TaskApp {
 
   private implicit val logs: Logs[I, F] = Logs.withContext[I, F]
 
-  def init: Resource[Task, (AppContext, Crawler[S])] =
+  def init: Resource[Task, (AppContext, Parser[S])] =
     for {
       implicit0(blocker: Blocker) <- Blocker[I]
+      wr                           = implicitly[WithRun[F, I, AppContext]]
       ctx                         <- AppContext.make[I]
       httpClient                  <- HttpClient.make[I, F](ctx.config.httpConfig)
       crawl                       <- Crawl.make[I, F, S](httpClient)
       crawler                     <- Crawler.make[I, F, S](crawl)
       parse                       <- Parse.make[I, F, S]
-      parser                      <- Parser.make[I, F, S](parse)
-    } yield (ctx, crawler)
+      parser                      <- Parser.make[I, F, S](crawler.run.map(_.result), parse)
+    } yield (ctx, parser)
+
 }

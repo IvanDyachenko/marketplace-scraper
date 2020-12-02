@@ -8,10 +8,11 @@ import tofu.optics.macros.ClassyOptics
 final case class ConfigContext(
   httpConfig: HttpConfig,
   clickhouseConfig: ClickhouseConfig,
-  crawlerConfig: CrawlerConfig
+  crawlerConfig: CrawlerConfig,
+  parserConfig: ParserConfig
 )
 
 object ConfigContext {
   def make[F[_]: Sync: ContextShift](implicit blocker: Blocker): F[ConfigContext] =
-    (HttpConfig.loadF[F], ClickhouseConfig.loadF[F], CrawlerConfig.loadF[F]).mapN(ConfigContext.apply)
+    (HttpConfig.loadF[F], ClickhouseConfig.loadF[F], CrawlerConfig.loadF[F], ParserConfig.loadF[F]).mapN(ConfigContext.apply)
 }

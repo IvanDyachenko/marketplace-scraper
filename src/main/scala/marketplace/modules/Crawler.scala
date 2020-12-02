@@ -16,10 +16,11 @@ import io.circe.{Decoder, Json}
 
 import marketplace.config.CrawlerConfig
 import marketplace.services.Crawl
+import marketplace.clients.models.HttpResponse
 
 @derive(representableK)
 trait Crawler[S[_]] {
-  def run: S[Unit]
+  def run: S[HttpResponse[Json]]
 }
 
 object Crawler extends ContextEmbed[Crawl] {
@@ -45,12 +46,11 @@ object Crawler extends ContextEmbed[Crawl] {
     prefetchNumber: Int
   ) extends Crawler[Stream[F, *]] {
 
-    def run: Stream[F, Unit] =
+    def run: Stream[F, HttpResponse[Json]] =
       crawl.flow
         .prefetchN(prefetchNumber)
         .balanceAvailable
         .parEvalMapUnordered(maxConcurrent)(crawl.crawl[Json](Decoder.decodeJson)(_).pure[F])
         .parJoin(maxOpen)
-        .evalMap(_ => ().pure[F])
   }
 }

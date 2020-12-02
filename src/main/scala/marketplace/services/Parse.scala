@@ -2,7 +2,6 @@ package marketplace.services
 
 import cats.Monad
 import cats.syntax.all._
-//import tofu.syntax.monadic._
 import cats.effect.Resource
 import tofu.data.derived.ContextEmbed
 import tofu.streams.Evals
@@ -12,7 +11,7 @@ import tofu.syntax.logging._
 import io.circe.{Decoder, Json}
 
 trait Parse[S[_]] {
-  def parse[R: Decoder]: S[Json] => S[Option[R]]
+  def parse[R: Decoder]: S[Json] => S[Option[R]] // ToDo: use [[tofu.Raise]] instead of [[Option]]
 }
 
 object Parse extends ContextEmbed[Parse] {

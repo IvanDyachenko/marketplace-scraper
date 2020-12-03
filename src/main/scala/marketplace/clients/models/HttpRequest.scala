@@ -23,7 +23,7 @@ object HttpRequest {
       i.field("uri", a.uri.renderString) |+|
         a.uri.host.map(host => i.field("host", host.renderString)).getOrElse(i.noop) |+|
         i.field("path", a.uri.path.show) |+|
-        i.foldTop(a.headers.toList)(h => i.addString(h.name.value, h.value))
-    //|+| i.foldTop(a.queryParams.toList)(q => i.addString(q._1, q._2))
+        i.foldTop(a.headers.toList)(h => i.addString(h.name.value, h.value)) |+|
+        i.foldTop(a.uri.query.toList)(q => i.addString(q._1, q._2.getOrElse("")))
   }
 }

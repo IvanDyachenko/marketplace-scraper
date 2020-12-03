@@ -3,12 +3,10 @@ package marketplace.models.yandex.market.requests
 import cats.implicits._
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
-import org.http4s.{QueryParam, QueryParamEncoder, Uri}
 
 import marketplace.models.yandex.market.{ApiVersion, Category, Field, Page, Region, Request, Section, User}
+import marketplace.models.yandex.market.Request.{Fields, RearrFactors, Sections}
 import marketplace.models.yandex.market.RearrFactor.{Name => RearrFactor}
-
-import Request._
 
 final case class GetCategoryModels(
   uuid: User.UUID,
@@ -19,9 +17,10 @@ final case class GetCategoryModels(
 ) extends Request {
   val apiVersion: ApiVersion = ApiVersion.`2.1.6`
 
-  val path: Uri.Path = s"market/blue/${apiVersion.show}/categories/${categoryId}/search"
+  val path: String = s"market/blue/${apiVersion.show}/categories/${categoryId.show}/search"
 
-  val sections: Sections = List(Section.Medicine)
+  val page: Option[Page.Number] = Some(pageNumber)
+  val count: Option[Page.Count] = Some(pageCount)
 
   val fields: Fields =
     List(
@@ -45,6 +44,8 @@ final case class GetCategoryModels(
       Field.ShopAll
     )
 
+  val sections: Sections = List(Section.Medicine)
+
   val rearrFactors: RearrFactors =
     List(
       RearrFactor.CommonlyPurchasedOrdered(),
@@ -56,12 +57,6 @@ final case class GetCategoryModels(
       RearrFactor.MarketPromoBlueGenericBundle(1),
       RearrFactor.MarketPromoBlueCheapestAsGift4(1),
       RearrFactor.BuyerPriceNominalInclPromo(1)
-    )
-
-  override val queryParams: Map[String, String] =
-    super.queryParams ++ Map(
-      QueryParam[Page.Count].key.value  -> QueryParamEncoder[Page.Count].encode(pageCount).value,
-      QueryParam[Page.Number].key.value -> QueryParamEncoder[Page.Number].encode(pageNumber).value
     )
 }
 

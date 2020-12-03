@@ -9,17 +9,14 @@ import tofu.syntax.embed._
 import tofu.syntax.context._
 import tofu.streams.Evals
 import tofu.syntax.streams.evals._
-import io.circe.Decoder
+import io.circe.{Decoder, Encoder}
 
 import marketplace.context.HasConfig
 import marketplace.clients.HttpClient
-import marketplace.clients.models.HttpResponse
-
-import marketplace.models.{Request => HttpRequest}
+import marketplace.clients.models.{HttpRequest, HttpResponse}
 
 trait Crawl[S[_]] {
-  def flow: S[HttpRequest]
-  def crawl[R: Decoder]: S[HttpRequest] => S[HttpResponse[R]]
+  def crawl[Req: Encoder, Res: Decoder]: S[HttpRequest[Req]] => S[HttpResponse[Res]]
 }
 
 object Crawl extends ContextEmbed[Crawl] {
@@ -29,19 +26,14 @@ object Crawl extends ContextEmbed[Crawl] {
     Resource.liftF(context[S].map(conf => new Impl[F, S](httpClient): Crawl[S]).embed.pure[I])
 
   private final class Impl[F[_]: Monad, S[_]: Monad: Evals[*[_], F]](httpClient: HttpClient[F]) extends Crawl[S] {
-    def flow: S[HttpRequest] = ???
-
-    def crawl[R: Decoder]: S[HttpRequest] => S[HttpResponse[R]] =
-      _.evalMap(req => httpClient.send[R](req))
+    def crawl[Req: Encoder, Res: Decoder]: S[HttpRequest[Req]] => S[HttpResponse[Res]] =
+      _.evalMap(req => httpClient.send[Req, Res](req))
   }
 
   implicit val embed: Embed[Crawl] = new Embed[Crawl] {
     def embed[F[_]: FlatMap](ft: F[Crawl[F]]): Crawl[F] = new Crawl[F] {
-      def flow: F[HttpRequest] =
-        ft >>= (_.flow)
-
-      def crawl[R](implicit decoder: Decoder[R]): F[HttpRequest] => F[HttpResponse[R]] =
-        requests => ft >>= (_.crawl(decoder)(requests))
+      def crawl[Req, Res](implicit encoder: Encoder[Req], decoder: Decoder[Res]): F[HttpRequest[Req]] => F[HttpResponse[Res]] =
+        requests => ft >>= (_.crawl(encoder, decoder)(requests))
     }
   }
 }

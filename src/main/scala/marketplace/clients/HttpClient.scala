@@ -10,7 +10,7 @@ import tofu.data.derived.ContextEmbed
 import tofu.higherKind.derived.representableK
 import tofu.logging.{Logging, Logs}
 import tofu.syntax.logging._
-import io.circe.Decoder
+import io.circe.{Decoder, Encoder}
 import org.http4s.{Method, Request => Http4sRequest, InvalidMessageBodyFailure}
 import org.http4s.Status.Successful
 import org.http4s.circe._
@@ -21,12 +21,11 @@ import org.asynchttpclient.Dsl
 import org.asynchttpclient.proxy.ProxyServer
 
 import marketplace.config.HttpConfig
-import marketplace.clients.models.{HttpClientDecodingError, HttpResponse}
-import marketplace.models.{Request => HttpRequest}
+import marketplace.clients.models.{HttpClientDecodingError, HttpRequest, HttpResponse}
 
 @derive(representableK)
 trait HttpClient[F[_]] {
-  def send[R: Decoder](request: HttpRequest): F[HttpResponse[R]]
+  def send[Req: Encoder, Res: Decoder](request: HttpRequest[Req]): F[HttpResponse[Res]]
 }
 
 object HttpClient extends ContextEmbed[HttpClient] {
@@ -41,7 +40,7 @@ object HttpClient extends ContextEmbed[HttpClient] {
 
   class Impl[F[+_]: Sync: Logging](http4sClient: Client[F]) extends HttpClient[F] {
 
-    def send[R](request: HttpRequest)(implicit decoder: Decoder[R]): F[HttpResponse[R]] =
+    def send[Req: Encoder, Res](request: HttpRequest[Req])(implicit decoder: Decoder[Res]): F[HttpResponse[Res]] =
       buildHttp4sRequest(request).flatMap { http4sRequest =>
         http4sClient
           .toKleisli { http4sResponse =>
@@ -54,19 +53,19 @@ object HttpClient extends ContextEmbed[HttpClient] {
                   .rethrowT
               case unexpected    =>
                 error"Received ${unexpected.status.show} status during execution of request to ${request}" *>
-                  UnexpectedStatus(unexpected.status).raiseError[F, HttpResponse[R]]
+                  UnexpectedStatus(unexpected.status).raiseError[F, HttpResponse[Res]]
             }
           }
           .run(http4sRequest)
           .recoverWith { case err: InvalidMessageBodyFailure =>
             errorCause"Received invalid response during execution of request to ${request}" (err) *>
-              HttpClientDecodingError(err.details.dropWhile(_ != '{')).raiseError[F, HttpResponse[R]]
+              HttpClientDecodingError(err.details.dropWhile(_ != '{')).raiseError[F, HttpResponse[Res]]
           }
           .flatTap(response => debug"Received ${response} during execution of request to ${request}")
       }
 
-    private def buildHttp4sRequest(request: HttpRequest): F[Http4sRequest[F]] =
-      Method.POST(request, request.uri, request.headers.toList: _*)(Sync[F], jsonEncoderOf(HttpRequest.circeEncoder))
+    private def buildHttp4sRequest[Req: Encoder](request: HttpRequest[Req]): F[Http4sRequest[F]] =
+      Method.POST(request, request.uri, request.headers.toList: _*)(Sync[F], jsonEncoderOf(HttpRequest.encoder[Req]))
   }
 
   private def fromHttp4sClient[F[_]: Monad: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] = {

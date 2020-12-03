@@ -3,48 +3,25 @@ package marketplace.models.yandex.market
 import supertagged.TaggedType
 import io.circe.syntax._
 import io.circe.Encoder
-import org.http4s.{Headers, QueryParam, QueryParamEncoder, QueryParameterKey, QueryParameterValue, Uri}
-import org.http4s.headers.{`User-Agent`, AgentComment, AgentProduct, Host}
+import org.http4s.{QueryParam, QueryParamEncoder, QueryParameterKey, QueryParameterValue}
 
-import marketplace.models.{Request => BaseRequest}
-import marketplace.models.yandex.market.headers._
 import marketplace.models.yandex.market.requests.GetCategoryModels
 
 import Request._
 
-trait Request extends BaseRequest {
-  def uri: Uri       = Uri(Some(Uri.Scheme.https), Some(Uri.Authority(host = host))).addPath(path).withQueryParams(queryParams)
-  val host: Uri.Host = Uri.RegName("mobile.market.yandex.net")
-  def path: Uri.Path
-
-  val headers: Headers =
-    Headers.of(
-      Host(host.value),
-      `User-Agent`(AgentProduct("Beru", Some("323")), List(AgentComment("iPhone; iOS 14.0.1; Scale/3.00"))),
-      `X-Device-Type`("SMARTPHONE"),
-      `X-Platform`("IOS"),
-      `X-App-Version`("3.2.3"),
-      `X-Region-Id`(geoId)
-    )
-
+trait Request {
+  def apiVersion: ApiVersion
+  def path: String
   def uuid: User.UUID
   def geoId: Region.GeoId
+  def page: Option[Page.Number]
+  def count: Option[Page.Count]
   def fields: Fields
   def sections: Sections
   def rearrFactors: RearrFactors
-
-  def queryParams: Map[String, String] =
-    Map(
-      QueryParam[User.UUID].key.value    -> QueryParamEncoder[User.UUID].encode(uuid).value,
-      QueryParam[Region.GeoId].key.value -> QueryParamEncoder[Region.GeoId].encode(geoId).value,
-      Fields.queryParam.key.value        -> Fields.queryParam.encode(fields).value,
-      Sections.queryParam.key.value      -> Sections.queryParam.encode(sections).value,
-      RearrFactors.queryParam.key.value  -> RearrFactors.queryParam.encode(rearrFactors).value
-    )
 }
 
 object Request {
-  implicit val circeEncoder: Encoder[Request] = Encoder.instance { case categoryModels: GetCategoryModels => categoryModels.asJson }
 
   /** Параметры категории, которые необходимо показать в выходных данных.
     */
@@ -87,4 +64,6 @@ object Request {
     }
   }
   type RearrFactors = RearrFactors.Type
+
+  implicit val circeEncoder: Encoder[Request] = Encoder.instance { case categoryModels: GetCategoryModels => categoryModels.asJson }
 }

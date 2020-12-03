@@ -12,7 +12,7 @@ import tofu.data.derived.ContextEmbed
 import tofu.higherKind.derived.representableK
 import fs2.Stream
 import tofu.fs2.LiftStream
-import io.circe.{Decoder, Json}
+import io.circe.Json
 
 import marketplace.config.CrawlerConfig
 import marketplace.services.Crawl
@@ -46,11 +46,6 @@ object Crawler extends ContextEmbed[Crawl] {
     prefetchNumber: Int
   ) extends Crawler[Stream[F, *]] {
 
-    def run: Stream[F, HttpResponse[Json]] =
-      crawl.flow
-        .prefetchN(prefetchNumber)
-        .balanceAvailable
-        .parEvalMapUnordered(maxConcurrent)(crawl.crawl[Json](Decoder.decodeJson)(_).pure[F])
-        .parJoin(maxOpen)
+    def run: Stream[F, HttpResponse[Json]] = ???
   }
 }

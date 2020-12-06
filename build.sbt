@@ -78,6 +78,7 @@ lazy val projectDependencies =
     "io.circe"              %% "circe-core"               % Versions.circe,
     "io.circe"              %% "circe-derivation"         % Versions.circeDerivation,
     "co.fs2"                %% "fs2-core"                 % Versions.fs2,
+    "com.github.fd4s"       %% "fs2-kafka"                % Versions.fs2Kafka,
     "org.http4s"            %% "http4s-dsl"               % Versions.http4s,
     "org.http4s"            %% "http4s-circe"             % Versions.http4s,
     "org.http4s"            %% "http4s-blaze-client"      % Versions.http4s,

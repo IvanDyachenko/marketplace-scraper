@@ -8,4 +8,5 @@ CREATE TABLE IF NOT EXISTS yandex.market_category_models
     path               LowCardinality(String),
     body_text          String
 )
-ENGINE = MergeTree() ORDER BY (timestamp, host, path, uri);
+ENGINE = MergeTree()
+ORDER BY (timestamp, host, path, uri);

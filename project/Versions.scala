@@ -7,6 +7,7 @@ object Versions {
   lazy val circe           = "0.13.0"
   lazy val circeDerivation = "0.13.0-M4"
   lazy val fs2             = "2.4.4"
+  lazy val fs2Kafka        = "1.1.0"
   lazy val http4s          = "0.21.8"
   lazy val asyncHttpClient = "2.12.1"
   lazy val doobie          = "0.9.0"

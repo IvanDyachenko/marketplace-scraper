@@ -3,6 +3,7 @@ package marketplace.models.yandex.market
 import cats.Show
 import cats.implicits._
 import supertagged.TaggedType
+import vulcan.Codec
 import io.circe.Decoder
 import io.circe.derivation.deriveDecoder
 import derevo.derive
@@ -29,6 +30,7 @@ object Page {
     implicit val show: Show[Type]            = Show.fromToString
     implicit val loggable: Loggable[Type]    = Loggable.intLoggable.contramap(identity)
     implicit val circeDecoder: Decoder[Type] = lift
+    implicit val vulcanCodec: Codec[Type]    = lift
 
     implicit val queryParam = new QueryParam[Type] with QueryParamEncoder[Type] {
       val key                                      = QueryParameterKey("page")
@@ -43,6 +45,7 @@ object Page {
     implicit val show: Show[Type]            = Show.fromToString
     implicit val loggable: Loggable[Type]    = Loggable.intLoggable.contramap(identity)
     implicit val circeDecoder: Decoder[Type] = lift
+    implicit val vulcanCodec: Codec[Type]    = lift
 
     implicit val queryParam = new QueryParam[Type] with QueryParamEncoder[Type] {
       val key                                      = QueryParameterKey("count")

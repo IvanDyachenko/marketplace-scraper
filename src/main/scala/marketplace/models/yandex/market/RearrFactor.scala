@@ -2,13 +2,16 @@ package marketplace.models.yandex.market
 
 import cats.Show
 import cats.implicits._
-import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry}
-import enumeratum.EnumEntry.{Hyphencase, Snakecase}
+import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry, VulcanEnum}
+import enumeratum.EnumEntry.Snakecase
 import derevo.derive
 import tofu.logging.LoggableEnum
 import tofu.logging.derivation.loggable
+import vulcan.generic._
+import vulcan.{AvroNamespace, Codec}
 
 @derive(loggable)
+@AvroNamespace("marketplace.models.yandex.market")
 case class RearrFactor(name: RearrFactor.Name, value: Option[Int] = None)
 
 object RearrFactor {
@@ -18,9 +21,11 @@ object RearrFactor {
     case RearrFactor(name, _)           => name.show
   })
 
+  implicit val vulcanCodec: Codec[RearrFactor] = Codec.derive[RearrFactor]
+
   sealed abstract class Name extends EnumEntry with Snakecase with Product with Serializable
 
-  object Name extends Enum[Name] with CatsEnum[Name] with CirceEnum[Name] with LoggableEnum[Name] {
+  object Name extends Enum[Name] with CatsEnum[Name] with CirceEnum[Name] with LoggableEnum[Name] with VulcanEnum[Name] {
 
     case object CommonlyPurchasedOrdered            extends Name
     case object MarketRebranded                     extends Name
@@ -29,7 +34,7 @@ object RearrFactor {
     case object MarketBlueSearchAuctionSupplierBid  extends Name
     case object MarketPromoBlueGenericBundle        extends Name
     case object MarketPromoBlueCheapestAsGift4      extends Name
-    case object BuyerPriceNominalInclPromo          extends Name with Hyphencase
+    case object BuyerPriceNominalInclPromo          extends Name // FixMe: with Hyphencase
 
     val values = findValues
 

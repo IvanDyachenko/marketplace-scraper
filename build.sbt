@@ -57,6 +57,8 @@ lazy val projectSettings = Seq(
   scalafmtOnCompile := true
 )
 
+resolvers += "confluent".at("https://packages.confluent.io/maven/")
+
 lazy val projectDependencies =
   libraryDependencies ++= List(
     "io.monix"              %% "monix"                    % Versions.monix,
@@ -77,8 +79,12 @@ lazy val projectDependencies =
     "org.manatki"           %% "derevo-cats-tagless"      % Versions.derevo,
     "io.circe"              %% "circe-core"               % Versions.circe,
     "io.circe"              %% "circe-derivation"         % Versions.circeDerivation,
+    "com.github.fd4s"       %% "vulcan"                   % Versions.vulkan,
+    "com.github.fd4s"       %% "vulcan-generic"           % Versions.vulkan,
+    "com.github.fd4s"       %% "vulcan-enumeratum"        % Versions.vulkan,
     "co.fs2"                %% "fs2-core"                 % Versions.fs2,
     "com.github.fd4s"       %% "fs2-kafka"                % Versions.fs2Kafka,
+    "com.github.fd4s"       %% "fs2-kafka-vulcan"         % Versions.fs2Kafka,
     "org.http4s"            %% "http4s-dsl"               % Versions.http4s,
     "org.http4s"            %% "http4s-circe"             % Versions.http4s,
     "org.http4s"            %% "http4s-blaze-client"      % Versions.http4s,
@@ -94,6 +100,7 @@ lazy val projectDependencies =
 
 lazy val testDependencies =
   libraryDependencies ++= List(
+    "io.circe"          %% "circe-parser"       % Versions.circe                   % "test",
     "org.scalactic"     %% "scalactic"          % Versions.scalactic               % "test",
     "org.scalatest"     %% "scalatest"          % Versions.scalatest               % "test",
     "org.scalatest"     %% "scalatest-flatspec" % Versions.scalatest               % "test",

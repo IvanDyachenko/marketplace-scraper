@@ -2,6 +2,7 @@ package marketplace.models.yandex.market
 
 import cats.Show
 import cats.implicits._
+import vulcan.Codec
 import io.circe.Decoder
 import supertagged.TaggedType
 import tofu.logging.Loggable
@@ -13,6 +14,7 @@ object User {
     implicit val show: Show[Type]            = Show.fromToString
     implicit val loggable: Loggable[Type]    = Loggable.stringValue.contramap(_.show)
     implicit val circeDecoder: Decoder[Type] = lift
+    implicit val vulcanCodec: Codec[Type]    = lift
 
     implicit val queryParam = new QueryParam[Type] with QueryParamEncoder[Type] {
       val key                                      = QueryParameterKey("uuid")

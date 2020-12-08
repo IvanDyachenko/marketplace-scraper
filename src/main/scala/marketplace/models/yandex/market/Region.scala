@@ -4,6 +4,7 @@ import cats.Show
 import supertagged.{TaggedOps, TaggedType, TaggedType0}
 import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry}
 import enumeratum.EnumEntry.UpperSnakecase
+import vulcan.Codec
 import io.circe.Decoder
 import io.circe.derivation.deriveDecoder
 import derevo.derive
@@ -37,6 +38,7 @@ object Region {
     implicit val show: Show[Type]            = Show.fromToString
     implicit val loggable: Loggable[Type]    = Loggable.intLoggable.contramap(TaggedOps(this).raw)
     implicit val circeDecoder: Decoder[Type] = TaggedOps(this).lift
+    implicit val vulcanCodec: Codec[Type]    = TaggedOps(this).lift
 
     implicit val queryParam = new QueryParam[Type] with QueryParamEncoder[Type] {
       val key                                      = QueryParameterKey("geo_id")

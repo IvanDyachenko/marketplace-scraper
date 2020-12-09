@@ -10,14 +10,14 @@ import marketplace.models.yandex.market.Request.{Fields, RearrFactors, Sections}
 
 package object marshalling {
 
-  implicit class YaMarketRequestOps(val request: YaMarketRequest) {
+  implicit class YaMarketRequestMarshaller(val request: YaMarketRequest) {
 
     def toHttpRequest: HttpRequest[YaMarketRequest] = new HttpRequest[YaMarketRequest] {
-      private val host: Uri.Host = Uri.RegName("mobile.market.yandex.net")
+      private val host: Uri.Host = Uri.RegName(request.host)
 
       def uri: Uri =
         Uri(Some(Uri.Scheme.https), Some(Uri.Authority(host = host)))
-          .addPath(request.path)
+          .addPath(request.method)
           .+*?(request.uuid)
           .+*?(request.geoId)
           .+??(request.page)

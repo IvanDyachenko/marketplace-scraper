@@ -1,6 +1,6 @@
-CREATE DATABASE IF NOT EXISTS yandex;
+CREATE DATABASE IF NOT EXISTS marketplaces;
 
-CREATE TABLE IF NOT EXISTS yandex.market_category_models
+CREATE TABLE IF NOT EXISTS yandex_market_responses
 (
     timestamp DateTime DEFAULT toDateTime(now(), 'Europe/Moscow') CODEC(DoubleDelta),
     uri                String,

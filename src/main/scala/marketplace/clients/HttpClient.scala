@@ -34,7 +34,7 @@ object HttpClient extends ContextEmbed[HttpClient] {
   def make[I[_]: Monad: Execute: ConcurrentEffect: Unlift[*[_], F], F[+_]: Sync](httpConfig: HttpConfig)(implicit
     logs: Logs[I, F]
   ): Resource[I, HttpClient[F]] =
-    fromHttp4sClient[I](httpConfig).flatMap { http4sClient =>
+    buildHttp4sClient[I](httpConfig).flatMap { http4sClient =>
       Resource.liftF(logs.forService[HttpClient[F]].map(implicit l => new Impl[F](translateHttp4sClient[I, F](http4sClient))))
     }
 
@@ -65,10 +65,10 @@ object HttpClient extends ContextEmbed[HttpClient] {
       }
 
     private def buildHttp4sRequest[Req: Encoder](request: HttpRequest[Req]): F[Http4sRequest[F]] =
-      Method.POST(request, request.uri, request.headers.toList: _*)(Sync[F], jsonEncoderOf(HttpRequest.encoder[Req]))
+      Method.POST(request, request.uri, request.headers.toList: _*)(Sync[F], jsonEncoderOf(HttpRequest.circeEncoder[Req]))
   }
 
-  private def fromHttp4sClient[F[_]: Monad: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] = {
+  private def buildHttp4sClient[F[_]: Monad: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] = {
     val HttpConfig(proxyHost, proxyPort, maxConnections, maxConnectionsPerHost) = httpConfig
 
     val proxyServer = new ProxyServer.Builder(proxyHost, proxyPort).build()

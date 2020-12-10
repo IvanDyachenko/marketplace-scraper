@@ -14,6 +14,15 @@ object HttpConfig {
     ConfigSource.default.at("http").loadF[F, HttpConfig](blocker)
 }
 
+final case class SchemaRegistryConfig(baseUrl: String)
+
+object SchemaRegistryConfig {
+  lazy val load: SchemaRegistryConfig = ConfigSource.default.at("schema-registry").loadOrThrow[SchemaRegistryConfig]
+
+  def loadF[F[_]: Sync: ContextShift](implicit blocker: Blocker): F[SchemaRegistryConfig] =
+    ConfigSource.default.at("schema-registry").loadF[F, SchemaRegistryConfig](blocker)
+}
+
 final case class ClickhouseConfig(url: String, user: String, pass: String, threadPoolSize: Int)
 
 object ClickhouseConfig {
@@ -35,7 +44,7 @@ object CrawlerConfig {
 final case class ParserConfig(maxOpen: Int, maxConcurrent: Int)
 
 object ParserConfig {
-  lazy val load: ParserConfig = ConfigSource.default.at("crawler").loadOrThrow[ParserConfig]
+  lazy val load: ParserConfig = ConfigSource.default.at("parser").loadOrThrow[ParserConfig]
 
   def loadF[F[_]: Sync: ContextShift](implicit blocker: Blocker): F[ParserConfig] =
     ConfigSource.default.at("parser").loadF[F, ParserConfig](blocker)

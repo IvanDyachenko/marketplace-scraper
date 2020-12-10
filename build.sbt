@@ -58,6 +58,7 @@ lazy val projectSettings = Seq(
 )
 
 resolvers += "confluent".at("https://packages.confluent.io/maven/")
+resolvers += Resolver.sonatypeRepo("snapshots")
 
 lazy val projectDependencies =
   libraryDependencies ++= List(
@@ -78,6 +79,7 @@ lazy val projectDependencies =
     "ru.tinkoff"            %% "tofu-logging"             % Versions.tofu,
     "org.manatki"           %% "derevo-cats-tagless"      % Versions.derevo,
     "io.circe"              %% "circe-core"               % Versions.circe,
+    "io.circe"              %% "circe-parser"             % Versions.circe,
     "io.circe"              %% "circe-derivation"         % Versions.circeDerivation,
     "com.github.fd4s"       %% "vulcan"                   % Versions.vulkan,
     "com.github.fd4s"       %% "vulcan-generic"           % Versions.vulkan,
@@ -100,7 +102,6 @@ lazy val projectDependencies =
 
 lazy val testDependencies =
   libraryDependencies ++= List(
-    "io.circe"          %% "circe-parser"       % Versions.circe                   % "test",
     "org.scalactic"     %% "scalactic"          % Versions.scalactic               % "test",
     "org.scalatest"     %% "scalatest"          % Versions.scalatest               % "test",
     "org.scalatest"     %% "scalatest-flatspec" % Versions.scalatest               % "test",

@@ -1,7 +1,7 @@
 package marketplace.modules
 
-import cats.{FlatMap, Functor, Inject}
-import cats.effect.{ConcurrentEffect, ContextShift, Resource, Timer}
+import cats.{FlatMap, Functor}
+import cats.effect.{Concurrent, ConcurrentEffect, ContextShift, Resource, Timer}
 import cats.tagless.syntax.functorK._
 import tofu.syntax.embed._
 import tofu.syntax.monadic._
@@ -13,20 +13,22 @@ import tofu.higherKind.derived.representableK
 import fs2.Stream
 import tofu.fs2.LiftStream
 import io.circe.Json
+import io.circe.parser.decode
+import vulcan.{AvroError, Codec}
 import fs2.kafka.{consumerStream, AutoOffsetReset, ConsumerSettings, KafkaConsumer}
 import fs2.kafka.{KafkaProducer, ProducerRecord, ProducerRecords, ProducerResult, ProducerSettings}
 import fs2.kafka.vulcan.{avroDeserializer, avroSerializer, AvroSettings, SchemaRegistryClientSettings}
 import fs2.kafka.{RecordDeserializer, RecordSerializer}
+import java.nio.charset.StandardCharsets.UTF_8
 
+import marketplace.marshalling._
 import marketplace.config.SchemaRegistryConfig
 import marketplace.services.Crawl
-import marketplace.clients.models.schema._
-import marketplace.clients.models.{HttpRequest, HttpResponse}
-import cats.effect.Concurrent
+import marketplace.models.yandex.market.Request
 
 @derive(representableK)
 trait Crawler[S[_]] {
-  def run: S[ProducerResult[String, HttpResponse[Json], Unit]]
+  def run: S[ProducerResult[String, Json, Unit]]
 }
 
 object Crawler extends ContextEmbed[Crawl] {
@@ -41,19 +43,23 @@ object Crawler extends ContextEmbed[Crawl] {
         .eval(Unlift[I, F].concurrentEffectWith { implicit ce =>
           val avroSettings = AvroSettings(SchemaRegistryClientSettings[F](config.baseUrl))
 
-          implicit def httpResponseSerializer[R: Inject[*, Array[Byte]]]: RecordSerializer[F, HttpResponse[R]]   =
-            avroSerializer[HttpResponse[R]].using(avroSettings)
-          implicit def httpRequestDeserializer[R: Inject[*, Array[Byte]]]: RecordDeserializer[F, HttpRequest[R]] =
-            avroDeserializer[HttpRequest[R]].using(avroSettings)
+          implicit val jsonCodec: Codec[Json] =
+            Codec.bytes.imapError(bytes => decode[Json](new String(bytes, UTF_8)).left.map(err => AvroError(err.getMessage)))(
+              _.noSpaces.getBytes(UTF_8)
+            )
 
-          val producerSettings = ProducerSettings[F, String, HttpResponse[Json]].withBootstrapServers("broker:9092")
-          val consumerSettings = ConsumerSettings[F, String, HttpRequest[Json]]
+          implicit val responseSerializer: RecordSerializer[F, Json]       = avroSerializer[Json].using(avroSettings)
+          implicit val requestDeserializer: RecordDeserializer[F, Request] = avroDeserializer[Request].using(avroSettings)
+
+          val consumerSettings = ConsumerSettings[F, String, Request]
             .withAutoOffsetReset(AutoOffsetReset.Earliest)
-            .withBootstrapServers("broker:29092")
-            .withGroupId("group")
+            .withBootstrapServers("http://localhost:9092")
+            .withGroupId("crawler")
+          val consumer         = consumerStream[F].using(consumerSettings)
 
-          val producer = KafkaProducer.stream[F].using(producerSettings)
-          val consumer = consumerStream[F].using(consumerSettings)
+          val producerSettings = ProducerSettings[F, String, Json]
+            .withBootstrapServers("http://localhost:9092")
+          val producer         = KafkaProducer.stream[F].using(producerSettings)
 
           val crawler: Crawler[Stream[F, *]] = new Impl[F](consumer, producer, producerSettings, crawl)
 
@@ -65,23 +71,23 @@ object Crawler extends ContextEmbed[Crawl] {
     )
 
   private final class Impl[F[_]: Functor: Concurrent](
-    consumer: Stream[F, KafkaConsumer[F, String, HttpRequest[Json]]],
-    producer: Stream[F, KafkaProducer[F, String, HttpResponse[Json]]],
-    producerSettings: ProducerSettings[F, String, HttpResponse[Json]],
+    consumer: Stream[F, KafkaConsumer[F, String, Request]],
+    producer: Stream[F, KafkaProducer[F, String, Json]],
+    producerSettings: ProducerSettings[F, String, Json],
     crawl: Crawl[Stream[F, *]]
   ) extends Crawler[Stream[F, *]] {
 
-    def run: Stream[F, ProducerResult[String, HttpResponse[Json], Unit]] =
+    def run: Stream[F, ProducerResult[String, Json, Unit]] =
       producer.flatMap { producer =>
         consumer
-          .evalTap(_.subscribeTo("topic"))
+          .evalTap(_.subscribeTo("crawler-commands-requests"))
           .flatMap(_.partitionedStream)
           .map { partition =>
             partition
-              .map(_.record.value)
-              .through(crawl.crawl[Json, Json])
-              .map(httpResponse => ProducerRecords.one(ProducerRecord("topic", "key", httpResponse)))
-              .through(KafkaProducer.pipe[F, String, HttpResponse[Json], Unit](producerSettings, producer))
+              .map(_.record.value.toHttpRequest)
+              .through(crawl.crawl[Request, Json])
+              .map(httpResponse => ProducerRecords.one(ProducerRecord("crawler-events-responses", "key", httpResponse.result)))
+              .through(KafkaProducer.pipe[F, String, Json, Unit](producerSettings, producer))
           }
           .parJoinUnbounded
       }

@@ -22,7 +22,7 @@ object Shop {
     */
   object ShopId extends TaggedType[Long] {
     implicit val show: Show[Type]            = Show.fromToString
-    implicit val loggable: Loggable[Type]    = Loggable.longLoggable.contramap(identity)
+    implicit val loggable: Loggable[Type]    = lift
     implicit val circeDecoder: Decoder[Type] = lift
   }
   type ShopId = ShopId.Type

@@ -28,7 +28,7 @@ object Page {
     */
   object Number extends TaggedType[Int] {
     implicit val show: Show[Type]            = Show.fromToString
-    implicit val loggable: Loggable[Type]    = Loggable.intLoggable.contramap(identity)
+    implicit val loggable: Loggable[Type]    = lift
     implicit val circeDecoder: Decoder[Type] = lift
     implicit val vulcanCodec: Codec[Type]    = lift
 
@@ -43,7 +43,7 @@ object Page {
     */
   object Count extends TaggedType[Int] {
     implicit val show: Show[Type]            = Show.fromToString
-    implicit val loggable: Loggable[Type]    = Loggable.intLoggable.contramap(identity)
+    implicit val loggable: Loggable[Type]    = lift
     implicit val circeDecoder: Decoder[Type] = lift
     implicit val vulcanCodec: Codec[Type]    = lift
 

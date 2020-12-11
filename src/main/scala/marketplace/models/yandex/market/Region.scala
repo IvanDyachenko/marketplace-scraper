@@ -36,7 +36,7 @@ object Region {
       catch { case _: NumberFormatException => None }
 
     implicit val show: Show[Type]            = Show.fromToString
-    implicit val loggable: Loggable[Type]    = Loggable.intLoggable.contramap(TaggedOps(this).raw)
+    implicit val loggable: Loggable[Type]    = TaggedOps(this).lift
     implicit val circeDecoder: Decoder[Type] = TaggedOps(this).lift
     implicit val vulcanCodec: Codec[Type]    = TaggedOps(this).lift
 
@@ -89,7 +89,7 @@ object Country {
     */
   object CountryId extends TaggedType[Int] {
     implicit val show: Show[Type]            = Show.fromToString
-    implicit val loggable: Loggable[Type]    = Loggable[Int].contramap(identity)
+    implicit val loggable: Loggable[Type]    = lift
     implicit def circeDecoder: Decoder[Type] = lift
   }
   type CountryId = CountryId.Type

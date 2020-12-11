@@ -11,6 +11,7 @@ import java.util.UUID
 import java.time.Instant
 
 package object models {
+
   @derive(loggable)
   case class Timestamp(value: Instant)
 
@@ -24,4 +25,11 @@ package object models {
     implicit val vulcanCodec: Codec[Type] = lift
   }
   type CommandId = CommandId.Type
+
+  object EventId extends TaggedType[UUID] {
+    implicit val show: Show[Type]         = Show.fromToString
+    implicit val loggable: Loggable[Type] = Loggable.uuidLoggable.contramap(identity)
+    implicit val vulcanCodec: Codec[Type] = lift
+  }
+  type EventId = EventId.Type
 }

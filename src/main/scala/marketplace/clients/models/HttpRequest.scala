@@ -7,6 +7,7 @@ import tofu.logging.{DictLoggable, LogRenderer, Loggable}
 import tofu.syntax.logRenderer._
 import org.http4s.{Headers, Uri}
 
+@deprecated
 trait HttpRequest[+R] {
   def headers: Headers
   def uri: Uri

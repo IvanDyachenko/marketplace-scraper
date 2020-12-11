@@ -12,23 +12,24 @@ import io.circe.Json
 
 import marketplace.marshalling._
 import marketplace.clients.HttpClient
-import marketplace.models.{CrawlerCommand, HandleYandexMarketRequest}
+import marketplace.models.{CrawlerCommand, CrawlerEvent, HandleYandexMarketRequest}
+import marketplace.models.YandexMarketRequestHandled
 
 @derive(representableK)
 trait Crawl[F[_]] {
-  def handle(command: CrawlerCommand): F[Unit]
+  def handle(command: CrawlerCommand): F[CrawlerEvent]
 }
 
 object Crawl {
 
   private final class Logger[F[_]: Monad: Logging] extends Crawl[Mid[F, *]] {
-    def handle(command: CrawlerCommand): Mid[F, Unit] =
-      _ *> info"Handle ${command}"
+    def handle(command: CrawlerCommand): Mid[F, CrawlerEvent] =
+      info"Start handling ${command}" *> _
   }
 
   private final class Impl[F[_]: Monad: Sync](httpClient: HttpClient[F]) extends Crawl[F] {
-    def handle(command: CrawlerCommand): F[Unit] = command match {
-      case HandleYandexMarketRequest(_, _, request) => httpClient.send[Json](request).map(_ => ())
+    def handle(command: CrawlerCommand): F[CrawlerEvent] = command match {
+      case HandleYandexMarketRequest(_, _, request) => httpClient.send[Json](request).map(YandexMarketRequestHandled(???, ???, _))
     }
   }
 

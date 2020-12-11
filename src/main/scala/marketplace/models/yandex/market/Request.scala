@@ -41,28 +41,6 @@ final case class GetCategoryModels(
   val count: Option[Page.Count] = Some(pageCount)
 }
 
-object GetCategoryModels {
-  implicit val circeEncoder: Encoder[GetCategoryModels] = Encoder.instance(_ => Json.obj("cartSnapshot" -> List.empty[String].asJson))
-
-  implicit val vulcanCodec: Codec[GetCategoryModels] =
-    Codec.record[GetCategoryModels](
-      name = "GetCategoryModels",
-      namespace = "marketplace.models.yandex.market"
-    ) { field =>
-      field("host", _.host) *> field("apiVersion", _.apiVersion) *> field("method", _.method) *>
-        (
-          field("uuid", _.uuid),
-          field("geoId", _.geoId),
-          field("categoryId", _.categoryId),
-          field("page", _.pageNumber),
-          field("count", _.pageCount),
-          field("fields", _.fields),
-          field("sections", _.sections),
-          field("rearrFactors", _.rearrFactors)
-        ).mapN(GetCategoryModels.apply)
-    }
-}
-
 object Request {
 
   /** Параметры категории, которые необходимо показать в выходных данных.
@@ -114,5 +92,28 @@ object Request {
   type RearrFactors = RearrFactors.Type
 
   implicit val circeEncoder: Encoder[Request] = Encoder.instance { case request: GetCategoryModels => request.asJson }
-  implicit val vulcanCodec: Codec[Request]    = Codec.union[Request](alt => alt[GetCategoryModels])
+
+  implicit val vulcanCodec: Codec[Request] = Codec.union[Request](alt => alt[GetCategoryModels])
+}
+
+object GetCategoryModels {
+  implicit val circeEncoder: Encoder[GetCategoryModels] = Encoder.instance(_ => Json.obj("cartSnapshot" -> List.empty[String].asJson))
+
+  implicit val vulcanCodec: Codec[GetCategoryModels] =
+    Codec.record[GetCategoryModels](
+      name = "GetCategoryModels",
+      namespace = "marketplace.models.yandex.market"
+    ) { field =>
+      field("host", _.host) *> field("apiVersion", _.apiVersion) *> field("method", _.method) *>
+        (
+          field("uuid", _.uuid),
+          field("geoId", _.geoId),
+          field("categoryId", _.categoryId),
+          field("page", _.pageNumber),
+          field("count", _.pageCount),
+          field("fields", _.fields),
+          field("sections", _.sections),
+          field("rearrFactors", _.rearrFactors)
+        ).mapN(GetCategoryModels.apply)
+    }
 }

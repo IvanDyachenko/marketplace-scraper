@@ -14,6 +14,7 @@ import marketplace.context.HasConfig
 import marketplace.clients.HttpClient
 import marketplace.clients.models.{HttpRequest, HttpResponse}
 
+@deprecated
 trait Crawl[S[_]] {
   def crawl[Req: Encoder, Res: Decoder]: S[HttpRequest[Req]] => S[HttpResponse[Res]]
 }

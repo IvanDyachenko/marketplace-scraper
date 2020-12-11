@@ -8,7 +8,6 @@ import tofu.syntax.monadic._
 import tofu.syntax.context._
 import tofu.WithContext
 import derevo.derive
-import tofu.data.derived.ContextEmbed
 import tofu.higherKind.derived.representableK
 import fs2.Stream
 import tofu.fs2.LiftStream
@@ -23,7 +22,18 @@ trait Parser[S[_]] {
   def run: S[Unit]
 }
 
-object Parser extends ContextEmbed[Parser] {
+object Parser {
+
+  private final class Impl[F[_]: Monad: Concurrent](flow: Stream[F, Json], parse: Parse[Stream[F, *]], maxOpen: Int, maxConcurrent: Int)
+      extends Parser[Stream[F, *]] {
+
+    def run: Stream[F, Unit] =
+      flow.balanceAvailable
+        .parEvalMapUnordered(maxConcurrent)(parse.parse[Result](Result.circeDecoder)(_).pure[F])
+        .parJoin(maxOpen)
+        .evalMap(_ => ().pure[F])
+  }
+
   def apply[S[_]](implicit ev: Parser[S]): ev.type = ev
 
   def make[I[_]: Monad, F[_]: Monad: Concurrent, S[_]: Monad: LiftStream[*[_], F]: WithContext[*[_], ParserConfig]](
@@ -39,14 +49,4 @@ object Parser extends ContextEmbed[Parser] {
         .embed
         .pure[I]
     }
-
-  private final class Impl[F[_]: Monad: Concurrent](flow: Stream[F, Json], parse: Parse[Stream[F, *]], maxOpen: Int, maxConcurrent: Int)
-      extends Parser[Stream[F, *]] {
-
-    def run: Stream[F, Unit] =
-      flow.balanceAvailable
-        .parEvalMapUnordered(maxConcurrent)(parse.parse[Result](Result.circeDecoder)(_).pure[F])
-        .parJoin(maxOpen)
-        .evalMap(_ => ().pure[F])
-  }
 }

@@ -6,7 +6,11 @@ import io.circe.syntax._
 import io.circe.{Encoder, Json}
 import vulcan.Codec
 import org.http4s.{QueryParam, QueryParamEncoder, QueryParameterKey, QueryParameterValue}
+import derevo.derive
+import tofu.logging.derivation.loggable
+import tofu.logging.Loggable
 
+@derive(loggable)
 sealed trait Request {
   def host: String = "mobile.market.yandex.net"
   def apiVersion: ApiVersion
@@ -20,6 +24,7 @@ sealed trait Request {
   def rearrFactors: Request.RearrFactors
 }
 
+@derive(loggable)
 final case class GetCategoryModels(
   uuid: User.UUID,
   geoId: Region.GeoId,
@@ -64,8 +69,8 @@ object Request {
     */
   object Fields extends TaggedType[List[Field]] {
     implicit def fields(ls: List[Field]): Fields = Fields(ls)
-
-    implicit val vulcanCodec: Codec[Type] = lift
+    implicit val loggable: Loggable[Type]        = lift
+    implicit val vulcanCodec: Codec[Type]        = lift
 
     implicit val queryParam = new QueryParam[Type] with QueryParamEncoder[Type] {
       val key                                       = QueryParameterKey("fields")
@@ -78,8 +83,8 @@ object Request {
     */
   object Sections extends TaggedType[List[Section]] {
     implicit def sections(ls: List[Section]): Sections = Sections(ls)
-
-    implicit val vulcanCodec: Codec[Type] = lift
+    implicit val loggable: Loggable[Type]              = lift
+    implicit val vulcanCodec: Codec[Type]              = lift
 
     implicit val queryParam = new QueryParam[Type] with QueryParamEncoder[Type] {
       val key                                       = QueryParameterKey("sections")
@@ -92,8 +97,8 @@ object Request {
     */
   object RearrFactors extends TaggedType[List[RearrFactor]] {
     implicit def rearrFactors(ls: List[RearrFactor]): RearrFactors = RearrFactors(ls)
-
-    implicit val vulcanCodec: Codec[Type] = lift
+    implicit val loggable: Loggable[Type]                          = lift
+    implicit val vulcanCodec: Codec[Type]                          = lift
 
     implicit val queryParam = new QueryParam[Type] with QueryParamEncoder[Type] {
       val key = QueryParameterKey("rearr_factors")

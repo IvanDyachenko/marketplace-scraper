@@ -5,14 +5,14 @@ import org.http4s.headers.{`User-Agent`, AgentComment, AgentProduct, Host}
 
 import marketplace.clients.models.HttpRequest
 import marketplace.models.yandex.market.headers._
-import marketplace.models.yandex.market.{Request => YaMarketRequest}
+import marketplace.models.yandex.market.{Request => YandexMarketRequest}
 import marketplace.models.yandex.market.Request.{Fields, RearrFactors, Sections}
 
 package object marshalling {
 
-  implicit class YaMarketRequestMarshaller(val request: YaMarketRequest) {
+  implicit class YandexMarketRequestMarshaller(val request: YandexMarketRequest) {
 
-    def toHttpRequest: HttpRequest[YaMarketRequest] = new HttpRequest[YaMarketRequest] {
+    def toHttpRequest: HttpRequest[YandexMarketRequest] = new HttpRequest[YandexMarketRequest] {
       private val host: Uri.Host = Uri.RegName(request.host)
 
       def uri: Uri =
@@ -36,7 +36,7 @@ package object marshalling {
           `X-Region-Id`(request.geoId)
         )
 
-      def body: YaMarketRequest = request
+      def body: YandexMarketRequest = request
     }
   }
 }

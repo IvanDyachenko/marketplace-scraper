@@ -3,6 +3,7 @@ package marketplace.clients.models
 import tofu.logging.Loggable
 import org.http4s.Headers
 
+@deprecated
 final case class HttpResponse[+R](headers: Headers, result: R)
 
 object HttpResponse {

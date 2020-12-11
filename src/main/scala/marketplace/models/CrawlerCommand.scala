@@ -17,12 +17,13 @@ sealed trait CrawlerCommand {
 case class HandleYandexMarketRequest(id: CommandId, created: Timestamp, request: YandexMarketRequest) extends CrawlerCommand
 
 object CrawlerCommand {
-
-  implicit val vulcanCodecHandleYandexMarketRequest: Codec[HandleYandexMarketRequest] =
-    Codec.record[HandleYandexMarketRequest]("HandleYandexMarketRequest", "marketplace.models")(field =>
-      (field("id", _.id), field("create", _.created), field("request", _.request)).mapN(HandleYandexMarketRequest.apply)
-    )
-
   implicit val vulcanCodec: Codec[CrawlerCommand] =
     Codec.union[CrawlerCommand](alt => alt[HandleYandexMarketRequest])
+}
+
+object HandleYandexMarketRequest {
+  implicit val vulcanCodec: Codec[HandleYandexMarketRequest] =
+    Codec.record[HandleYandexMarketRequest]("HandleYandexMarketRequest", "marketplace.models")(field =>
+      (field("id", _.id), field("created", _.created), field("request", _.request)).mapN(HandleYandexMarketRequest.apply)
+    )
 }

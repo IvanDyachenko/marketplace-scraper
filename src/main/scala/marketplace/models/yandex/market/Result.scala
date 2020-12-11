@@ -1,8 +1,9 @@
 package marketplace.models.yandex.market
 
-import cats.syntax.functor._
+import cats.implicits._
 import enumeratum.{CirceEnum, Enum, EnumEntry}
 import enumeratum.EnumEntry.Uppercase
+import vulcan.Codec
 import io.circe.Decoder
 import io.circe.derivation.deriveDecoder
 import derevo.derive
@@ -41,12 +42,24 @@ object Result {
     val values = findValues
   }
 
-  implicit val circeDecoderFailureResult: Decoder[FailureResult] = deriveDecoder
-  implicit val circeDecoderModelsResult: Decoder[ModelsResult]   = deriveDecoder
-
   implicit val circeDecoder: Decoder[Result] =
     List[Decoder[Result]](
       Decoder[FailureResult].widen,
       Decoder[ModelsResult].widen
     ).reduceLeft(_ or _)
+
+  implicit val vulcanCodec: Codec[Result] =
+    Codec.union[Result](alt => alt[FailureResult] |+| alt[ModelsResult])
+}
+
+object FailureResult {
+  implicit val circeDecoder: Decoder[FailureResult] = deriveDecoder
+
+  implicit val vulcanCodec: Codec[FailureResult] = ???
+}
+
+object ModelsResult {
+  implicit val circeDecoder: Decoder[ModelsResult] = deriveDecoder
+
+  implicit val vulcanCodec: Codec[ModelsResult] = ???
 }

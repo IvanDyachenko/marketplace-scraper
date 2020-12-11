@@ -35,13 +35,11 @@ object Crawler {
 
     def run: Stream[F, Unit] =
       consumer
-        .evalTap(_.subscribeTo("crawler-commands-yandex_market_request"))
+        .evalTap(_.subscribeTo("crawler-commands-handle_yandex_market_request"))
         .flatMap(_.partitionedStream)
         .map { partition =>
           partition
-            .evalMap { commitable =>
-              crawl.handle(commitable.record.value).as(commitable.offset)
-            }
+            .evalMap(commitable => crawl.handle(commitable.record.value).as(commitable.offset))
             .through(commitBatchWithin(100, 5.seconds))
         }
         .parJoinUnbounded

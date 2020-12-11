@@ -45,8 +45,8 @@ object Model {
     */
   object ModelId extends TaggedType[Long] {
     implicit val show: Show[Type]            = Show.fromToString
-    implicit val loggable: Loggable[Type]    = Loggable.longLoggable.contramap(identity)
-    implicit def circeDecoder: Decoder[Type] = LiftF[Decoder].lift[Raw, Tag](Decoder[Raw].or(Decoder[Raw].at("id")))
+    implicit val loggable: Loggable[Type]    = lift
+    implicit val circeDecoder: Decoder[Type] = LiftF[Decoder].lift[Raw, Tag](Decoder[Raw].or(Decoder[Raw].at("id")))
   }
   type ModelId = ModelId.Type
 }

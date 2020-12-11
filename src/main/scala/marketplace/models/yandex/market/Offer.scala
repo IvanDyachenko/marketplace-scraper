@@ -49,7 +49,7 @@ object Offer {
     */
   object OfferId extends TaggedType[String] {
     implicit val show: Show[Type]            = Show.fromToString
-    implicit val loggable: Loggable[Type]    = Loggable.stringValue.contramap(identity)
+    implicit val loggable: Loggable[Type]    = lift
     implicit val circeDecoder: Decoder[Type] = LiftF[Decoder].lift[Raw, Tag](Decoder[Raw].or(Decoder[Raw].at("id")))
   }
   type OfferId = OfferId.Type
@@ -58,7 +58,7 @@ object Offer {
     */
   object MD5 extends TaggedType[String] {
     implicit val show: Show[Type]            = Show.fromToString
-    implicit val loggable: Loggable[Type]    = Loggable.stringValue.contramap(identity)
+    implicit val loggable: Loggable[Type]    = lift
     implicit val circeDecoder: Decoder[Type] = lift
   }
   type MD5 = MD5.Type

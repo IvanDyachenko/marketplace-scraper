@@ -21,14 +21,14 @@ package object models {
 
   object CommandId extends TaggedType[UUID] {
     implicit val show: Show[Type]         = Show.fromToString
-    implicit val loggable: Loggable[Type] = Loggable.uuidLoggable.contramap(identity)
+    implicit val loggable: Loggable[Type] = lift
     implicit val vulcanCodec: Codec[Type] = lift
   }
   type CommandId = CommandId.Type
 
   object EventId extends TaggedType[UUID] {
     implicit val show: Show[Type]         = Show.fromToString
-    implicit val loggable: Loggable[Type] = Loggable.uuidLoggable.contramap(identity)
+    implicit val loggable: Loggable[Type] = lift
     implicit val vulcanCodec: Codec[Type] = lift
   }
   type EventId = EventId.Type

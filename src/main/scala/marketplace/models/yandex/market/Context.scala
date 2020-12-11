@@ -34,7 +34,7 @@ object Context {
     */
   object ContextId extends TaggedType[String] {
     implicit val show: Show[Type]            = Show.fromToString
-    implicit val loggable: Loggable[Type]    = Loggable.stringValue.contramap(identity)
+    implicit val loggable: Loggable[Type]    = lift
     implicit val circeDecoder: Decoder[Type] = lift
   }
   type ContextId = ContextId.Type

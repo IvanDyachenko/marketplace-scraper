@@ -12,7 +12,7 @@ object User {
 
   object UUID extends TaggedType[String] {
     implicit val show: Show[Type]            = Show.fromToString
-    implicit val loggable: Loggable[Type]    = Loggable.stringValue.contramap(_.show)
+    implicit val loggable: Loggable[Type]    = lift
     implicit val circeDecoder: Decoder[Type] = lift
     implicit val vulcanCodec: Codec[Type]    = lift
 

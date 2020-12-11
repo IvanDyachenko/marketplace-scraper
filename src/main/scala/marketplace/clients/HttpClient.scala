@@ -5,15 +5,12 @@ import cats.syntax.all._
 import cats.effect.{ConcurrentEffect, Resource, Sync}
 import tofu.Execute
 import tofu.lift.Unlift
-import derevo.derive
-import tofu.data.derived.ContextEmbed
-import tofu.higherKind.derived.representableK
 import tofu.logging.{Logging, Logs}
 import tofu.syntax.logging._
 import io.circe.{Decoder, Encoder}
 import org.http4s.{Method, Request => Http4sRequest, InvalidMessageBodyFailure}
 import org.http4s.Status.Successful
-import org.http4s.circe._
+import org.http4s.circe.{jsonEncoderOf, jsonOf}
 import org.http4s.client.{Client, UnexpectedStatus}
 import org.http4s.client.dsl.Http4sClientDsl._
 import org.http4s.client.asynchttpclient.AsyncHttpClient
@@ -23,22 +20,45 @@ import org.asynchttpclient.proxy.ProxyServer
 import marketplace.config.HttpConfig
 import marketplace.clients.models.{HttpClientDecodingError, HttpRequest, HttpResponse}
 
-@derive(representableK)
 trait HttpClient[F[_]] {
+  def send[Res: Decoder](request: Http4sRequest[F]): F[Res]
+
+  @deprecated
   def send[Req: Encoder, Res: Decoder](request: HttpRequest[Req]): F[HttpResponse[Res]]
 }
 
-object HttpClient extends ContextEmbed[HttpClient] {
+object HttpClient {
   def apply[F[_]](implicit ev: HttpClient[F]): ev.type = ev
 
   def make[I[_]: Monad: Execute: ConcurrentEffect: Unlift[*[_], F], F[+_]: Sync](httpConfig: HttpConfig)(implicit
     logs: Logs[I, F]
   ): Resource[I, HttpClient[F]] =
-    buildHttp4sClient[I](httpConfig).flatMap { http4sClient =>
+    buildHttp4sClient[I](httpConfig) >>= { http4sClient =>
       Resource.liftF(logs.forService[HttpClient[F]].map(implicit l => new Impl[F](translateHttp4sClient[I, F](http4sClient))))
     }
 
   class Impl[F[+_]: Sync: Logging](http4sClient: Client[F]) extends HttpClient[F] {
+
+    def send[Res](request: Http4sRequest[F])(implicit decoder: Decoder[Res]): F[Res] =
+      http4sClient
+        .toKleisli { response =>
+          response match {
+            case Successful(_) =>
+              jsonOf(Sync[F], decoder)
+                .decode(response, strict = false)
+                .leftWiden[Throwable]
+                .rethrowT
+            case unexpected    =>
+              error"Received ${unexpected.status.show} status during execution of request to ${request.uri.path}" *>
+                UnexpectedStatus(unexpected.status).raiseError[F, Res]
+          }
+        }
+        .run(request)
+        .recoverWith { case err: InvalidMessageBodyFailure =>
+          errorCause"Received invalid response during execution of request to ${request.uri.path}" (err) *>
+            HttpClientDecodingError(err.details.dropWhile(_ != '{')).raiseError[F, Res]
+        }
+        .flatTap(response => debug"Received TODO during execution of request to ${request.uri.path}")
 
     def send[Req: Encoder, Res](request: HttpRequest[Req])(implicit decoder: Decoder[Res]): F[HttpResponse[Res]] =
       buildHttp4sRequest(request).flatMap { http4sRequest =>

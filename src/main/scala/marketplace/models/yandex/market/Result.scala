@@ -21,20 +21,12 @@ final case class FailureResult(
   def status: Result.Status = Result.Status.Error
 }
 
-object FailureResult {
-  implicit val circeDecoder: Decoder[FailureResult] = deriveDecoder
-}
-
 @derive(loggable)
 final case class ModelsResult(
   @masked(MaskMode.Erase) context: Context,
   @masked(MaskMode.Erase) items: List[Model]
 ) extends Result {
   val status: Result.Status = Result.Status.Ok
-}
-
-object ModelsResult {
-  implicit val circeDecoder: Decoder[ModelsResult] = deriveDecoder
 }
 
 object Result {
@@ -48,6 +40,9 @@ object Result {
 
     val values = findValues
   }
+
+  implicit val circeDecoderFailureResult: Decoder[FailureResult] = deriveDecoder
+  implicit val circeDecoderModelsResult: Decoder[ModelsResult]   = deriveDecoder
 
   implicit val circeDecoder: Decoder[Result] =
     List[Decoder[Result]](

@@ -9,8 +9,8 @@ import tofu.fs2Instances._
 
 import marketplace.context._
 import marketplace.clients._
-import marketplace.modules._
 import marketplace.services._
+import marketplace.modules._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -28,10 +28,9 @@ object Main extends TaskApp {
   def init: Resource[Task, (AppContext, Crawler[S])] =
     for {
       implicit0(blocker: Blocker) <- Blocker[I]
-//    wr                           = implicitly[WithRun[F, I, AppContext]]
-      env                         <- AppContext.make[I]
-      httpClient                  <- HttpClient.make[I, F](env.config.httpConfig)
-      crawl                       <- Crawl.make[I, F, S](httpClient)
-      crawler                     <- Crawler.make[I, F, S](env.config.schemaRegistryConfig, crawl)
-    } yield (env, crawler)
+      ctx                         <- AppContext.make[I]
+      httpClient                  <- HttpClient.make[I, F](ctx.config.httpConfig)
+      crawlerCmdHdlr              <- HandleCrawlerCommand.make[I, F](httpClient)
+      crawler                     <- Crawler.make[I, F, S](ctx.config.schemaRegistryConfig, crawlerCmdHdlr)
+    } yield (ctx, crawler)
 }

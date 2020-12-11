@@ -30,7 +30,7 @@ object Main extends TaskApp {
       implicit0(blocker: Blocker) <- Blocker[I]
       ctx                         <- AppContext.make[I]
       httpClient                  <- HttpClient.make[I, F](ctx.config.httpConfig)
-      crawlerCmdHdlr              <- HandleCrawlerCommand.make[I, F](httpClient)
-      crawler                     <- Crawler.make[I, F, S](ctx.config.schemaRegistryConfig, crawlerCmdHdlr)
+      crawl                       <- Crawl.make[I, F](httpClient)
+      crawler                     <- Crawler.make[I, F, S](ctx.config.schemaRegistryConfig, crawl)
     } yield (ctx, crawler)
 }

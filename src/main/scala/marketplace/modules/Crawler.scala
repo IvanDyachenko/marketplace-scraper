@@ -19,7 +19,7 @@ import fs2.kafka.vulcan.{avroDeserializer, AvroSettings, SchemaRegistryClientSet
 
 import marketplace.config.SchemaRegistryConfig
 import marketplace.models.CrawlerCommand
-import marketplace.services.HandleCrawlerCommand
+import marketplace.services.Crawl
 
 @derive(representableK)
 trait Crawler[S[_]] {
@@ -29,18 +29,18 @@ trait Crawler[S[_]] {
 object Crawler {
 
   private final class Impl[F[_]: Monad: Concurrent: Timer](
-    commandHandler: HandleCrawlerCommand[F],
+    crawl: Crawl[F],
     consumer: Stream[F, KafkaConsumer[F, String, CrawlerCommand]]
   ) extends Crawler[Stream[F, *]] {
 
     def run: Stream[F, Unit] =
       consumer
-        .evalTap(_.subscribeTo("crawler-commands-marketplace_requests"))
+        .evalTap(_.subscribeTo("crawler-commands-yandex_market_request"))
         .flatMap(_.partitionedStream)
         .map { partition =>
           partition
             .evalMap { commitable =>
-              commandHandler.handle(commitable.record.value).as(commitable.offset)
+              crawl.handle(commitable.record.value).as(commitable.offset)
             }
             .through(commitBatchWithin(100, 5.seconds))
         }
@@ -52,7 +52,7 @@ object Crawler {
 
   def make[I[_]: ConcurrentEffect: Unlift[*[_], F], F[_]: FlatMap: ContextShift: Timer, S[_]: LiftStream[*[_], F]](
     config: SchemaRegistryConfig,
-    commandHandler: HandleCrawlerCommand[F]
+    crawl: Crawl[F]
   ): Resource[I, Crawler[S]] =
     Resource.liftF(
       Stream
@@ -67,7 +67,7 @@ object Crawler {
             .withGroupId("crawler")
           val consumer         = consumerStream[F].using(consumerSettings)
 
-          val crawler: Crawler[Stream[F, *]] = new Impl[F](commandHandler, consumer)
+          val crawler: Crawler[Stream[F, *]] = new Impl[F](crawl, consumer)
 
           crawler.pure[F]
         })

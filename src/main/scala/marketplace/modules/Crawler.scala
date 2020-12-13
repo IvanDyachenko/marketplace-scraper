@@ -1,6 +1,6 @@
 package marketplace.modules
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.FiniteDuration
 
 import cats.{FlatMap, Monad}
 import cats.effect.{Concurrent, ConcurrentEffect, ContextShift, Resource, Timer}
@@ -17,7 +17,7 @@ import fs2.kafka.{commitBatchWithin, consumerStream, AutoOffsetReset, ConsumerSe
 import fs2.kafka.RecordDeserializer
 import fs2.kafka.vulcan.{avroDeserializer, AvroSettings, SchemaRegistryClientSettings}
 
-import marketplace.config.SchemaRegistryConfig
+import marketplace.config.{CrawlerConfig, SchemaRegistryConfig}
 import marketplace.models.crawler.Command
 import marketplace.services.Crawl
 
@@ -29,18 +29,21 @@ trait Crawler[S[_]] {
 object Crawler {
 
   private final class Impl[F[_]: Monad: Concurrent: Timer](
+    commandsTopic: String,
+    batchOffsets: Int,
+    batchTimeWindow: FiniteDuration,
     crawl: Crawl[F],
     consumer: Stream[F, KafkaConsumer[F, String, Command]]
   ) extends Crawler[Stream[F, *]] {
 
     def run: Stream[F, Unit] =
       consumer
-        .evalTap(_.subscribeTo("crawler-commands-handle_yandex_market_request"))
+        .evalTap(_.subscribeTo(commandsTopic))
         .flatMap(_.partitionedStream)
         .map { partition =>
           partition
             .evalMap(commitable => crawl.handle(commitable.record.value).as(commitable.offset))
-            .through(commitBatchWithin(100, 5.seconds))
+            .through(commitBatchWithin(batchOffsets, batchTimeWindow))
         }
         .parJoinUnbounded
         .map(_ => ())
@@ -49,13 +52,14 @@ object Crawler {
   def apply[S[_]](implicit ev: Crawler[S]): ev.type = ev
 
   def make[I[_]: ConcurrentEffect: Unlift[*[_], F], F[_]: FlatMap: ContextShift: Timer, S[_]: LiftStream[*[_], F]](
-    config: SchemaRegistryConfig,
+    crawlerConfig: CrawlerConfig,
+    schemaRegistryConfig: SchemaRegistryConfig,
     crawl: Crawl[F]
   ): Resource[I, Crawler[S]] =
     Resource.liftF(
       Stream
         .eval(Unlift[I, F].concurrentEffectWith { implicit ce =>
-          val avroSettings = AvroSettings(SchemaRegistryClientSettings[F](config.baseUrl))
+          val avroSettings = AvroSettings(SchemaRegistryClientSettings[F](schemaRegistryConfig.baseUrl))
 
           implicit val requestDeserializer: RecordDeserializer[F, Command] = avroDeserializer[Command].using(avroSettings)
 
@@ -65,7 +69,8 @@ object Crawler {
             .withGroupId("crawler")
           val consumer         = consumerStream[F].using(consumerSettings)
 
-          val crawler: Crawler[Stream[F, *]] = new Impl[F](crawl, consumer)
+          val crawler: Crawler[Stream[F, *]] =
+            new Impl[F](crawlerConfig.commandsTopic, crawlerConfig.batchOffsets, crawlerConfig.batchTimeWindow, crawl, consumer)
 
           crawler.pure[F]
         })

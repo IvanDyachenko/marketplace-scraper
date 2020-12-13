@@ -1,24 +1,25 @@
-package marketplace.models
+package marketplace.models.crawler
 
 import cats.implicits._
 import vulcan.Codec
 import derevo.derive
 import tofu.logging.derivation.loggable
 
+import marketplace.models.{CommandId, Timestamp}
 import marketplace.models.yandex.market.{Request => YandexMarketRequest}
 
 @derive(loggable)
-sealed trait CrawlerCommand {
+sealed trait Command {
   def id: CommandId
   def created: Timestamp
 }
 
 @derive(loggable)
-case class HandleYandexMarketRequest(id: CommandId, created: Timestamp, request: YandexMarketRequest) extends CrawlerCommand
+case class HandleYandexMarketRequest(id: CommandId, created: Timestamp, request: YandexMarketRequest) extends Command
 
-object CrawlerCommand {
-  implicit val vulcanCodec: Codec[CrawlerCommand] =
-    Codec.union[CrawlerCommand](alt => alt[HandleYandexMarketRequest])
+object Command {
+  implicit val vulcanCodec: Codec[Command] =
+    Codec.union[Command](alt => alt[HandleYandexMarketRequest])
 }
 
 object HandleYandexMarketRequest {

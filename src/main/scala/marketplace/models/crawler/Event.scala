@@ -1,4 +1,4 @@
-package marketplace.models
+package marketplace.models.crawler
 
 import java.nio.charset.StandardCharsets.UTF_8
 
@@ -7,21 +7,23 @@ import io.circe.Json
 import io.circe.parser.decode
 import vulcan.{AvroError, Codec}
 import derevo.derive
-import tofu.logging.derivation.loggable
 import tofu.logging.Loggable
+import tofu.logging.derivation.loggable
+
+import marketplace.models.{EventId, Timestamp}
 
 @derive(loggable)
-sealed trait CrawlerEvent {
+sealed trait Event {
   def id: EventId
   def created: Timestamp
 }
 
 @derive(loggable)
-final case class YandexMarketRequestHandled(id: EventId, created: Timestamp, raw: Json) extends CrawlerEvent
+final case class YandexMarketRequestHandled(id: EventId, created: Timestamp, raw: Json) extends Event
 
 object CrawlerEvent {
-  implicit val vulcanCodec: Codec[CrawlerEvent] =
-    Codec.union[CrawlerEvent](alt => alt[YandexMarketRequestHandled])
+  implicit val vulcanCodec: Codec[Event] =
+    Codec.union[Event](alt => alt[YandexMarketRequestHandled])
 }
 
 object YandexMarketRequestHandled {

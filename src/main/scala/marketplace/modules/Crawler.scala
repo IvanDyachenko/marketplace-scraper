@@ -14,8 +14,8 @@ import tofu.higherKind.derived.representableK
 import fs2.Stream
 import tofu.fs2.LiftStream
 import fs2.kafka.{commitBatchWithin, consumerStream, AutoOffsetReset, ConsumerSettings, KafkaConsumer}
-import fs2.kafka.RecordDeserializer
-import fs2.kafka.vulcan.{avroDeserializer, AvroSettings, SchemaRegistryClientSettings}
+import fs2.kafka.{RecordDeserializer, RecordSerializer}
+import fs2.kafka.vulcan.{avroDeserializer, avroSerializer, AvroSettings, SchemaRegistryClientSettings}
 
 import marketplace.config.{CrawlerConfig, SchemaRegistryConfig}
 import marketplace.models.crawler.Command
@@ -61,7 +61,8 @@ object Crawler {
         .eval(Unlift[I, F].concurrentEffectWith { implicit ce =>
           val avroSettings = AvroSettings(SchemaRegistryClientSettings[F](schemaRegistryConfig.baseUrl))
 
-          implicit val requestDeserializer: RecordDeserializer[F, Command] = avroDeserializer[Command].using(avroSettings)
+          implicit val commandSerializer: RecordSerializer[F, Command]     = avroSerializer[Command].using(avroSettings)
+          implicit val commandDeserializer: RecordDeserializer[F, Command] = avroDeserializer[Command].using(avroSettings)
 
           val consumerSettings = ConsumerSettings[F, String, Command]
             .withAutoOffsetReset(AutoOffsetReset.Earliest)

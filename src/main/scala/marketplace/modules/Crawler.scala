@@ -18,7 +18,7 @@ import fs2.kafka.RecordDeserializer
 import fs2.kafka.vulcan.{avroDeserializer, AvroSettings, SchemaRegistryClientSettings}
 
 import marketplace.config.SchemaRegistryConfig
-import marketplace.models.CrawlerCommand
+import marketplace.models.crawler.Command
 import marketplace.services.Crawl
 
 @derive(representableK)
@@ -30,7 +30,7 @@ object Crawler {
 
   private final class Impl[F[_]: Monad: Concurrent: Timer](
     crawl: Crawl[F],
-    consumer: Stream[F, KafkaConsumer[F, String, CrawlerCommand]]
+    consumer: Stream[F, KafkaConsumer[F, String, Command]]
   ) extends Crawler[Stream[F, *]] {
 
     def run: Stream[F, Unit] =
@@ -57,9 +57,9 @@ object Crawler {
         .eval(Unlift[I, F].concurrentEffectWith { implicit ce =>
           val avroSettings = AvroSettings(SchemaRegistryClientSettings[F](config.baseUrl))
 
-          implicit val requestDeserializer: RecordDeserializer[F, CrawlerCommand] = avroDeserializer[CrawlerCommand].using(avroSettings)
+          implicit val requestDeserializer: RecordDeserializer[F, Command] = avroDeserializer[Command].using(avroSettings)
 
-          val consumerSettings = ConsumerSettings[F, String, CrawlerCommand]
+          val consumerSettings = ConsumerSettings[F, String, Command]
             .withAutoOffsetReset(AutoOffsetReset.Earliest)
             .withBootstrapServers("http://localhost:9092")
             .withGroupId("crawler")

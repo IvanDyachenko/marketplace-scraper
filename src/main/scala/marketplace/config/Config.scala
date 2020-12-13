@@ -1,5 +1,7 @@
 package marketplace.config
 
+import scala.concurrent.duration.FiniteDuration
+
 import cats.effect.{Blocker, ContextShift, Sync}
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
@@ -32,7 +34,7 @@ object ClickhouseConfig {
     ConfigSource.default.at("clickhouse").loadF[F, ClickhouseConfig](blocker)
 }
 
-final case class CrawlerConfig(maxOpen: Int, maxConcurrent: Int, prefetchNumber: Int)
+final case class CrawlerConfig(commandsTopic: String, batchOffsets: Int, batchTimeWindow: FiniteDuration)
 
 object CrawlerConfig {
   lazy val load: CrawlerConfig = ConfigSource.default.at("crawler").loadOrThrow[CrawlerConfig]

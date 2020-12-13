@@ -31,6 +31,6 @@ object Main extends TaskApp {
       ctx                         <- AppContext.make[I]
       httpClient                  <- HttpClient.make[I, F](ctx.config.httpConfig)
       crawl                       <- Crawl.make[I, F](httpClient)
-      crawler                     <- Crawler.make[I, F, S](ctx.config.schemaRegistryConfig, crawl)
+      crawler                     <- Crawler.make[I, F, S](ctx.config.crawlerConfig, ctx.config.schemaRegistryConfig, crawl)
     } yield (ctx, crawler)
 }

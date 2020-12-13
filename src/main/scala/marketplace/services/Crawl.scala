@@ -1,19 +1,21 @@
 package marketplace.services
 
 import cats.Monad
-import cats.implicits._
-import cats.effect.{Resource, Sync}
+import tofu.syntax.monadic._
+import cats.effect.{Clock, Resource, Sync}
+import supertagged.postfix._
 import derevo.derive
 import tofu.higherKind.Mid
 import tofu.higherKind.derived.representableK
+import tofu.generate.GenUUID
 import tofu.logging.{Logging, Logs}
 import tofu.syntax.logging._
 import io.circe.Json
 
 import marketplace.marshalling._
 import marketplace.clients.HttpClient
-import marketplace.models.{CrawlerCommand, CrawlerEvent, HandleYandexMarketRequest}
-import marketplace.models.YandexMarketRequestHandled
+import marketplace.models.{CrawlerCommand, CrawlerEvent, EventId, HandleYandexMarketRequest, YandexMarketRequestHandled}
+import marketplace.models.Timestamp
 
 @derive(representableK)
 trait Crawl[F[_]] {
@@ -27,15 +29,20 @@ object Crawl {
       info"Start handling ${command}" *> _
   }
 
-  private final class Impl[F[_]: Monad: Sync](httpClient: HttpClient[F]) extends Crawl[F] {
+  private final class Impl[F[_]: Sync: Clock: GenUUID](httpClient: HttpClient[F]) extends Crawl[F] {
     def handle(command: CrawlerCommand): F[CrawlerEvent] = command match {
-      case HandleYandexMarketRequest(_, _, request) => httpClient.send[Json](request).map(YandexMarketRequestHandled(???, ???, _))
+      case HandleYandexMarketRequest(_, _, request) =>
+        for {
+          raw     <- httpClient.send[Json](request)
+          uuid    <- GenUUID[F].randomUUID
+          instant <- Clock[F].instantNow
+        } yield YandexMarketRequestHandled(uuid @@ EventId, Timestamp(instant), raw)
     }
   }
 
   def apply[F[_]](implicit ev: Crawl[F]): ev.type = ev
 
-  def make[I[_]: Monad, F[_]: Monad: Sync](httpClient: HttpClient[F])(implicit logs: Logs[I, F]): Resource[I, Crawl[F]] =
+  def make[I[_]: Monad, F[_]: Sync: Clock: GenUUID](httpClient: HttpClient[F])(implicit logs: Logs[I, F]): Resource[I, Crawl[F]] =
     Resource.liftF {
       logs
         .forService[Crawl[F]]

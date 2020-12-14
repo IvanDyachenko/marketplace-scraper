@@ -34,7 +34,7 @@ object ClickhouseConfig {
     ConfigSource.default.at("clickhouse").loadF[F, ClickhouseConfig](blocker)
 }
 
-final case class CrawlerConfig(commandsTopic: String, batchOffsets: Int, batchTimeWindow: FiniteDuration)
+final case class CrawlerConfig(eventsTopic: String, commandsTopic: String, batchOffsets: Int, batchTimeWindow: FiniteDuration)
 
 object CrawlerConfig {
   lazy val load: CrawlerConfig = ConfigSource.default.at("crawler").loadOrThrow[CrawlerConfig]

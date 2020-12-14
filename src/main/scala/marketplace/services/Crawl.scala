@@ -14,7 +14,7 @@ import io.circe.Json
 
 import marketplace.marshalling._
 import marketplace.clients.HttpClient
-import marketplace.models.{EventId, Timestamp}
+import marketplace.models.{EventId, EventKey, Timestamp}
 import marketplace.models.crawler.{Command, Event, HandleYandexMarketRequest, YandexMarketRequestHandled}
 
 @derive(representableK)
@@ -36,7 +36,8 @@ object Crawl {
           raw     <- httpClient.send[Json](request)
           uuid    <- GenUUID[F].randomUUID
           instant <- Clock[F].instantNow
-        } yield YandexMarketRequestHandled(uuid @@ EventId, Timestamp(instant), raw)
+          key      = request.method
+        } yield YandexMarketRequestHandled(uuid @@ EventId, key @@ EventKey, Timestamp(instant), raw)
     }
   }
 

@@ -10,18 +10,19 @@ import derevo.derive
 import tofu.logging.Loggable
 import tofu.logging.derivation.loggable
 
-import marketplace.models.{EventId, Timestamp}
+import marketplace.models.{EventId, EventKey, Timestamp}
 
 @derive(loggable)
 sealed trait Event {
   def id: EventId
+  def key: EventKey
   def created: Timestamp
 }
 
 @derive(loggable)
-final case class YandexMarketRequestHandled(id: EventId, created: Timestamp, raw: Json) extends Event
+final case class YandexMarketRequestHandled(id: EventId, key: EventKey, created: Timestamp, raw: Json) extends Event
 
-object CrawlerEvent {
+object Event {
   implicit val vulcanCodec: Codec[Event] =
     Codec.union[Event](alt => alt[YandexMarketRequestHandled])
 }
@@ -33,6 +34,6 @@ object YandexMarketRequestHandled {
 
   implicit val vulcanCodec: Codec[YandexMarketRequestHandled] =
     Codec.record[YandexMarketRequestHandled]("YandexMarketRequestHandled", "marketplace.models")(field =>
-      (field("id", _.id), field("created", _.created), field("raw", _.raw)).mapN(YandexMarketRequestHandled.apply)
+      (field("id", _.id), field("key", _.key), field("created", _.created), field("raw", _.raw)).mapN(YandexMarketRequestHandled.apply)
     )
 }

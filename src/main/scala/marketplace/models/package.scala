@@ -32,4 +32,11 @@ package object models {
     implicit val vulcanCodec: Codec[Type] = lift
   }
   type EventId = EventId.Type
+
+  object EventKey extends TaggedType[String] {
+    implicit val show: Show[Type]         = Show.fromToString
+    implicit val loggable: Loggable[Type] = lift
+    implicit val vulcanCodec: Codec[Type] = lift
+  }
+  type EventKey = EventKey.Type
 }

@@ -18,7 +18,7 @@ import fs2.kafka.{KafkaProducer, ProducerRecord, ProducerRecords, ProducerSettin
 import fs2.kafka.{RecordDeserializer, RecordSerializer}
 import fs2.kafka.vulcan.{avroDeserializer, avroSerializer, AvroSettings, SchemaRegistryClientSettings}
 
-import marketplace.config.{CrawlerConfig, SchemaRegistryConfig}
+import marketplace.config.{CrawlerConfig, KafkaConfig, SchemaRegistryConfig}
 import marketplace.models.crawler.{Command, Event}
 import marketplace.services.Crawl
 import fs2.kafka.CommittableOffset
@@ -66,7 +66,6 @@ object Crawler {
               .through(commitBatchWithin(batchOffsets, batchTimeWindow))
           }
           .parJoinUnbounded
-          .as(())
       }
   }
 
@@ -74,19 +73,22 @@ object Crawler {
 
   def make[I[_]: ConcurrentEffect: Unlift[*[_], F], F[_]: FlatMap: ContextShift: Timer, S[_]: LiftStream[*[_], F]](
     crawlerConfig: CrawlerConfig,
+    kafkaConfig: KafkaConfig,
     schemaRegistryConfig: SchemaRegistryConfig,
     crawl: Crawl[F]
   ): Resource[I, Crawler[S]] =
     Resource.liftF(
       Stream
         .eval(Unlift[I, F].concurrentEffectWith { implicit ce =>
+          val CrawlerConfig(groupId, eventsTopic, commandsTopic, batchOffsets, batchTimeWindow) = crawlerConfig
+
           val avroSettings = AvroSettings(SchemaRegistryClientSettings[F](schemaRegistryConfig.baseUrl))
 
           implicit val eventSerializer: RecordSerializer[F, Event]     = avroSerializer[Event].using(avroSettings)
           implicit val eventDeserializer: RecordDeserializer[F, Event] = avroDeserializer[Event].using(avroSettings)
 
           val producerSettings = ProducerSettings[F, String, Event]
-            .withBootstrapServers("localhost:9092")
+            .withBootstrapServers(kafkaConfig.bootstrapServers)
           val producer         = KafkaProducer.stream[F].using(producerSettings)
 
           implicit val commandSerializer: RecordSerializer[F, Command]     = avroSerializer[Command].using(avroSettings)
@@ -94,11 +96,9 @@ object Crawler {
 
           val consumerSettings = ConsumerSettings[F, String, Command]
             .withAutoOffsetReset(AutoOffsetReset.Earliest)
-            .withBootstrapServers("localhost:9092")
-            .withGroupId("crawler")
+            .withBootstrapServers(kafkaConfig.bootstrapServers)
+            .withGroupId(crawlerConfig.groupId)
           val consumer         = consumerStream[F].using(consumerSettings)
-
-          val CrawlerConfig(eventsTopic, commandsTopic, batchOffsets, batchTimeWindow) = crawlerConfig
 
           val crawler: Crawler[Stream[F, *]] =
             new Impl[F](crawl, consumer, producer, producerSettings, eventsTopic, commandsTopic, batchOffsets, batchTimeWindow)

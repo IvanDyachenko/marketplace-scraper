@@ -16,6 +16,15 @@ object HttpConfig {
     ConfigSource.default.at("http").loadF[F, HttpConfig](blocker)
 }
 
+final case class KafkaConfig(bootstrapServers: String)
+
+object KafkaConfig {
+  lazy val load: KafkaConfig = ConfigSource.default.at("kafka").loadOrThrow[KafkaConfig]
+
+  def loadF[F[_]: Sync: ContextShift](implicit blocker: Blocker): F[KafkaConfig] =
+    ConfigSource.default.at("kafka").loadF[F, KafkaConfig](blocker)
+}
+
 final case class SchemaRegistryConfig(baseUrl: String)
 
 object SchemaRegistryConfig {
@@ -34,7 +43,13 @@ object ClickhouseConfig {
     ConfigSource.default.at("clickhouse").loadF[F, ClickhouseConfig](blocker)
 }
 
-final case class CrawlerConfig(eventsTopic: String, commandsTopic: String, batchOffsets: Int, batchTimeWindow: FiniteDuration)
+final case class CrawlerConfig(
+  groupId: String,
+  eventsTopic: String,
+  commandsTopic: String,
+  batchOffsets: Int,
+  batchTimeWindow: FiniteDuration
+)
 
 object CrawlerConfig {
   lazy val load: CrawlerConfig = ConfigSource.default.at("crawler").loadOrThrow[CrawlerConfig]

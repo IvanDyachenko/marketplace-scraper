@@ -24,7 +24,7 @@ object Command {
 
 object HandleYandexMarketRequest {
   implicit val vulcanCodec: Codec[HandleYandexMarketRequest] =
-    Codec.record[HandleYandexMarketRequest]("HandleYandexMarketRequest", "marketplace.models")(field =>
+    Codec.record[HandleYandexMarketRequest]("HandleYandexMarketRequest", "marketplace.models.crawler")(field =>
       (field("id", _.id), field("created", _.created), field("request", _.request)).mapN(HandleYandexMarketRequest.apply)
     )
 }

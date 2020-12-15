@@ -102,7 +102,7 @@ object GetCategoryModels {
   implicit val vulcanCodec: Codec[GetCategoryModels] =
     Codec.record[GetCategoryModels](
       name = "GetCategoryModels",
-      namespace = "marketplace.models.yandex.market"
+      namespace = "yandex.market.models"
     ) { field =>
       field("host", _.host) *> field("apiVersion", _.apiVersion) *> field("method", _.method) *>
         (

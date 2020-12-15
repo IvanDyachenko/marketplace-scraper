@@ -11,7 +11,7 @@ import vulcan.generic._
 import vulcan.{AvroNamespace, Codec}
 
 @derive(loggable)
-@AvroNamespace("marketplace.models.yandex.market")
+@AvroNamespace("yandex.market.models")
 case class RearrFactor(name: RearrFactor.Name, value: Option[Int] = None)
 
 object RearrFactor {

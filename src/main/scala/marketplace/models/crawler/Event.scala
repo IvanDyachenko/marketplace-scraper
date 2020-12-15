@@ -33,7 +33,7 @@ object YandexMarketRequestHandled {
     .imapError(bytes => decode[Json](new String(bytes, UTF_8)).left.map(err => AvroError(err.getMessage)))(_.noSpaces.getBytes(UTF_8))
 
   implicit val vulcanCodec: Codec[YandexMarketRequestHandled] =
-    Codec.record[YandexMarketRequestHandled]("YandexMarketRequestHandled", "marketplace.models.crawler")(field =>
+    Codec.record[YandexMarketRequestHandled]("YandexMarketRequestHandled", "crawler.events")(field =>
       (field("id", _.id), field("key", _.key), field("created", _.created), field("raw", _.raw)).mapN(YandexMarketRequestHandled.apply)
     )
 }

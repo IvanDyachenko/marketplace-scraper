@@ -205,6 +205,8 @@ Temporary Items
 ### Metals ###
 .metals/
 project/metals.sbt
+project/project/metals.sbt
+project/project/project/metals.sbt
 
 ### SBT ###
 # Simple Build Tool
@@ -219,6 +221,7 @@ project/plugins/project/
 .history
 .cache
 .lib/
+.bsp/
 
 ### Scala ###
 
@@ -244,5 +247,6 @@ tags
 
 ### Docker ###
 .data/
+.persistence/
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,emacs,scala,jetbrains+all,vim,metals,sbt,bloop,helm,java

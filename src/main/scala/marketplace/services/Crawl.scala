@@ -31,7 +31,7 @@ object Crawl {
 
   private final class Impl[F[_]: Sync: Clock: GenUUID](httpClient: HttpClient[F]) extends Crawl[F] {
     def handle(command: Command): F[Event] = command match {
-      case HandleYandexMarketRequest(_, _, request) =>
+      case HandleYandexMarketRequest(_, _, _, request) =>
         for {
           raw     <- httpClient.send[Json](request)
           uuid    <- GenUUID[F].randomUUID

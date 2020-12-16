@@ -26,6 +26,13 @@ package object models {
   }
   type CommandId = CommandId.Type
 
+  object CommandKey extends TaggedType[String] {
+    implicit val show: Show[Type]         = Show.fromToString
+    implicit val loggable: Loggable[Type] = lift
+    implicit val vulcanCodec: Codec[Type] = lift
+  }
+  type CommandKey = CommandKey.Type
+
   object EventId extends TaggedType[UUID] {
     implicit val show: Show[Type]         = Show.fromToString
     implicit val loggable: Loggable[Type] = lift

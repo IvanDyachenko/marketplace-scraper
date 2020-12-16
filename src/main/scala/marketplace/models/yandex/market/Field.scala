@@ -3,9 +3,11 @@ package marketplace.models.yandex.market
 import enumeratum.{CatsEnum, Enum, EnumEntry, VulcanEnum}
 import enumeratum.EnumEntry.UpperSnakecase
 import tofu.logging.LoggableEnum
+import vulcan.AvroNamespace
 
 /** Свойства, которые необходимо показать в выходных данных.
   */
+@AvroNamespace("yandex.market.models")
 sealed trait Field extends EnumEntry with UpperSnakecase with Product with Serializable
 
 object Field extends Enum[Field] with CatsEnum[Field] with LoggableEnum[Field] with VulcanEnum[Field] {

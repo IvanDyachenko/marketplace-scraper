@@ -11,17 +11,17 @@ import tofu.lift.Unlift
 import tofu.syntax.unlift._
 import derevo.derive
 import tofu.higherKind.derived.representableK
-import fs2.Stream
+import fs2.{Pipe, Stream}
 import tofu.fs2.LiftStream
-import fs2.kafka.{commitBatchWithin, consumerStream, AutoOffsetReset, ConsumerSettings, KafkaConsumer}
+import fs2.kafka.{commitBatchWithin, consumerStream => KafkaConsumerStream, AutoOffsetReset, CommittableConsumerRecord, ConsumerSettings, KafkaConsumer}
 import fs2.kafka.{KafkaProducer, ProducerRecord, ProducerRecords, ProducerSettings}
 import fs2.kafka.{RecordDeserializer, RecordSerializer}
 import fs2.kafka.vulcan.{avroDeserializer, avroSerializer, AvroSettings, SchemaRegistryClientSettings}
 
 import marketplace.config.{CrawlerConfig, KafkaConfig, SchemaRegistryConfig}
+import marketplace.models.{CommandKey, EventKey}
 import marketplace.models.crawler.{Command, Event}
 import marketplace.services.Crawl
-import fs2.kafka.CommittableOffset
 
 @derive(representableK)
 trait Crawler[S[_]] {
@@ -30,43 +30,33 @@ trait Crawler[S[_]] {
 
 object Crawler {
 
-  private final class Impl[F[_]: Monad: Concurrent: Timer](
+  private final class Impl[F[_]: Monad: Concurrent: Timer](eventsTopic: String, commandsTopic: String)(
     crawl: Crawl[F],
-    consumerS: Stream[F, KafkaConsumer[F, String, Command]],
-    producerS: Stream[F, KafkaProducer[F, String, Event]],
-    producerSettings: ProducerSettings[F, String, Event],
-    eventsTopic: String,
-    commandsTopic: String,
+    consumerStream: Stream[F, KafkaConsumer[F, CommandKey, Command]],
+    producerStream: Stream[F, KafkaProducer[F, EventKey, Event]],
+    producerSettings: ProducerSettings[F, EventKey, Event],
     batchOffsets: Int,
     batchTimeWindow: FiniteDuration
   ) extends Crawler[Stream[F, *]] {
 
     def run: Stream[F, Unit] =
-      producerS.flatMap { producer =>
-        consumerS
+      producerStream.flatMap { producer =>
+        consumerStream
           .evalTap(_.subscribeTo(commandsTopic))
           .flatMap(_.partitionedStream)
-          .map { partition =>
-            partition
-              .evalMap { committable =>
-                crawl
-                  .handle(committable.record.value)
-                  .flatTap { event =>
-                    val record  = ProducerRecord(eventsTopic, event.key.show, event)
-                    val records = ProducerRecords.one(record, committable.offset)
-
-                    Stream
-                      .emit[F, ProducerRecords[String, Event, CommittableOffset[F]]](records)
-                      .through(KafkaProducer.pipe(producerSettings, producer))
-                      .compile
-                      .drain
-                  }
-                  .as(committable.offset)
-              }
-              .through(commitBatchWithin(batchOffsets, batchTimeWindow))
-          }
+          .map(_.through(handle(producer)))
           .parJoinUnbounded
       }
+
+    private def handle(producer: KafkaProducer[F, EventKey, Event]): Pipe[F, CommittableConsumerRecord[F, CommandKey, Command], Unit] =
+      _.evalMap { committable =>
+        crawl
+          .handle(committable.record.value)
+          .map(event => ProducerRecords.one(ProducerRecord(eventsTopic, event.key, event), committable.offset))
+      }
+        .through(KafkaProducer.pipe(producerSettings, producer))
+        .map(_.passthrough)
+        .through(commitBatchWithin(batchOffsets, batchTimeWindow))
   }
 
   def apply[S[_]](implicit ev: Crawler[S]): ev.type = ev
@@ -84,24 +74,23 @@ object Crawler {
 
           val avroSettings = AvroSettings(SchemaRegistryClientSettings[F](schemaRegistryConfig.baseUrl))
 
-          implicit val eventSerializer: RecordSerializer[F, Event]     = avroSerializer[Event].using(avroSettings)
-          implicit val eventDeserializer: RecordDeserializer[F, Event] = avroDeserializer[Event].using(avroSettings)
+          implicit val eventSerializer: RecordSerializer[F, Event]               = avroSerializer[Event].using(avroSettings)
+          implicit val eventKeySerializer: RecordSerializer[F, EventKey]         = avroSerializer[EventKey].using(avroSettings)
+          implicit val commandDeserializer: RecordDeserializer[F, Command]       = avroDeserializer[Command].using(avroSettings)
+          implicit val commandKeyDeserializer: RecordDeserializer[F, CommandKey] = avroDeserializer[CommandKey].using(avroSettings)
 
-          val producerSettings = ProducerSettings[F, String, Event]
+          val producerSettings = ProducerSettings[F, EventKey, Event]
             .withBootstrapServers(kafkaConfig.bootstrapServers)
-          val producer         = KafkaProducer.stream[F].using(producerSettings)
-
-          implicit val commandSerializer: RecordSerializer[F, Command]     = avroSerializer[Command].using(avroSettings)
-          implicit val commandDeserializer: RecordDeserializer[F, Command] = avroDeserializer[Command].using(avroSettings)
-
-          val consumerSettings = ConsumerSettings[F, String, Command]
-            .withAutoOffsetReset(AutoOffsetReset.Earliest)
+          val consumerSettings = ConsumerSettings[F, CommandKey, Command]
             .withBootstrapServers(kafkaConfig.bootstrapServers)
             .withGroupId(crawlerConfig.groupId)
-          val consumer         = consumerStream[F].using(consumerSettings)
+            .withAutoOffsetReset(AutoOffsetReset.Earliest)
+
+          val consumerStream = KafkaConsumerStream[F].using(consumerSettings)
+          val producerStream = KafkaProducer.stream[F].using(producerSettings)
 
           val crawler: Crawler[Stream[F, *]] =
-            new Impl[F](crawl, consumer, producer, producerSettings, eventsTopic, commandsTopic, batchOffsets, batchTimeWindow)
+            new Impl[F](eventsTopic, commandsTopic)(crawl, consumerStream, producerStream, producerSettings, batchOffsets, batchTimeWindow)
 
           crawler.pure[F]
         })

@@ -23,6 +23,7 @@ object RearrFactor {
 
   implicit val vulcanCodec: Codec[RearrFactor] = Codec.derive[RearrFactor]
 
+  @AvroNamespace("yandex.market.models")
   sealed abstract class Name extends EnumEntry with Snakecase with Product with Serializable
 
   object Name extends Enum[Name] with CatsEnum[Name] with CirceEnum[Name] with LoggableEnum[Name] with VulcanEnum[Name] {

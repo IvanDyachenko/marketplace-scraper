@@ -29,7 +29,7 @@ object Crawl {
       info"Start handling ${command}" *> _
   }
 
-  private final class Impl[F[_]: Sync: Clock: GenUUID](httpClient: HttpClient[F]) extends Crawl[F] {
+  private final class Impl[F[_]: Sync: Clock: GenUUID](implicit httpClient: HttpClient[F]) extends Crawl[F] {
     def handle(command: Command): F[Event] = command match {
       case HandleYandexMarketRequest(_, _, _, request) =>
         for {
@@ -43,12 +43,12 @@ object Crawl {
 
   def apply[F[_]](implicit ev: Crawl[F]): ev.type = ev
 
-  def make[I[_]: Monad, F[_]: Sync: Clock: GenUUID](httpClient: HttpClient[F])(implicit logs: Logs[I, F]): Resource[I, Crawl[F]] =
+  def make[I[_]: Monad, F[_]: Sync: Clock: GenUUID: HttpClient](implicit logs: Logs[I, F]): Resource[I, Crawl[F]] =
     Resource.liftF {
       logs
         .forService[Crawl[F]]
         .map { implicit l =>
-          val service = new Impl[F](httpClient)
+          val service = new Impl[F]
 
           val logger: Crawl[Mid[F, *]] = new Logger[F]
 

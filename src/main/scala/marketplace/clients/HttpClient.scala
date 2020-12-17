@@ -1,10 +1,12 @@
 package marketplace.clients
 
-import cats.Monad
+import cats.{FlatMap, Monad}
 import cats.syntax.all._
 import cats.effect.{ConcurrentEffect, Resource, Sync}
 import tofu.Execute
 import tofu.lift.Unlift
+import tofu.higherKind.Embed
+import tofu.data.derived.ContextEmbed
 import tofu.logging.{Logging, Logs}
 import tofu.syntax.logging._
 import io.circe.Decoder
@@ -23,15 +25,7 @@ trait HttpClient[F[_]] {
   def send[Res: Decoder](request: Http4sRequest[F]): F[Res]
 }
 
-object HttpClient {
-  def apply[F[_]](implicit ev: HttpClient[F]): ev.type = ev
-
-  def make[I[_]: Monad: Execute: ConcurrentEffect: Unlift[*[_], F], F[+_]: Sync](httpConfig: HttpConfig)(implicit
-    logs: Logs[I, F]
-  ): Resource[I, HttpClient[F]] =
-    buildHttp4sClient[I](httpConfig) >>= { http4sClient =>
-      Resource.liftF(logs.forService[HttpClient[F]].map(implicit l => new Impl[F](translateHttp4sClient[I, F](http4sClient))))
-    }
+object HttpClient extends ContextEmbed[HttpClient] {
 
   class Impl[F[+_]: Sync: Logging](http4sClient: Client[F]) extends HttpClient[F] {
 
@@ -54,8 +48,23 @@ object HttpClient {
           errorCause"Received invalid response during execution of request to ${request.uri.path}" (err) *>
             HttpClientDecodingError(err.details.dropWhile(_ != '{')).raiseError[F, Res]
         }
-        .flatTap(response => debug"Received TODO during execution of request to ${request.uri.path}")
+        .flatTap(response => debug"Received ... during execution of request to ${request.uri.path}")
   }
+
+  def apply[F[_]](implicit ev: HttpClient[F]): ev.type = ev
+
+  implicit val embed: Embed[HttpClient] = new Embed[HttpClient] {
+    def embed[F[_]: FlatMap](ft: F[HttpClient[F]]): HttpClient[F] = new HttpClient[F] {
+      def send[Res: Decoder](request: Http4sRequest[F]): F[Res] = ft >>= (_.send(request))
+    }
+  }
+
+  def make[I[_]: Monad: Execute: ConcurrentEffect: Unlift[*[_], F], F[+_]: Sync](httpConfig: HttpConfig)(implicit
+    logs: Logs[I, F]
+  ): Resource[I, HttpClient[F]] =
+    buildHttp4sClient[I](httpConfig) >>= { http4sClient =>
+      Resource.liftF(logs.forService[HttpClient[F]].map(implicit l => new Impl[F](translateHttp4sClient[I, F](http4sClient))))
+    }
 
   private def buildHttp4sClient[F[_]: Monad: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] = {
     val HttpConfig(proxyHost, proxyPort, maxConnections, maxConnectionsPerHost) = httpConfig

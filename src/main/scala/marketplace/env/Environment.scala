@@ -7,6 +7,7 @@ import tofu.lift.Unlift
 import tofu.optics.Contains
 import tofu.optics.macros.{promote, ClassyOptics}
 import tofu.logging.{Loggable, LoggableContext, Logs}
+import fs2.kafka.vulcan.{AvroSettings, SchemaRegistryClientSettings}
 
 import marketplace.config.Config
 import marketplace.clients.HttpClient
@@ -14,7 +15,8 @@ import marketplace.clients.HttpClient
 @ClassyOptics
 final case class Environment(
   @promote config: Config,
-  httpClient: HttpClient[App]
+  httpClient: HttpClient[App],
+  avroSettings: AvroSettings[App]
 )
 
 object Environment {
@@ -32,7 +34,8 @@ object Environment {
     logs: Logs[I, App]
   ): Resource[I, Environment] =
     for {
-      config     <- Resource.liftF(Config.make[I])
-      httpClient <- HttpClient.make[I, App](config.httpConfig)
-    } yield Environment(config, httpClient)
+      config      <- Resource.liftF(Config.make[I])
+      httpClient  <- HttpClient.make[I, App](config.httpConfig)
+      avroSettings = AvroSettings(SchemaRegistryClientSettings[App](config.schemaRegistryConfig.baseUrl))
+    } yield Environment(config, httpClient, avroSettings)
 }

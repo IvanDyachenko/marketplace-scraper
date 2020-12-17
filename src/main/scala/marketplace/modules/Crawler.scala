@@ -16,9 +16,9 @@ import tofu.fs2.LiftStream
 import fs2.kafka.{commitBatchWithin, consumerStream => KafkaConsumerStream, AutoOffsetReset, CommittableConsumerRecord, ConsumerSettings, KafkaConsumer}
 import fs2.kafka.{KafkaProducer, ProducerRecord, ProducerRecords, ProducerSettings}
 import fs2.kafka.{RecordDeserializer, RecordSerializer}
-import fs2.kafka.vulcan.{avroDeserializer, avroSerializer, AvroSettings, SchemaRegistryClientSettings}
+import fs2.kafka.vulcan.{avroDeserializer, avroSerializer, AvroSettings}
 
-import marketplace.config.{CrawlerConfig, KafkaConfig, SchemaRegistryConfig}
+import marketplace.config.{CrawlerConfig, KafkaConfig}
 import marketplace.models.{CommandKey, EventKey}
 import marketplace.models.crawler.{Command, Event}
 import marketplace.services.Crawl
@@ -64,15 +64,12 @@ object Crawler {
   def make[I[_]: ConcurrentEffect: Unlift[*[_], F], F[_]: FlatMap: ContextShift: Timer, S[_]: LiftStream[*[_], F]](
     crawlerConfig: CrawlerConfig,
     kafkaConfig: KafkaConfig,
-    schemaRegistryConfig: SchemaRegistryConfig,
     crawl: Crawl[F]
-  ): Resource[I, Crawler[S]] =
+  )(implicit avroSettings: AvroSettings[F]): Resource[I, Crawler[S]] =
     Resource.liftF(
       Stream
         .eval(Unlift[I, F].concurrentEffectWith { implicit ce =>
           val CrawlerConfig(groupId, eventsTopic, commandsTopic, batchOffsets, batchTimeWindow) = crawlerConfig
-
-          val avroSettings = AvroSettings(SchemaRegistryClientSettings[F](schemaRegistryConfig.baseUrl))
 
           implicit val eventSerializer: RecordSerializer[F, Event]               = avroSerializer[Event].using(avroSettings)
           implicit val eventKeySerializer: RecordSerializer[F, EventKey]         = avroSerializer[EventKey].using(avroSettings)

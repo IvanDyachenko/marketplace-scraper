@@ -7,17 +7,17 @@ import tofu.optics.Contains
 import tofu.optics.macros.{promote, ClassyOptics}
 import tofu.logging.{Loggable, LoggableContext}
 
-import marketplace.config.ConfigContext
+import marketplace.config.Config
 
 @ClassyOptics
 final case class AppContext(
-  @promote config: ConfigContext
+  @promote config: Config
 )
 
 object AppContext {
 
   def make[I[_]: Monad: Sync: ContextShift](implicit blocker: Blocker): Resource[I, AppContext] =
-    Resource.liftF(ConfigContext.make[I]).map(AppContext.apply)
+    Resource.liftF(Config.make[I]).map(AppContext.apply)
 
   implicit def loggable[F[+_]]: Loggable[AppContext] =
     Loggable.empty

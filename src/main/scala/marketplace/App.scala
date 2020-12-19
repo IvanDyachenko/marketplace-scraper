@@ -19,18 +19,19 @@ object Main extends TaskApp {
   override def run(args: List[String]): Task[ExitCode] =
     init.use { case (env, program) => program.run.compile.drain.run(env).as(ExitCode.Success) }
 
-  type I[+A] = Task[A]
-  type S[+A] = Stream[App, A]
+  type Init[+A] = Task[A]
+  type AppS[+A] = Stream[App, A]
 
-  private implicit val logs: Logs[I, App] = Logs.withContext[I, App]
+  private implicit val logsApp: Logs[Init, App] = Logs.withContext[Init, App]
+//private implicit val logsInit: Logs[Init, Init] = Logs.sync[Init, Init]
 
-  def init: Resource[Task, (Environment, Crawler[S])] =
+  def init: Resource[Task, (Environment, Crawler[AppS])] =
     for {
-      implicit0(blocker: Blocker)       <- Blocker[I]
-      env                               <- Environment.make[I]
-      wr                                 = implicitly[WithRun[App, I, Environment]]
+      implicit0(blocker: Blocker)       <- Blocker[Init]
+      env                               <- Environment.make[Init]
+      wr                                 = implicitly[WithRun[App, Init, Environment]]
       implicit0(avro: AvroSettings[App]) = env.avroSettings
-      crawl                             <- Crawl.make[I, App]
-      crawler                           <- Crawler.make[I, App, S](env.config.crawlerConfig, env.config.kafkaConfig, crawl)
+      crawl                             <- Crawl.make[Init, App]
+      crawler                           <- Crawler.make[Init, App, AppS](env.config.crawlerConfig, env.config.kafkaConfig, crawl)
     } yield (env, crawler)
 }

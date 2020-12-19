@@ -1,6 +1,5 @@
 package marketplace
 
-import cats.effect.Sync
 import io.circe.Encoder
 import org.http4s.{Headers, Uri}
 import org.http4s.{Method, Request => Http4sRequest}
@@ -13,7 +12,7 @@ import marketplace.models.yandex.market.Request.{Fields, RearrFactors, Sections}
 
 package object marshalling {
 
-  implicit def yandexMarketRequest2http4sRequest[F[_]: Sync](request: YandexMarketRequest): Http4sRequest[F] = {
+  implicit def yandexMarketRequest2http4sRequest[F[_]](request: YandexMarketRequest): Http4sRequest[F] = {
     val host: Uri.Host = Uri.RegName(request.host)
 
     val headers: Headers =

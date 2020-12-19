@@ -1,8 +1,8 @@
 package marketplace.services
 
-import cats.Monad
+import cats.{FlatMap, Monad}
 import tofu.syntax.monadic._
-import cats.effect.{Clock, Resource, Sync}
+import cats.effect.{Clock, Resource}
 import supertagged.postfix._
 import derevo.derive
 import tofu.higherKind.Mid
@@ -29,7 +29,7 @@ object Crawl {
       info"Start handling ${command}" *> _
   }
 
-  private final class Impl[F[_]: Sync: Clock: GenUUID](implicit httpClient: HttpClient[F]) extends Crawl[F] {
+  private final class Impl[F[_]: FlatMap: Clock: GenUUID](implicit httpClient: HttpClient[F]) extends Crawl[F] {
     def handle(command: Command): F[Event] = command match {
       case HandleYandexMarketRequest(_, _, _, request) =>
         for {
@@ -43,7 +43,7 @@ object Crawl {
 
   def apply[F[_]](implicit ev: Crawl[F]): ev.type = ev
 
-  def make[I[_]: Monad, F[_]: Sync: Clock: GenUUID: HttpClient](implicit logs: Logs[I, F]): Resource[I, Crawl[F]] =
+  def make[I[_]: Monad, F[_]: Monad: Clock: GenUUID: HttpClient](implicit logs: Logs[I, F]): Resource[I, Crawl[F]] =
     Resource.liftF {
       logs
         .forService[Crawl[F]]
@@ -55,5 +55,4 @@ object Crawl {
           logger.attach(service)
         }
     }
-
 }

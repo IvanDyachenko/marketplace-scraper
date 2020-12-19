@@ -66,6 +66,10 @@ object HttpClient extends ContextEmbed[HttpClient] {
       Resource.liftF(logs.forService[HttpClient[F]].map(implicit l => new Impl[F](translateHttp4sClient[I, F](http4sClient))))
     }
 
+  // https://scastie.scala-lang.org/Odomontois/F29lLrY2RReZrcUJ1zIEEg/25
+  private def translateHttp4sClient[F[_]: Sync, G[_]: Sync](client: Client[F])(implicit U: Unlift[F, G]): Client[G] =
+    Client(req => Resource.suspend(U.unlift.map(gf => client.run(req.mapK(gf)).mapK(U.liftF).map(_.mapK(U.liftF)))))
+
   private def buildHttp4sClient[F[_]: Monad: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] = {
     val HttpConfig(proxyHost, proxyPort, maxConnections, maxConnectionsPerHost) = httpConfig
 
@@ -83,10 +87,6 @@ object HttpClient extends ContextEmbed[HttpClient] {
 
     AsyncHttpClient.resource(httpClientConfig)
   }
-
-  // https://scastie.scala-lang.org/Odomontois/F29lLrY2RReZrcUJ1zIEEg/25
-  private def translateHttp4sClient[F[_]: Sync, G[_]: Sync](client: Client[F])(implicit U: Unlift[F, G]): Client[G] =
-    Client(req => Resource.suspend(U.unlift.map(gf => client.run(req.mapK(gf)).mapK(U.liftF).map(_.mapK(U.liftF)))))
 
 //  // Should be fixed in https://github.com/TinkoffCreditSystems/tofu/pull/422
 //  private object Execute {

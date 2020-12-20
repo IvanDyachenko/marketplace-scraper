@@ -2,17 +2,14 @@ package marketplace.context
 
 import cats.{Applicative, Defer}
 import cats.effect.{Blocker, ContextShift, Resource, Sync}
+import tofu.syntax.monadic._
 import tofu.{WithContext, WithLocal}
 import tofu.optics.Contains
-import tofu.optics.macros.{promote, ClassyOptics}
+import tofu.optics.macros.ClassyOptics
 import tofu.logging.{Loggable, LoggableContext}
 
-import marketplace.config.Config
-
 @ClassyOptics
-final case class AppContext(
-  @promote config: Config
-)
+final case class AppContext()
 
 object AppContext {
 
@@ -27,5 +24,5 @@ object AppContext {
   ): F WithLocal C = WithLocal[F, AppContext].subcontext(lens)
 
   def make[I[_]: Sync: ContextShift](implicit blocker: Blocker): Resource[I, AppContext] =
-    Resource.liftF(Config.make[I]).map(apply)
+    Resource.liftF(apply().pure[I])
 }

@@ -27,7 +27,7 @@ object KafkaClient {
   def makeConsumer[F[_]: ContextShift: ConcurrentEffect: Timer, K: Codec, V: Codec](
     kafkaConfig: KafkaConfig,
     schemaRegistryConfig: SchemaRegistryConfig
-  )(groupId: String): Resource[F, KafkaConsumer[F, K, V]] = {
+  )(groupId: String, topic: String): Resource[F, KafkaConsumer[F, K, V]] = {
     val avroSettings = AvroSettings(SchemaRegistryClientSettings[F](schemaRegistryConfig.baseUrl))
 
     implicit val keyDeserializer: RecordDeserializer[F, K]   = avroDeserializer[K].using(avroSettings)
@@ -38,6 +38,6 @@ object KafkaClient {
       .withGroupId(groupId)
       .withAutoOffsetReset(AutoOffsetReset.Earliest)
 
-    consumerResource[F, K, V](consumerSettings)
+    consumerResource[F, K, V](consumerSettings).evalTap(_.subscribeTo(topic))
   }
 }

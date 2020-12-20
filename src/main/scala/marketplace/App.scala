@@ -7,12 +7,14 @@ import tofu.logging.Logs
 import fs2.Stream
 //import tofu.fs2Instances._
 
-import marketplace.context._
-import marketplace.services._
-import marketplace.modules._
+import marketplace.context.AppContext
+import marketplace.modules.Crawler
+import marketplace.services.Crawl
+import marketplace.clients.{HttpClient, KafkaClient}
+import marketplace.models.{CommandId, EventId}
+import marketplace.models.crawler.{Command, Event}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import marketplace.clients.HttpClient
 
 object Main extends TaskApp {
 
@@ -29,8 +31,11 @@ object Main extends TaskApp {
     for {
       implicit0(blocker: Blocker)             <- Blocker[AppI]
       ctx                                     <- AppContext.make[AppI]
-      implicit0(httpClient: HttpClient[AppF]) <- HttpClient.make[AppI, AppF](ctx.config.httpConfig)
+      cfg                                      = ctx.config
+      implicit0(httpClient: HttpClient[AppF]) <- HttpClient.make[AppI, AppF](cfg.httpConfig)
       crawl                                   <- Crawl.make[AppI, AppF]
-      crawler                                 <- Crawler.make[AppI, AppF](crawl)
+      consumer                                <- KafkaClient.makeConsumer[AppI, CommandId, Command](cfg.kafkaConfig, cfg.schemaRegistryConfig)(cfg.crawlerConfig.groupId)
+      producer                                <- KafkaClient.makeProducer[AppI, EventId, Event](cfg.kafkaConfig, cfg.schemaRegistryConfig)
+      crawler                                 <- Crawler.make[AppI, AppF](crawl, consumer, producer)(cfg.crawlerConfig)
     } yield crawler
 }

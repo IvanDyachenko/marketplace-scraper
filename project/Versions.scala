@@ -11,7 +11,7 @@ object Versions {
   lazy val fs2Kafka        = "1.1.0+97-b34173aa-SNAPSHOT"
   lazy val http4s          = "0.21.8"
   lazy val asyncHttpClient = "2.12.1"
-  lazy val doobie          = "0.9.0"
+  lazy val doobie          = "0.9.4"
   lazy val clickhouseJDBC  = "0.2.4"
   lazy val pureconfig      = "0.14.0"
   lazy val logback         = "1.2.3"

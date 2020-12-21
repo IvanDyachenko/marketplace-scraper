@@ -5,7 +5,7 @@ object Versions {
   lazy val supertagged     = "2.0-RC2"
   lazy val enumeratum      = "1.6.1"
   lazy val circe           = "0.13.0"
-  lazy val circeDerivation = "0.13.0-M4"
+  lazy val circeDerivation = "0.13.0-M5"
   lazy val vulkan          = "1.2.0"
   lazy val fs2             = "2.4.4"
   lazy val fs2Kafka        = "1.1.0+97-b34173aa-SNAPSHOT"

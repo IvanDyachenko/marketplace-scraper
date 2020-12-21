@@ -7,15 +7,15 @@ import tofu.logging.Logs
 import fs2.Stream
 import tofu.fs2Instances._
 
-import marketplace.context.AppContext
-import marketplace.modules.Crawler
-import marketplace.services.Crawl
+import marketplace.config.Config
 import marketplace.clients.{HttpClient, KafkaClient}
+import marketplace.services.Crawl
+import marketplace.modules.Crawler
+import marketplace.context.AppContext
 import marketplace.models.{CommandKey, EventKey}
 import marketplace.models.crawler.{Command, Event}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import marketplace.config.Config
 
 object Main extends TaskApp {
 

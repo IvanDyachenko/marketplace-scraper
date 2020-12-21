@@ -8,7 +8,8 @@ import fs2.Stream
 import tofu.fs2Instances._
 
 import marketplace.config.Config
-import marketplace.clients.{HttpClient, KafkaClient}
+import marketplace.clients.HttpClient
+import marketplace.sources.KafkaSource
 import marketplace.services.Crawl
 import marketplace.modules.Crawler
 import marketplace.context.AppContext
@@ -34,11 +35,11 @@ object Main extends TaskApp {
       cfg                                     <- Resource.liftF(Config.make[AppI])
       implicit0(httpClient: HttpClient[AppF]) <- HttpClient.make[AppI, AppF](cfg.httpConfig)
       crawl                                   <- Crawl.make[AppI, AppF]
-      consumer                                <- KafkaClient.makeConsumer[AppI, CommandKey, Command](cfg.kafkaConfig, cfg.schemaRegistryConfig)(
+      consumer                                <- KafkaSource.makeConsumer[AppI, CommandKey, Command](cfg.kafkaConfig, cfg.schemaRegistryConfig)(
                                                    groupId = cfg.crawlerConfig.groupId,
                                                    topic = cfg.crawlerConfig.commandsTopic
                                                  )
-      producer                                <- KafkaClient.makeProducer[AppI, EventKey, Event](cfg.kafkaConfig, cfg.schemaRegistryConfig)
+      producer                                <- KafkaSource.makeProducer[AppI, EventKey, Event](cfg.kafkaConfig, cfg.schemaRegistryConfig)
       crawler                                 <- Crawler.make[AppI, AppF, AppS](crawl, consumer, producer)(cfg.crawlerConfig)
     } yield crawler
 }

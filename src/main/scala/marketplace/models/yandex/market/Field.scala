@@ -2,8 +2,8 @@ package marketplace.models.yandex.market
 
 import enumeratum.{CatsEnum, Enum, EnumEntry, VulcanEnum}
 import enumeratum.EnumEntry.UpperSnakecase
-import tofu.logging.LoggableEnum
 import vulcan.AvroNamespace
+import tofu.logging.LoggableEnum
 
 /** Свойства, которые необходимо показать в выходных данных.
   */

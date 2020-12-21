@@ -2,11 +2,12 @@ package marketplace.models.yandex.market
 
 import cats.Show
 import supertagged.{TaggedOps, TaggedType, TaggedType0}
-import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry}
+import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry, VulcanEnum}
 import enumeratum.EnumEntry.UpperSnakecase
-import vulcan.Codec
 import io.circe.Decoder
 import io.circe.derivation.deriveDecoder
+import vulcan.generic._
+import vulcan.{AvroNamespace, Codec}
 import derevo.derive
 import tofu.logging.{Loggable, LoggableEnum}
 import tofu.logging.derivation.loggable
@@ -20,10 +21,10 @@ import org.http4s.{QueryParam, QueryParamEncoder, QueryParameterKey, QueryParame
   * @param country Страна, к которой относится регион.
   */
 @derive(loggable)
+@AvroNamespace("yandex.market.models")
 case class Region(id: Region.GeoId, name: String, `type`: Region.Type, country: Country)
 
 object Region {
-  implicit val circeDecoder: Decoder[Region] = deriveDecoder
 
   /** Идентификатор региона, для которого нужно получить информацию о предложениях.
     */
@@ -49,9 +50,10 @@ object Region {
 
   /** Тип региона.
     */
+  @AvroNamespace("yandex.market.models")
   sealed trait Type extends EnumEntry with UpperSnakecase
 
-  object Type extends Enum[Type] with CatsEnum[Type] with CirceEnum[Type] with LoggableEnum[Type] {
+  object Type extends Enum[Type] with CatsEnum[Type] with CirceEnum[Type] with LoggableEnum[Type] with VulcanEnum[Type] {
 
     case object Continent                 extends Type // Континент.
     case object Region                    extends Type // Регион.
@@ -72,6 +74,9 @@ object Region {
 
     val values = findValues
   }
+
+  implicit val circeDecoder: Decoder[Region] = deriveDecoder
+  implicit val avroCodec: Codec[Region]      = Codec.derive[Region]
 }
 
 /** Страна, к которой относится регион.
@@ -80,17 +85,21 @@ object Region {
   * @param name Наименование страны.
   */
 @derive(loggable)
+@AvroNamespace("yandex.market.models")
 case class Country(id: Country.CountryId, name: String)
 
 object Country {
-  implicit val circeDecoder: Decoder[Country] = deriveDecoder
 
   /** Код страны.
     */
   object CountryId extends TaggedType[Int] {
     implicit val show: Show[Type]            = Show.fromToString
     implicit val loggable: Loggable[Type]    = lift
-    implicit def circeDecoder: Decoder[Type] = lift
+    implicit val circeDecoder: Decoder[Type] = lift
+    implicit val avroCodec: Codec[Type]      = lift
   }
   type CountryId = CountryId.Type
+
+  implicit val circeDecoder: Decoder[Country] = deriveDecoder
+  implicit val avroCodec: Codec[Country]      = Codec.derive[Country]
 }

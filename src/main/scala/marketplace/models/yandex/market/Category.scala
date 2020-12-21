@@ -2,9 +2,10 @@ package marketplace.models.yandex.market
 
 import cats.Show
 import supertagged.TaggedType
-import vulcan.Codec
 import io.circe.Decoder
 import io.circe.derivation.deriveDecoder
+import vulcan.generic._
+import vulcan.{AvroNamespace, Codec}
 import derevo.derive
 import tofu.logging.Loggable
 import tofu.logging.derivation.loggable
@@ -17,6 +18,7 @@ import tofu.logging.derivation.loggable
   * @param childCount Количество дочерних категорий.
   */
 @derive(loggable)
+@AvroNamespace("yandex.market.models")
 final case class Category(
   id: Category.CategoryId,
   name: Option[String] = None,
@@ -25,7 +27,6 @@ final case class Category(
 )
 
 object Category {
-  implicit val circeDecoder: Decoder[Category] = deriveDecoder
 
   /** Идентификатор категории.
     */
@@ -33,7 +34,10 @@ object Category {
     implicit val show: Show[Type]            = Show.fromToString
     implicit val loggable: Loggable[Type]    = lift
     implicit val circeDecoder: Decoder[Type] = lift
-    implicit val vulcanCodec: Codec[Type]    = lift
+    implicit val avroCodec: Codec[Type]      = lift
   }
   type CategoryId = CategoryId.Type
+
+  implicit val circeDecoder: Decoder[Category] = deriveDecoder
+  implicit val avroCodec: Codec[Category]      = Codec.derive[Category]
 }

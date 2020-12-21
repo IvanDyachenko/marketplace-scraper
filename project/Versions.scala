@@ -20,7 +20,7 @@ object Versions {
   lazy val kindProjector    = "0.11.0"
 
   lazy val scalactic               = "3.2.0"
-  lazy val scalatest               = "3.2.0"
+  lazy val scalatest               = "3.2.3"
   lazy val scalacheck              = "1.14.1"
   lazy val scalatestPlusScalacheck = "3.2.2.0"
 }

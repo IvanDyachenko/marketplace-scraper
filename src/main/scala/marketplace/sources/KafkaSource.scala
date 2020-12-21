@@ -1,4 +1,4 @@
-package marketplace.clients
+package marketplace.sources
 
 import cats.effect.{Concurrent, ConcurrentEffect, ContextShift, Resource, Timer}
 import fs2.kafka.{consumerResource, AutoOffsetReset, ConsumerSettings, KafkaConsumer, KafkaProducer, ProducerSettings, RecordDeserializer, RecordSerializer}
@@ -7,7 +7,7 @@ import fs2.kafka.vulcan.{avroDeserializer, avroSerializer, AvroSettings, SchemaR
 
 import marketplace.config.{KafkaConfig, SchemaRegistryConfig}
 
-object KafkaClient {
+object KafkaSource {
 
   def makeProducer[F[_]: ContextShift: Concurrent, K: Codec, V: Codec](
     kafkaConfig: KafkaConfig,

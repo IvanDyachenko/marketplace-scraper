@@ -4,11 +4,11 @@ import cats.Show
 import cats.implicits._
 import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry, VulcanEnum}
 import enumeratum.EnumEntry.Snakecase
+import vulcan.generic._
+import vulcan.{AvroNamespace, Codec}
 import derevo.derive
 import tofu.logging.LoggableEnum
 import tofu.logging.derivation.loggable
-import vulcan.generic._
-import vulcan.{AvroNamespace, Codec}
 
 @derive(loggable)
 @AvroNamespace("yandex.market.models")
@@ -20,8 +20,6 @@ object RearrFactor {
     case RearrFactor(name, Some(value)) => s"${name.show}=$value"
     case RearrFactor(name, _)           => name.show
   })
-
-  implicit val vulcanCodec: Codec[RearrFactor] = Codec.derive[RearrFactor]
 
   @AvroNamespace("yandex.market.models")
   sealed abstract class Name extends EnumEntry with Snakecase with Product with Serializable
@@ -44,4 +42,6 @@ object RearrFactor {
       def apply(value: Int): RearrFactor = RearrFactor(name, Some(value))
     }
   }
+
+  implicit val vulcanCodec: Codec[RearrFactor] = Codec.derive[RearrFactor]
 }

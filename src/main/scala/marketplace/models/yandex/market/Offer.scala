@@ -5,6 +5,8 @@ import supertagged.TaggedType
 import supertagged.lift.LiftF
 import io.circe.Decoder
 import io.circe.derivation.deriveDecoder
+import vulcan.generic._
+import vulcan.{AvroNamespace, Codec}
 import derevo.derive
 import tofu.logging.Loggable
 import tofu.logging.derivation.loggable
@@ -26,6 +28,7 @@ import tofu.logging.derivation.loggable
   * @param activeFilters Параметры модели, по которым можно отфильтровать предложения.
   */
 @derive(loggable)
+@AvroNamespace("yandex.market.models")
 final case class Offer(
   id: Offer.OfferId,
   wareMd5: Offer.MD5,
@@ -43,7 +46,6 @@ final case class Offer(
 )
 
 object Offer {
-  implicit val circeDecoder: Decoder[Offer] = deriveDecoder
 
   /** Идентификатор предложения.
     */
@@ -51,6 +53,7 @@ object Offer {
     implicit val show: Show[Type]            = Show.fromToString
     implicit val loggable: Loggable[Type]    = lift
     implicit val circeDecoder: Decoder[Type] = LiftF[Decoder].lift[Raw, Tag](Decoder[Raw].or(Decoder[Raw].at("id")))
+    implicit val avroCodec: Codec[Type]      = lift
   }
   type OfferId = OfferId.Type
 
@@ -60,8 +63,12 @@ object Offer {
     implicit val show: Show[Type]            = Show.fromToString
     implicit val loggable: Loggable[Type]    = lift
     implicit val circeDecoder: Decoder[Type] = lift
+    implicit val avroCodec: Codec[Type]      = lift
   }
   type MD5 = MD5.Type
+
+  implicit val circeDecoder: Decoder[Offer] = deriveDecoder
+  implicit val avroCodec: Codec[Offer]      = Codec.derive[Offer]
 }
 
 /** Информация о цене.
@@ -71,8 +78,10 @@ object Offer {
   * @param discount Скидка.
   */
 @derive(loggable)
+@AvroNamespace("yandex.market.models")
 final case class OfferPrice(value: String, base: Option[String], discount: Option[String])
 
 object OfferPrice {
   implicit val circeDecoder: Decoder[OfferPrice] = deriveDecoder
+  implicit val avroCodec: Codec[OfferPrice]      = Codec.derive[OfferPrice]
 }

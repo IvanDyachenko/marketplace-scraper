@@ -14,7 +14,7 @@ object User {
     implicit val show: Show[Type]            = Show.fromToString
     implicit val loggable: Loggable[Type]    = lift
     implicit val circeDecoder: Decoder[Type] = lift
-    implicit val vulcanCodec: Codec[Type]    = lift
+    implicit val avroCodec: Codec[Type]      = lift
 
     implicit val queryParam = new QueryParam[Type] with QueryParamEncoder[Type] {
       val key                                      = QueryParameterKey("uuid")

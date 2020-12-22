@@ -21,6 +21,6 @@ object ApiVersion {
 
   implicit val show: Show[ApiVersion]         = Show.fromToString
   implicit val loggable: Loggable[ApiVersion] = Loggable.stringValue.contramap(_.show)
-  implicit val vulcanCodec: Codec[ApiVersion] =
+  implicit val avroCodec: Codec[ApiVersion]   =
     Codec.string.imapError(s => fromString(s).toRight(AvroError(s"$s was not found to be a valid Yandex.Market API version")))(_.show)
 }

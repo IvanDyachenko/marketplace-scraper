@@ -3,7 +3,6 @@ package marketplace.services
 import cats.{FlatMap, Monad}
 import tofu.syntax.monadic._
 import cats.effect.{Clock, Resource}
-import supertagged.postfix._
 import derevo.derive
 import tofu.higherKind.Mid
 import tofu.higherKind.derived.representableK
@@ -14,8 +13,7 @@ import io.circe.Json
 
 import marketplace.marshalling._
 import marketplace.clients.HttpClient
-import marketplace.models.{EventId, EventKey, Timestamp}
-import marketplace.models.crawler.{Command, Event, HandleYandexMarketRequest, YandexMarketRequestHandled}
+import marketplace.models.crawler.{Command, Event, HandleYandexMarketRequest}
 
 @derive(representableK)
 trait Crawl[F[_]] {
@@ -29,15 +27,10 @@ object Crawl {
       info"Start handling ${command}" *> _
   }
 
-  private final class Impl[F[_]: FlatMap: Clock: GenUUID](implicit httpClient: HttpClient[F]) extends Crawl[F] {
+  private final class Impl[F[_]: FlatMap: Clock: GenUUID: HttpClient] extends Crawl[F] {
     def handle(command: Command): F[Event] = command match {
       case HandleYandexMarketRequest(_, _, _, request) =>
-        for {
-          raw     <- httpClient.send[Json](request)
-          uuid    <- GenUUID[F].randomUUID
-          instant <- Clock[F].instantNow
-          key      = request.method
-        } yield YandexMarketRequestHandled(uuid @@ EventId, key @@ EventKey, Timestamp(instant), raw)
+        HttpClient[F].send[Json](request) >>= (raw => Event.yandexMarketRequestHandled[F](request, raw))
     }
   }
 

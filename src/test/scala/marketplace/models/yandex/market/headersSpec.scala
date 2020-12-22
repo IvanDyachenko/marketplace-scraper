@@ -10,7 +10,7 @@ class headersSpec extends AnyFlatSpec with Matchers {
 
   it should "decode `X-Region-Id` header from a valid raw string" in {
     `X-Region-Id`.parse("213").isRight shouldBe true
-    `X-Region-Id`.parse("213").map(Some(_)) shouldBe Right(Region.GeoId(213).map(`X-Region-Id`(_)))
+    `X-Region-Id`.parse("213") shouldBe Right(`X-Region-Id`(Region.GeoId(213)))
   }
 
   it should "not decode `X-Region-Id` header from a valid raw string" in {

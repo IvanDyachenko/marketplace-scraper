@@ -29,11 +29,10 @@ object Region {
   /** Идентификатор региона, для которого нужно получить информацию о предложениях.
     */
   object GeoId extends TaggedType0[Int] {
-    def apply(value: Int): Option[Type]      =
-      if (value >= 0) Some(TaggedOps(this)(value))
-      else None
+    def apply(value: Int): Type = TaggedOps(this)(value)
+
     def apply(value: String): Option[Type]   =
-      try apply(value.toInt)
+      try Some(apply(value.toInt))
       catch { case _: NumberFormatException => None }
 
     implicit val show: Show[Type]            = Show.fromToString

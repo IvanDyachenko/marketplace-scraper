@@ -10,6 +10,8 @@ import derevo.derive
 import tofu.logging.derivation.loggable
 import tofu.logging.Loggable
 
+import marketplace.models.yandex.market.Request.{Fields, RearrFactors, Sections}
+
 @derive(loggable)
 sealed trait Request {
   def host: String = "mobile.market.yandex.net"
@@ -96,6 +98,54 @@ object Request {
 }
 
 object GetCategoryModels {
+
+  def apply(
+    uuid: User.UUID,
+    geoId: Region.GeoId,
+    categoryId: Category.CategoryId,
+    pageNumber: Page.Number,
+    pageCount: Page.Count
+  ): GetCategoryModels = {
+
+    val fields: Fields = List(
+      Field.ModelVendor,
+      Field.ModelCategory,
+      Field.ModelPrice,
+      Field.ModelDiscounts,
+      Field.ModelRating,
+      Field.ModelMedia,
+      Field.ModelReasonsToBuy,
+      Field.ModelSpecification,
+      Field.ModelFilterColor,
+      Field.ModelPhoto,
+      Field.ModelPhotos,
+      Field.ModelOffers,
+      Field.ModelDefaultOffer,
+      Field.OfferAll,
+      Field.OfferShop,
+      Field.OfferCategory,
+      Field.OfferBundleSettings,
+      Field.ShopAll
+    )
+
+    val sections: Sections = List(Section.Medicine)
+
+    val rearrFactors: RearrFactors =
+      List(
+        RearrFactor.Name.CommonlyPurchasedOrdered(),
+        RearrFactor.Name.MarketRebranded(1),
+        RearrFactor.Name.MarketRebranded(1),
+        RearrFactor.Name.MarketBlueSearchAuction(1),
+        RearrFactor.Name.MarketBlueSubjectFederationDistrict(1),
+        RearrFactor.Name.MarketBlueSearchAuctionSupplierBid(50),
+        RearrFactor.Name.MarketPromoBlueGenericBundle(1),
+        RearrFactor.Name.MarketPromoBlueCheapestAsGift4(1),
+        RearrFactor.Name.BuyerPriceNominalInclPromo(1)
+      )
+
+    GetCategoryModels(uuid, geoId, categoryId, pageNumber, pageCount, fields, sections, rearrFactors)
+  }
+
   implicit val circeEncoder: Encoder[GetCategoryModels] = Encoder.instance(_ => Json.obj("cartSnapshot" -> List.empty[String].asJson))
 
   implicit val avroCodec: Codec[GetCategoryModels] =

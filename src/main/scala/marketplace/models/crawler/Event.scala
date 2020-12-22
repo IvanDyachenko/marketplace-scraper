@@ -2,7 +2,11 @@ package marketplace.models.crawler
 
 import java.nio.charset.StandardCharsets.UTF_8
 
+import supertagged.postfix._
 import cats.implicits._
+import cats.FlatMap
+import cats.effect.Clock
+import tofu.generate.GenUUID
 import io.circe.Json
 import io.circe.parser.decode
 import vulcan.{AvroError, Codec}
@@ -11,6 +15,7 @@ import tofu.logging.Loggable
 import tofu.logging.derivation.loggable
 
 import marketplace.models.{EventId, EventKey, Timestamp}
+import marketplace.models.yandex.market.{Request => YandexMarketRequest}
 
 @derive(loggable)
 sealed trait Event {
@@ -23,6 +28,13 @@ sealed trait Event {
 final case class YandexMarketRequestHandled(id: EventId, key: EventKey, created: Timestamp, raw: Json) extends Event
 
 object Event {
+  def yandexMarketRequestHandled[F[_]: FlatMap: Clock: GenUUID](request: YandexMarketRequest, raw: Json): F[Event] =
+    for {
+      uuid    <- GenUUID[F].randomUUID
+      instant <- Clock[F].instantNow
+      key      = request.method
+    } yield YandexMarketRequestHandled(uuid @@ EventId, key @@ EventKey, Timestamp(instant), raw)
+
   implicit val vulcanCodec: Codec[Event] =
     Codec.union[Event](alt => alt[YandexMarketRequestHandled])
 }

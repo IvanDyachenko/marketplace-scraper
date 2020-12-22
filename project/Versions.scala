@@ -21,6 +21,6 @@ object Versions {
 
   lazy val scalactic               = "3.2.3"
   lazy val scalatest               = "3.2.3"
-  lazy val scalacheck              = "1.14.3"
+  lazy val scalacheck              = "1.15.2"
   lazy val scalatestPlusScalacheck = "3.2.2.0"
 }

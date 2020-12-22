@@ -1,31 +1,58 @@
 package marketplace.services
 
-import cats.Applicative
-import cats.syntax.all._
-import cats.effect.Resource
-import tofu.streams.Evals
-import tofu.syntax.streams.evals._
+import cats.Monad
+import cats.effect.{Clock, Resource}
+import tofu.Raise
+import tofu.syntax.raise._
+import tofu.syntax.monadic._
+import supertagged.postfix._
+import derevo.derive
+import tofu.higherKind.Mid
+import tofu.higherKind.derived.representableK
 import tofu.logging.{Logging, Logs}
 import tofu.syntax.logging._
-import io.circe.{Decoder, Json}
+import tofu.generate.GenUUID
+import io.circe.DecodingFailure
 
-trait Parse[S[_]] {
-  def parse[R: Decoder]: S[Json] => S[Option[R]]
+import marketplace.models.{EventId, EventKey, Timestamp}
+import marketplace.models.parser.{Command, Event, ParseYandexMarketResponse, YandexMarketResponseParsed}
+import marketplace.models.yandex.market.{Result => YandexMarketResult}
+
+@derive(representableK)
+trait Parse[F[_]] {
+  def handle(command: Command): F[Event]
 }
 
 object Parse {
 
-  private final class Impl[F[_]: Applicative: Logging, S[_]: Evals[*[_], F]] extends Parse[S] {
-    def parse[R](implicit decoder: Decoder[R]): S[Json] => S[Option[R]] = _.evalMap { json =>
-      json.as[R] match {
-        case Right(result) => (Some(result): Option[R]).pure[F]
-        case Left(error)   => error"Get ${error.toString()} during parsing JSON: ${json.toString()}" *> (None: Option[R]).pure[F]
-      }
+  private final class Logger[F[_]: Monad: Logging] extends Parse[Mid[F, *]] {
+    def handle(command: Command): Mid[F, Event] =
+      info"Execution of the ${command} has started" *> _
+  }
+
+  private final class Impl[F[_]: Monad: Clock: GenUUID: Raise[*[_], DecodingFailure]] extends Parse[F] {
+    def handle(command: Command): F[Event] = command match {
+      case ParseYandexMarketResponse(_, _, _, response) =>
+        for {
+          uuid    <- GenUUID[F].randomUUID
+          instant <- Clock[F].instantNow
+          result  <- response.as[YandexMarketResult].toRaise
+        } yield YandexMarketResponseParsed(uuid @@ EventId, "yandex.market" @@ EventKey, Timestamp(instant), result)
     }
   }
 
-  def apply[S[_]](implicit ev: Parse[S]): ev.type = ev
+  def apply[F[_]](implicit ev: Parse[F]): ev.type = ev
 
-  def make[I[_]: Applicative, F[_]: Applicative, S[_]: Evals[*[_], F]](implicit logs: Logs[I, F]): Resource[I, Parse[S]] =
-    Resource.liftF(logs.forService[Parse[F]].map(implicit l => new Impl[F, S]))
+  def make[I[_]: Monad, F[_]: Monad: Clock: GenUUID: Raise[*[_], DecodingFailure]](implicit logs: Logs[I, F]): Resource[I, Parse[F]] =
+    Resource.liftF {
+      logs
+        .forService[Parse[F]]
+        .map { implicit l =>
+          val impl = new Impl[F]
+
+          val logger: Parse[Mid[F, *]] = new Logger[F]
+
+          logger.attach(impl)
+        }
+    }
 }

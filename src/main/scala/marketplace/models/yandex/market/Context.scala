@@ -1,11 +1,13 @@
 package marketplace.models.yandex.market
 
-import java.time.OffsetDateTime
+import java.time.{OffsetDateTime, ZoneOffset}
 
 import cats.Show
 import supertagged.TaggedType
 import io.circe.Decoder
 import io.circe.derivation.deriveDecoder
+import vulcan.generic._
+import vulcan.{AvroNamespace, Codec}
 import derevo.derive
 import tofu.logging.Loggable
 import tofu.logging.derivation.loggable
@@ -19,6 +21,7 @@ import tofu.logging.derivation.loggable
   * @param page     Информация о параметрах страницы запроса.
   */
 @derive(loggable)
+@AvroNamespace("yandex.market.models")
 case class Context(
   id: Context.ContextId,
   time: OffsetDateTime,
@@ -28,7 +31,6 @@ case class Context(
 )
 
 object Context {
-  implicit val circeDecoder: Decoder[Context] = deriveDecoder
 
   /** Уникальный идентификатор запроса.
     */
@@ -36,6 +38,12 @@ object Context {
     implicit val show: Show[Type]            = Show.fromToString
     implicit val loggable: Loggable[Type]    = lift
     implicit val circeDecoder: Decoder[Type] = lift
+    implicit val avroCodec: Codec[Type]      = lift
   }
   type ContextId = ContextId.Type
+
+  implicit val circeDecoder: Decoder[Context]                   = deriveDecoder
+  implicit val offsetDateTimeVulcanCodec: Codec[OffsetDateTime] =
+    Codec.instant.imap(OffsetDateTime.ofInstant(_, ZoneOffset.UTC))(_.toInstant())
+  implicit val avroCodec: Codec[Context]                        = Codec.derive[Context]
 }

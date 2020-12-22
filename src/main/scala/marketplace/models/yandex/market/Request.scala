@@ -48,7 +48,7 @@ object Request {
   object Fields extends TaggedType[List[Field]] {
     implicit def fields(ls: List[Field]): Fields = Fields(ls)
     implicit val loggable: Loggable[Type]        = lift
-    implicit val vulcanCodec: Codec[Type]        = lift
+    implicit val avroCodec: Codec[Type]          = lift
 
     implicit val queryParam = new QueryParam[Type] with QueryParamEncoder[Type] {
       val key                                       = QueryParameterKey("fields")
@@ -62,7 +62,7 @@ object Request {
   object Sections extends TaggedType[List[Section]] {
     implicit def sections(ls: List[Section]): Sections = Sections(ls)
     implicit val loggable: Loggable[Type]              = lift
-    implicit val vulcanCodec: Codec[Type]              = lift
+    implicit val avroCodec: Codec[Type]                = lift
 
     implicit val queryParam = new QueryParam[Type] with QueryParamEncoder[Type] {
       val key                                       = QueryParameterKey("sections")
@@ -76,7 +76,7 @@ object Request {
   object RearrFactors extends TaggedType[List[RearrFactor]] {
     implicit def rearrFactors(ls: List[RearrFactor]): RearrFactors = RearrFactors(ls)
     implicit val loggable: Loggable[Type]                          = lift
-    implicit val vulcanCodec: Codec[Type]                          = lift
+    implicit val avroCodec: Codec[Type]                            = lift
 
     implicit val queryParam = new QueryParam[Type] with QueryParamEncoder[Type] {
       val key = QueryParameterKey("rearr_factors")
@@ -92,14 +92,13 @@ object Request {
   type RearrFactors = RearrFactors.Type
 
   implicit val circeEncoder: Encoder[Request] = Encoder.instance { case request: GetCategoryModels => request.asJson }
-
-  implicit val vulcanCodec: Codec[Request] = Codec.union[Request](alt => alt[GetCategoryModels])
+  implicit val avroCodec: Codec[Request]      = Codec.union[Request](alt => alt[GetCategoryModels])
 }
 
 object GetCategoryModels {
   implicit val circeEncoder: Encoder[GetCategoryModels] = Encoder.instance(_ => Json.obj("cartSnapshot" -> List.empty[String].asJson))
 
-  implicit val vulcanCodec: Codec[GetCategoryModels] =
+  implicit val avroCodec: Codec[GetCategoryModels] =
     Codec.record[GetCategoryModels](
       name = "GetCategoryModels",
       namespace = "yandex.market.models"

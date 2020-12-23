@@ -7,8 +7,8 @@ import io.circe.{Encoder, Json}
 import vulcan.Codec
 import org.http4s.{QueryParam, QueryParamEncoder, QueryParameterKey, QueryParameterValue}
 import derevo.derive
-import tofu.logging.derivation.loggable
 import tofu.logging.Loggable
+import tofu.logging.derivation.{loggable, masked, MaskMode}
 
 import marketplace.models.yandex.market.Request.{Fields, RearrFactors, Sections}
 
@@ -33,9 +33,9 @@ final case class GetCategoryModels(
   categoryId: Category.CategoryId,
   pageNumber: Page.Number,
   pageCount: Page.Count,
-  fields: Request.Fields,
-  sections: Request.Sections,
-  rearrFactors: Request.RearrFactors
+  @masked(MaskMode.Erase) fields: Request.Fields,
+  @masked(MaskMode.Erase) sections: Request.Sections,
+  @masked(MaskMode.Erase) rearrFactors: Request.RearrFactors
 ) extends Request {
   val apiVersion: ApiVersion    = ApiVersion.`2.1.6`
   val method: String            = s"market/blue/${apiVersion.show}/categories/${categoryId.show}/search"
@@ -139,8 +139,8 @@ object GetCategoryModels {
         RearrFactor.Name.MarketBlueSubjectFederationDistrict(1),
         RearrFactor.Name.MarketBlueSearchAuctionSupplierBid(50),
         RearrFactor.Name.MarketPromoBlueGenericBundle(1),
-        RearrFactor.Name.MarketPromoBlueCheapestAsGift4(1),
-        RearrFactor.Name.BuyerPriceNominalInclPromo(1)
+        RearrFactor.Name.MarketPromoBlueCheapestAsGift4(1)
+//      RearrFactor.Name.BuyerPriceNominalInclPromo(1)
       )
 
     GetCategoryModels(uuid, geoId, categoryId, pageNumber, pageCount, fields, sections, rearrFactors)

@@ -14,7 +14,7 @@ import io.circe.{Decoder, DecodingFailure}
 import org.http4s.{Request => Http4sRequest, InvalidMessageBodyFailure}
 import org.http4s.Status.Successful
 import org.http4s.circe.jsonOf
-import org.http4s.client.{Client, UnexpectedStatus}
+import org.http4s.client.Client
 import org.http4s.client.asynchttpclient.AsyncHttpClient
 import org.asynchttpclient.Dsl
 import org.asynchttpclient.proxy.ProxyServer
@@ -27,8 +27,15 @@ trait HttpClient[F[_]] {
 
 object HttpClient extends ContextEmbed[HttpClient] {
 
-  class Impl[F[_]: Sync: Logging: Raise[*[_], DecodingFailure]: Raise[*[_], InvalidMessageBodyFailure]](http4sClient: Client[F])
-      extends HttpClient[F] {
+  sealed abstract class HttpClientError(message: String) extends Throwable(message, null, true, false)
+
+  object HttpClientError {
+    case class DecodingError(message: String)      extends HttpClientError(message)
+    case class UnexpectedStatus(message: String)   extends HttpClientError(message)
+    case class InvalidMessageBody(message: String) extends HttpClientError(message)
+  }
+
+  class Impl[F[_]: Sync: Logging: Raise[*[_], HttpClientError]](http4sClient: Client[F]) extends HttpClient[F] {
 
     def send[Res](request: Http4sRequest[F])(implicit decoder: Decoder[Res]): F[Res] =
       http4sClient
@@ -39,13 +46,25 @@ object HttpClient extends ContextEmbed[HttpClient] {
                 .decode(response, strict = false)
                 .rethrowT
             case unexpected    =>
-              error"Received ${unexpected.status.show} status during execution of request to ${request.uri.path}" *>
-                UnexpectedStatus(unexpected.status).raise[F, Res]
+              // format: off
+              val msg = s"Received unexpected ${unexpected.status.code} status during execution of the request to ${request.uri.path.show}"
+              val err = HttpClientError.UnexpectedStatus(msg)
+              errorCause"${msg}" (err) *> err.raise[F, Res]
+              // format: on
           }
         }
         .run(request)
-        .recoverWith { case err: InvalidMessageBodyFailure =>
-          errorCause"Received invalid response during execution of request to ${request.uri.path}" (err) *> err.raise[F, Res]
+        .recoverWith {
+          // format: off
+          case error: InvalidMessageBodyFailure =>
+            val msg = s"Received invalid response body during execution of the request to ${request.uri.path.show}: ${error.details.dropWhile(_ != '{')}"
+            val err = HttpClientError.InvalidMessageBody(msg)
+            errorCause"${msg}" (error) *> err.raise[F, Res]
+          case error: DecodingFailure           =>
+            val msg = s"A response received as a result of the request to ${request.uri.path.show} was rejected because of a decoding failure: ${error.message}"
+            val err = HttpClientError.DecodingError(msg)
+            errorCause"${msg}" (error) *> err.raise[F, Res]
+          // format: on
         }
         .flatTap(response => debug"Received ... during execution of request to ${request.uri.path}")
   }

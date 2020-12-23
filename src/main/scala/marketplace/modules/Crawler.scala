@@ -1,16 +1,16 @@
 package marketplace.modules
 
-import cats.Monad
-import cats.effect.{Concurrent, Resource, Timer}
 import cats.tagless.syntax.functorK._
-import tofu.WithRun
 import tofu.syntax.embed._
 import tofu.syntax.monadic._
 import tofu.syntax.context._
 import derevo.derive
+import cats.Monad
+import cats.effect.{Concurrent, Resource, Timer}
+import tofu.WithRun
 import tofu.higherKind.derived.representableK
-import fs2.Stream
 import tofu.fs2.LiftStream
+import fs2.Stream
 import fs2.kafka.{commitBatchWithin, KafkaConsumer, KafkaProducer, ProducerRecord, ProducerRecords}
 
 import marketplace.config.CrawlerConfig
@@ -40,13 +40,11 @@ object Crawler {
             def run: Stream[I, Unit] =
               consumer.partitionedStream.map { partition =>
                 partition
-                  .evalMap { committable =>
-                    runContext(crawl.handle(committable.record.value))(AppContext()).map { event =>
-                      ProducerRecords.one(
-                        ProducerRecord(config.eventsTopic, event.key, event),
-                        committable.offset
-                      )
-                    }
+                  .parEvalMap(1000) { committable =>
+                    runContext(crawl.handle(committable.record.value))(AppContext()).map(_.map(_ -> committable.offset))
+                  }
+                  .collect { case Some((event, offset)) =>
+                    ProducerRecords.one(ProducerRecord(config.eventsTopic, event.key, event), offset)
                   }
                   .through(_.evalMap(producer.produce).mapAsync(1000)(identity))
                   .map(_.passthrough)

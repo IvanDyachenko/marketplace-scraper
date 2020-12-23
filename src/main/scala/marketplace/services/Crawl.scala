@@ -1,42 +1,47 @@
 package marketplace.services
 
-import cats.{FlatMap, Monad}
-import tofu.syntax.monadic._
-import cats.effect.{Clock, Resource}
+import cats.implicits._
+import tofu.syntax.handle._
+import tofu.syntax.logging._
 import derevo.derive
+import cats.Monad
+import cats.effect.{Clock, Resource}
+import tofu.Handle
 import tofu.higherKind.Mid
 import tofu.higherKind.derived.representableK
 import tofu.generate.GenUUID
 import tofu.logging.{Logging, Logs}
-import tofu.syntax.logging._
 import io.circe.Json
 
 import marketplace.marshalling._
 import marketplace.clients.HttpClient
+import marketplace.clients.HttpClient.HttpClientError
 import marketplace.models.crawler.{Command, Event, HandleYandexMarketRequest}
 
 @derive(representableK)
 trait Crawl[F[_]] {
-  def handle(command: Command): F[Event]
+  def handle(command: Command): F[Option[Event]]
 }
 
 object Crawl {
 
   private final class Logger[F[_]: Monad: Logging] extends Crawl[Mid[F, *]] {
-    def handle(command: Command): Mid[F, Event] =
-      info"Start handling ${command}" *> _
+    def handle(command: Command): Mid[F, Option[Event]] =
+      info"Execution of the ${command} has started" *> _
   }
 
-  private final class Impl[F[_]: FlatMap: Clock: GenUUID: HttpClient] extends Crawl[F] {
-    def handle(command: Command): F[Event] = command match {
+  private final class Impl[F[_]: Monad: Clock: GenUUID: HttpClient: Handle[*[_], HttpClientError]] extends Crawl[F] {
+    def handle(command: Command): F[Option[Event]] = command match {
       case HandleYandexMarketRequest(_, _, _, request) =>
-        HttpClient[F].send[Json](request) >>= (raw => Event.yandexMarketRequestHandled[F](request, raw))
+        HttpClient[F].send[Json](request).attempt >>= (_.toOption.traverse(Event.yandexMarketRequestHandled[F](request, _)))
     }
   }
 
   def apply[F[_]](implicit ev: Crawl[F]): ev.type = ev
 
-  def make[I[_]: Monad, F[_]: Monad: Clock: GenUUID: HttpClient](implicit logs: Logs[I, F]): Resource[I, Crawl[F]] =
+  def make[I[_]: Monad, F[_]: Monad: Clock: GenUUID: HttpClient: Handle[*[_], HttpClientError]](implicit
+    logs: Logs[I, F]
+  ): Resource[I, Crawl[F]] =
     Resource.liftF {
       logs
         .forService[Crawl[F]]

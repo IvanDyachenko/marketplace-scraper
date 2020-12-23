@@ -14,13 +14,30 @@ docker-compose exec ch-client sh
 ```
 
 #### Schema registry
-##### Get list of all subjects
+Get list of all subjects:
 ```bash
 docker-compose exec schema-registry sh
 # curl -X GET http://schema-registry:8081/subjects
 ```
 
 ### Mitmproxy
+Install the mitmproxy CA certificate manually by using `keytool`:
+```bash
+sudo $JAVA_HOME/bin/keytool -noprompt -importcert -trustcacerts \
+  -keystore $JAVA_HOME/jre/lib/security/cacerts \
+  -storepass changeit \
+  -alias mitmproxycert \
+  -file ~/.mitmproxy/mitmproxy-ca-cert.pem
+```
+
+Delete the mitmproxy CA certificate manually by using `keytool`:
+```bash
+sudo $JAVA_HOME/bin/keytool -noprompt -delete \
+  -keystore $JAVA_HOME/jre/lib/security/cacerts \
+  -storepass changeit \
+  -alias mitmproxycert 
+```
+
 
 Start [mitmproxy in regular mode](https://docs.mitmproxy.org/stable/concepts-modes/#regular-proxy):
 ```bash

@@ -1,17 +1,18 @@
 package marketplace.services
 
+import tofu.syntax.raise._
+import tofu.syntax.monadic._
+import tofu.syntax.logging._
+import supertagged.postfix._
+import derevo.derive
 import cats.Monad
 import cats.effect.{Clock, Resource}
 import tofu.Raise
-import tofu.syntax.raise._
-import tofu.syntax.monadic._
-import supertagged.postfix._
-import derevo.derive
 import tofu.higherKind.Mid
 import tofu.higherKind.derived.representableK
-import tofu.logging.{Logging, Logs}
-import tofu.syntax.logging._
 import tofu.generate.GenUUID
+import tofu.logging.{Logging, Logs}
+
 import io.circe.DecodingFailure
 
 import marketplace.models.{EventId, EventKey, Timestamp}

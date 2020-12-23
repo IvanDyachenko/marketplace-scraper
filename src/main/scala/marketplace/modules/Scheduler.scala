@@ -1,14 +1,14 @@
 package marketplace.modules
 
 import cats.implicits._
-import cats.Monad
-import cats.effect.{Concurrent, Resource, Timer}
 import cats.tagless.syntax.functorK._
 import tofu.syntax.embed._
 import derevo.derive
+import cats.Monad
+import cats.effect.{Concurrent, Resource, Timer}
 import tofu.higherKind.derived.representableK
-import fs2.Stream
 import tofu.fs2.LiftStream
+import fs2.Stream
 import fs2.kafka.{KafkaProducer, ProducerRecord, ProducerRecords}
 
 import marketplace.config.SchedulerConfig

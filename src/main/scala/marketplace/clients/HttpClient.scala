@@ -15,6 +15,7 @@ import org.http4s.{Request => Http4sRequest, InvalidMessageBodyFailure}
 import org.http4s.Status.Successful
 import org.http4s.circe.jsonOf
 import org.http4s.client.Client
+//import org.http4s.client.blaze.BlazeClientBuilder
 import org.http4s.client.asynchttpclient.AsyncHttpClient
 import org.asynchttpclient.Dsl
 import org.asynchttpclient.proxy.ProxyServer
@@ -47,7 +48,7 @@ object HttpClient extends ContextEmbed[HttpClient] {
                 .rethrowT
             case unexpected    =>
               // format: off
-              val msg = s"Received unexpected ${unexpected.status.code} status during execution of the request to ${request.uri.path.show}"
+              val msg = s"Received ${unexpected.status.code} status during execution of the request to ${request.uri.path.show}"
               val err = HttpClientError.UnexpectedStatus(msg)
               errorCause"${msg}" (err) *> err.raise[F, Res]
               // format: on
@@ -107,6 +108,6 @@ object HttpClient extends ContextEmbed[HttpClient] {
     AsyncHttpClient.resource(httpClientConfig)
   }
 
-//  private def buildHttp4sClient[F[_]: Execute: ConcurrentEffect]: Resource[F, Client[F]] =
+//  private def buildHttp4sClient[F[_]: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] =
 //    Resource.liftF(Execute[F].executionContext) >>= (BlazeClientBuilder[F](_).resource)
 }

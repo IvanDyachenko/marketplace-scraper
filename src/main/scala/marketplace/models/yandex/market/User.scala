@@ -1,24 +1,19 @@
 package marketplace.models.yandex.market
 
-import cats.Show
 import cats.implicits._
-import vulcan.Codec
-import io.circe.Decoder
 import supertagged.TaggedType
-import tofu.logging.Loggable
 import org.http4s.{QueryParam, QueryParamEncoder, QueryParameterKey, QueryParameterValue}
+
+import marketplace.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcanCodec}
+
+//import java.util.{UUID => juUUID}
 
 object User {
 
-  object UUID extends TaggedType[String] {
-    implicit val show: Show[Type]            = Show.fromToString
-    implicit val loggable: Loggable[Type]    = lift
-    implicit val circeDecoder: Decoder[Type] = lift
-    implicit val avroCodec: Codec[Type]      = lift
-
+  object UUID extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec {
     implicit val queryParam = new QueryParam[Type] with QueryParamEncoder[Type] {
       val key                                      = QueryParameterKey("uuid")
-      def encode(value: Type): QueryParameterValue = QueryParameterValue(value.show)
+      def encode(value: Type): QueryParameterValue = QueryParameterValue(value.show.filterNot(_ == '-'))
     }
   }
   type UUID = UUID.Type

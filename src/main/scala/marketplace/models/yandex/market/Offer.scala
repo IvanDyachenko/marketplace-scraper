@@ -1,6 +1,5 @@
 package marketplace.models.yandex.market
 
-import cats.Show
 import supertagged.TaggedType
 import supertagged.lift.LiftF
 import io.circe.Decoder
@@ -8,8 +7,9 @@ import io.circe.derivation.deriveDecoder
 import vulcan.generic._
 import vulcan.{AvroNamespace, Codec}
 import derevo.derive
-import tofu.logging.Loggable
 import tofu.logging.derivation.loggable
+
+import marketplace.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcanCodec}
 
 /** Предложение.
   *
@@ -49,22 +49,14 @@ object Offer {
 
   /** Идентификатор предложения.
     */
-  object OfferId extends TaggedType[String] {
-    implicit val show: Show[Type]            = Show.fromToString
-    implicit val loggable: Loggable[Type]    = lift
+  object OfferId extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedVulcanCodec {
     implicit val circeDecoder: Decoder[Type] = LiftF[Decoder].lift[Raw, Tag](Decoder[Raw].or(Decoder[Raw].at("id")))
-    implicit val avroCodec: Codec[Type]      = lift
   }
   type OfferId = OfferId.Type
 
   /** MD5 хеш-код предложения.
     */
-  object MD5 extends TaggedType[String] {
-    implicit val show: Show[Type]            = Show.fromToString
-    implicit val loggable: Loggable[Type]    = lift
-    implicit val circeDecoder: Decoder[Type] = lift
-    implicit val avroCodec: Codec[Type]      = lift
-  }
+  object MD5 extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec {}
   type MD5 = MD5.Type
 
   implicit val circeDecoder: Decoder[Offer] = deriveDecoder

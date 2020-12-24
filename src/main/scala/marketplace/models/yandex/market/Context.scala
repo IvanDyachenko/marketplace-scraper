@@ -2,15 +2,15 @@ package marketplace.models.yandex.market
 
 import java.time.{OffsetDateTime, ZoneOffset}
 
-import cats.Show
 import supertagged.TaggedType
 import io.circe.Decoder
 import io.circe.derivation.deriveDecoder
 import vulcan.generic._
 import vulcan.{AvroNamespace, Codec}
 import derevo.derive
-import tofu.logging.Loggable
 import tofu.logging.derivation.loggable
+
+import marketplace.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcanCodec}
 
 /** Контекст обработки запроса.
   *
@@ -34,12 +34,7 @@ object Context {
 
   /** Уникальный идентификатор запроса.
     */
-  object ContextId extends TaggedType[String] {
-    implicit val show: Show[Type]            = Show.fromToString
-    implicit val loggable: Loggable[Type]    = lift
-    implicit val circeDecoder: Decoder[Type] = lift
-    implicit val avroCodec: Codec[Type]      = lift
-  }
+  object ContextId extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec {}
   type ContextId = ContextId.Type
 
   implicit val circeDecoder: Decoder[Context]                   = deriveDecoder

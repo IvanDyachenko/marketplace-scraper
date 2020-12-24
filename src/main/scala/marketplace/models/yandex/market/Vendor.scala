@@ -1,14 +1,14 @@
 package marketplace.models.yandex.market
 
-import cats.Show
 import supertagged.TaggedType
 import io.circe.Decoder
 import io.circe.derivation.deriveDecoder
 import vulcan.generic._
 import vulcan.{AvroNamespace, Codec}
 import derevo.derive
-import tofu.logging.Loggable
 import tofu.logging.derivation.loggable
+
+import marketplace.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcanCodec}
 
 /** Информация о производителе.
   *
@@ -23,12 +23,7 @@ object Vendor {
 
   /** Уникальный идентификатор производителя.
     */
-  object VendorId extends TaggedType[Long] {
-    implicit val show: Show[Type]            = Show.fromToString
-    implicit val loggable: Loggable[Type]    = lift
-    implicit val circeDecoder: Decoder[Type] = lift
-    implicit val avroCodec: Codec[Type]      = lift
-  }
+  object VendorId extends TaggedType[Long] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec {}
   type VendorId = VendorId.Type
 
   implicit val circeDecoder: Decoder[Vendor] = deriveDecoder

@@ -1,14 +1,15 @@
 package marketplace
 
-import cats.Show
-import supertagged.TaggedType
-import vulcan.Codec
-import tofu.logging.Loggable
-import derevo.derive
-import tofu.logging.derivation.loggable
-
 import java.util.UUID
 import java.time.Instant
+
+import cats.Show
+import supertagged.TaggedType
+import derevo.derive
+import tofu.logging.Loggable
+import tofu.logging.derivation.loggable
+import vulcan.Codec
+import io.circe.{Decoder, Encoder}
 
 package object models {
 
@@ -19,31 +20,44 @@ package object models {
     implicit val vulcanCodec: Codec[Timestamp] = Codec.instant.imap(apply)(_.value)
   }
 
-  object CommandId extends TaggedType[UUID] {
-    implicit val show: Show[Type]         = Show.fromToString
-    implicit val loggable: Loggable[Type] = lift
-    implicit val vulcanCodec: Codec[Type] = lift
-  }
+  object CommandId extends TaggedType[UUID] with LiftedCats with LiftedLoggable with LiftedVulcanCodec {}
   type CommandId = CommandId.Type
 
-  object CommandKey extends TaggedType[String] {
-    implicit val show: Show[Type]         = Show.fromToString
-    implicit val loggable: Loggable[Type] = lift
-    implicit val vulcanCodec: Codec[Type] = lift
-  }
+  object CommandKey extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedVulcanCodec {}
   type CommandKey = CommandKey.Type
 
-  object EventId extends TaggedType[UUID] {
-    implicit val show: Show[Type]         = Show.fromToString
-    implicit val loggable: Loggable[Type] = lift
-    implicit val vulcanCodec: Codec[Type] = lift
-  }
+  object EventId extends TaggedType[UUID] with LiftedCats with LiftedLoggable with LiftedVulcanCodec {}
   type EventId = EventId.Type
 
-  object EventKey extends TaggedType[String] {
-    implicit val show: Show[Type]         = Show.fromToString
-    implicit val loggable: Loggable[Type] = lift
-    implicit val vulcanCodec: Codec[Type] = lift
-  }
+  object EventKey extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedVulcanCodec {}
   type EventKey = EventKey.Type
+
+  trait LiftedCats {
+    type Raw
+    type Type
+
+    implicit def show(implicit raw: Show[Raw]): Show[Type] = raw.asInstanceOf[Show[Type]]
+  }
+
+  trait LiftedLoggable {
+    type Raw
+    type Type
+
+    implicit def loggable(implicit raw: Loggable[Raw]): Loggable[Type] = raw.asInstanceOf[Loggable[Type]]
+  }
+
+  trait LiftedCirce {
+    type Raw
+    type Type
+
+    implicit def circeEncoder(implicit raw: Encoder[Raw]): Encoder[Type] = raw.asInstanceOf[Encoder[Type]]
+    implicit def circeDecoder(implicit raw: Decoder[Raw]): Decoder[Type] = raw.asInstanceOf[Decoder[Type]]
+  }
+
+  trait LiftedVulcanCodec {
+    type Raw
+    type Type
+
+    implicit def vulcanCodec(implicit raw: Codec[Raw]): Codec[Type] = raw.asInstanceOf[Codec[Type]]
+  }
 }

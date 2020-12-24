@@ -1,6 +1,5 @@
 package marketplace.models.yandex.market
 
-import cats.Show
 import supertagged.TaggedType
 import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry, VulcanEnum}
 import enumeratum.EnumEntry.Uppercase
@@ -9,8 +8,10 @@ import io.circe.derivation.deriveDecoder
 import vulcan.generic._
 import vulcan.{AvroNamespace, Codec}
 import derevo.derive
-import tofu.logging.{Loggable, LoggableEnum}
 import tofu.logging.derivation.loggable
+import tofu.logging.LoggableEnum
+
+import marketplace.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcanCodec}
 
 /** Параметры модели, по которым можно отфильтровать предложения.
   *
@@ -26,12 +27,7 @@ object Filter {
 
   /** Идентификатор фильтра.
     */
-  object FilterId extends TaggedType[String] {
-    implicit val show: Show[Type]            = Show.fromToString
-    implicit val loggable: Loggable[Type]    = lift
-    implicit val circeDecoder: Decoder[Type] = lift
-    implicit val avroCodec: Codec[Type]      = lift
-  }
+  object FilterId extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec {}
   type FilterId = FilterId.Type
 
   /** Тип фильтра.

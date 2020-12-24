@@ -8,10 +8,12 @@ import io.circe.Decoder
 import io.circe.derivation.deriveDecoder
 import vulcan.generic._
 import vulcan.{AvroNamespace, Codec}
-import derevo.derive
 import tofu.logging.{Loggable, LoggableEnum}
+import derevo.derive
 import tofu.logging.derivation.loggable
 import org.http4s.{QueryParam, QueryParamEncoder, QueryParameterKey, QueryParameterValue}
+
+import marketplace.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcanCodec}
 
 /** Информация о регионе запроса.
   *
@@ -91,12 +93,7 @@ object Country {
 
   /** Код страны.
     */
-  object CountryId extends TaggedType[Int] {
-    implicit val show: Show[Type]            = Show.fromToString
-    implicit val loggable: Loggable[Type]    = lift
-    implicit val circeDecoder: Decoder[Type] = lift
-    implicit val avroCodec: Codec[Type]      = lift
-  }
+  object CountryId extends TaggedType[Int] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec {}
   type CountryId = CountryId.Type
 
   implicit val circeDecoder: Decoder[Country] = deriveDecoder

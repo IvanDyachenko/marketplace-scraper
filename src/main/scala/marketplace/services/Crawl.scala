@@ -16,7 +16,7 @@ import io.circe.Json
 import marketplace.marshalling._
 import marketplace.clients.HttpClient
 import marketplace.clients.HttpClient.HttpClientError
-import marketplace.models.crawler.{Command, Event, HandleYandexMarketRequest}
+import marketplace.models.crawler.{Command, Event, HandleOzonRequest, HandleYandexMarketRequest}
 
 @derive(representableK)
 trait Crawl[F[_]] {
@@ -32,6 +32,8 @@ object Crawl {
 
   private final class Impl[F[_]: Monad: Clock: GenUUID: HttpClient: Handle[*[_], HttpClientError]] extends Crawl[F] {
     def handle(command: Command): F[Option[Event]] = command match {
+      case HandleOzonRequest(_, _, _, request)         =>
+        HttpClient[F].send[Json](request).attempt >>= (_.toOption.traverse(Event.ozonRequestHandled[F](request, _)))
       case HandleYandexMarketRequest(_, _, _, request) =>
         HttpClient[F].send[Json](request).attempt >>= (_.toOption.traverse(Event.yandexMarketRequestHandled[F](request, _)))
     }

@@ -15,10 +15,10 @@ import org.http4s.{Request => Http4sRequest, InvalidMessageBodyFailure}
 import org.http4s.Status.Successful
 import org.http4s.circe.jsonOf
 import org.http4s.client.Client
-//import org.http4s.client.blaze.BlazeClientBuilder
-import org.http4s.client.asynchttpclient.AsyncHttpClient
-import org.asynchttpclient.Dsl
-import org.asynchttpclient.proxy.ProxyServer
+import org.http4s.client.blaze.BlazeClientBuilder
+//import org.http4s.client.asynchttpclient.AsyncHttpClient
+//import org.asynchttpclient.Dsl
+//import org.asynchttpclient.proxy.ProxyServer
 
 import marketplace.config.HttpConfig
 
@@ -90,24 +90,24 @@ object HttpClient extends ContextEmbed[HttpClient] {
   private def translateHttp4sClient[F[_]: Sync, G[_]: Sync](client: Client[F])(implicit U: Unlift[F, G]): Client[G] =
     Client(req => Resource.suspend(U.unlift.map(gf => client.run(req.mapK(gf)).mapK(U.liftF).map(_.mapK(U.liftF)))))
 
-  private def buildHttp4sClient[F[_]: Monad: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] = {
-    val HttpConfig(proxyHost, proxyPort, maxConnections, maxConnectionsPerHost) = httpConfig
+  // private def buildHttp4sClient[F[_]: Monad: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] = {
+  //   val HttpConfig(proxyHost, proxyPort, maxConnections, maxConnectionsPerHost) = httpConfig
+  //
+  //   val proxyServer = new ProxyServer.Builder(proxyHost, proxyPort).build()
+  //
+  //   val httpClientConfig = Dsl
+  //     .config()
+  //     .setMaxConnections(maxConnections)
+  //     .setMaxConnectionsPerHost(maxConnectionsPerHost)
+  //     .setFollowRedirect(false)
+  //     .setKeepAlive(true)
+  //     .setMaxRequestRetry(0)
+  //     .setProxyServer(proxyServer)
+  //     .build()
+  //
+  //   AsyncHttpClient.resource(httpClientConfig)
+  // }
 
-    val proxyServer = new ProxyServer.Builder(proxyHost, proxyPort).build()
-
-    val httpClientConfig = Dsl
-      .config()
-      .setMaxConnections(maxConnections)
-      .setMaxConnectionsPerHost(maxConnectionsPerHost)
-      .setFollowRedirect(false)
-      .setKeepAlive(true)
-      .setMaxRequestRetry(0)
-      .setProxyServer(proxyServer)
-      .build()
-
-    AsyncHttpClient.resource(httpClientConfig)
-  }
-
-//  private def buildHttp4sClient[F[_]: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] =
-//    Resource.liftF(Execute[F].executionContext) >>= (BlazeClientBuilder[F](_).resource)
+  private def buildHttp4sClient[F[_]: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] =
+    Resource.liftF(Execute[F].executionContext) >>= (BlazeClientBuilder[F](_).resource)
 }

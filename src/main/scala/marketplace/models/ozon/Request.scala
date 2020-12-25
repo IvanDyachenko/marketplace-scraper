@@ -39,3 +39,7 @@ object GetCategorySearchResultsV2 {
         ).mapN(apply)
     }
 }
+
+object Request {
+  implicit val avroCodec: Codec[Request] = Codec.union[Request](alt => alt[GetCategorySearchResultsV2])
+}

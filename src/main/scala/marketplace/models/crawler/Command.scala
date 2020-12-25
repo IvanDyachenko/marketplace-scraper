@@ -31,7 +31,7 @@ object Command {
     for {
       uuid    <- GenUUID[F].randomUUID
       instant <- Clock[F].instantNow
-      key      = request.path
+      key      = request.url.path
     } yield HandleOzonRequest(uuid @@ CommandId, key @@ CommandKey, Timestamp(instant), request)
 
   def handleYandexMarketRequest[F[_]: FlatMap: Clock: GenUUID](request: YandexMarketRequest): F[Command] =

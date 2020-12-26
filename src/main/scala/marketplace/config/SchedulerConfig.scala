@@ -8,7 +8,8 @@ import pureconfig.generic.auto._
 import pureconfig.module.catseffect.syntax._
 
 final case class SchedulerConfig(
-  timeout: FiniteDuration
+  timeout: FiniteDuration,
+  maxConcurrent: Int
 )
 
 object SchedulerConfig {

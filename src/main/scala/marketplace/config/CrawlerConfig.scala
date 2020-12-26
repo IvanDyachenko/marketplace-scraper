@@ -11,6 +11,7 @@ final case class CrawlerConfig(
   groupId: String,
   eventsTopic: String,
   commandsTopic: String,
+  maxConcurrent: Int,
   batchOffsets: Int,
   batchTimeWindow: FiniteDuration
 )

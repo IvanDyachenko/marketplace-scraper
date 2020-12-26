@@ -17,7 +17,7 @@ case class RearrFactor(name: RearrFactor.Name, value: Option[Int] = None)
 object RearrFactor {
 
   implicit val show: Show[RearrFactor] = Show.show(_ match {
-    case RearrFactor(name, Some(value)) => s"${name.show}=$value"
+    case RearrFactor(name, Some(value)) => s"${name.show}=${value.show}"
     case RearrFactor(name, _)           => name.show
   })
 

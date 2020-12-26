@@ -67,7 +67,7 @@ object HttpClient extends ContextEmbed[HttpClient] {
             errorCause"${msg}" (error) *> err.raise[F, Res]
           // format: on
         }
-        .flatTap(response => debug"Received ... during execution of request to ${request.uri.path}")
+        .flatTap(result => debug"Received ... during execution of request to ${request.uri.show}")
   }
 
   def apply[F[_]](implicit ev: HttpClient[F]): ev.type = ev

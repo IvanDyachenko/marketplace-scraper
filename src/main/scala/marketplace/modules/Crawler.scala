@@ -28,11 +28,11 @@ object Crawler {
 
   def apply[F[_]](implicit ev: Crawler[F]): ev.type = ev
 
-  def make[I[_]: Monad: Concurrent: Timer, F[_]: WithRun[*[_], I, AppContext], S[_]: LiftStream[*[_], I]](
-    crawl: Crawl[F],
+  def make[I[_]: Monad: Concurrent: Timer, F[_]: WithRun[*[_], I, AppContext], S[_]: LiftStream[*[_], I]](crawl: Crawl[F])(
+    config: CrawlerConfig,
     consumer: KafkaConsumer[I, CommandKey, Command],
     producer: KafkaProducer[I, EventKey, Event]
-  )(config: CrawlerConfig): Resource[I, Crawler[S]] =
+  ): Resource[I, Crawler[S]] =
     Resource.liftF {
       Stream
         .eval {
@@ -40,13 +40,14 @@ object Crawler {
             def run: Stream[I, Unit] =
               consumer.partitionedStream.map { partition =>
                 partition
-                  .parEvalMap(1000) { committable =>
+                  .parEvalMap(config.maxConcurrent) { committable =>
                     runContext(crawl.handle(committable.record.value))(AppContext()).map(_.map(_ -> committable.offset))
                   }
                   .collect { case Some((event, offset)) =>
                     ProducerRecords.one(ProducerRecord(config.eventsTopic, event.key, event), offset)
                   }
-                  .through(_.evalMap(producer.produce).mapAsync(1000)(identity))
+                  .evalMap(producer.produce)
+                  .parEvalMap(1000)(identity)
                   .map(_.passthrough)
                   .through(commitBatchWithin(config.batchOffsets, config.batchTimeWindow))
               }.parJoinUnbounded

@@ -22,9 +22,9 @@ object Scheduler {
 
   def apply[F[_]](implicit ev: Scheduler[F]): ev.type = ev
 
-  def make[F[_]: Monad: Timer: Concurrent, S[_]: LiftStream[*[_], F], K, V](producer: KafkaProducer[F, K, V])(
-    config: SchedulerConfig,
-    topic: String
+  def make[F[_]: Monad: Timer: Concurrent, S[_]: LiftStream[*[_], F], K, V](config: SchedulerConfig)(
+    topic: String,
+    producer: KafkaProducer[F, K, V]
   )(f: Stream[F, (K, V)]): Resource[F, Scheduler[S]] =
     Resource.liftF {
       Stream
@@ -35,8 +35,8 @@ object Scheduler {
               Stream
                 .awakeEvery[F](config.timeout)
                 .zipRight(f)
-                .map { case (k, v) => ProducerRecords.one(ProducerRecord(topic, k, v)) }
-                .through(_.evalMap(producer.produce[Unit]).mapAsync(1000)(identity))
+                .evalMap { case (k, v) => producer.produce(ProducerRecords.one(ProducerRecord(topic, k, v))) }
+                .parEvalMap(config.maxConcurrent)(identity)
                 .map(_.passthrough)
                 .repeat
           }

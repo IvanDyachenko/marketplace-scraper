@@ -1,14 +1,11 @@
 package marketplace.config
 
-import scala.concurrent.duration.FiniteDuration
-
 import cats.effect.{Blocker, ContextShift, Sync}
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
 import pureconfig.module.catseffect.syntax._
 
 final case class SchedulerConfig(
-  timeout: FiniteDuration,
   maxConcurrent: Int
 )
 

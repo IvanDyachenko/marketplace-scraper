@@ -11,8 +11,6 @@ import tofu.fs2.LiftStream
 import fs2.Stream
 import fs2.kafka.{KafkaProducer, ProducerRecord, ProducerRecords}
 
-import marketplace.config.SchedulerConfig
-
 @derive(representableK)
 trait Scheduler[S[_]] {
   def run: S[Unit]
@@ -22,10 +20,10 @@ object Scheduler {
 
   def apply[F[_]](implicit ev: Scheduler[F]): ev.type = ev
 
-  def make[F[_]: Monad: Timer: Concurrent, S[_]: LiftStream[*[_], F], K, V](config: SchedulerConfig)(
+  def make[F[_]: Monad: Timer: Concurrent, S[_]: LiftStream[*[_], F], K, V](sources: List[Stream[F, (K, V)]])(
     topic: String,
     producer: KafkaProducer[F, K, V]
-  )(f: Stream[F, (K, V)]): Resource[F, Scheduler[S]] =
+  ): Resource[F, Scheduler[S]] =
     Resource.liftF {
       Stream
         .eval {
@@ -33,12 +31,11 @@ object Scheduler {
 
             def run: Stream[F, Unit] =
               Stream
-                .awakeEvery[F](config.timeout)
-                .zipRight(f)
+                .emits(sources)
+                .parJoinUnbounded
                 .evalMap { case (k, v) => producer.produce(ProducerRecords.one(ProducerRecord(topic, k, v))) }
-                .parEvalMap(config.maxConcurrent)(identity)
+                .parEvalMap(1000)(identity)
                 .map(_.passthrough)
-                .repeat
           }
 
           impl.pure[F]

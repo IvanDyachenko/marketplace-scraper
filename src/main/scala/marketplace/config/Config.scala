@@ -1,7 +1,7 @@
 package marketplace.config
 
-import cats.effect.{Blocker, ContextShift, Sync}
 import cats.syntax.apply._
+import cats.effect.{Blocker, ContextShift, Sync}
 import tofu.optics.macros.ClassyOptics
 
 @ClassyOptics("contains_")
@@ -11,7 +11,8 @@ final case class Config(
   schemaRegistryConfig: SchemaRegistryConfig,
   schedulerConfig: SchedulerConfig,
   crawlerConfig: CrawlerConfig,
-  parserConfig: ParserConfig
+  parserConfig: ParserConfig,
+  sourcesConfig: SourcesConfig
 )
 
 object Config {
@@ -22,7 +23,8 @@ object Config {
       SchemaRegistryConfig.loadF[F],
       SchedulerConfig.loadF[F],
       CrawlerConfig.loadF[F],
-      ParserConfig.loadF[F]
+      ParserConfig.loadF[F],
+      SourcesConfig.loadF[F]
     )
       .mapN(Config.apply)
 }

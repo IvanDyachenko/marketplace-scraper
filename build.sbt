@@ -96,6 +96,7 @@ lazy val projectDependencies =
     "org.tpolecat"          %% "doobie-hikari"            % Versions.doobie,
     "ru.yandex.clickhouse"   % "clickhouse-jdbc"          % Versions.clickhouseJDBC,
     "com.github.pureconfig" %% "pureconfig"               % Versions.pureconfig,
+    "com.github.pureconfig" %% "pureconfig-enumeratum"    % Versions.pureconfig,
     "com.github.pureconfig" %% "pureconfig-cats-effect"   % Versions.pureconfig,
     "ch.qos.logback"         % "logback-classic"          % Versions.logback
   )

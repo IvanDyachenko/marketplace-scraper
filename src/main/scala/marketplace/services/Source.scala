@@ -1,8 +1,7 @@
 package marketplace.services
 
 import cats.Monad
-import cats.effect.{Resource, Timer}
-import tofu.syntax.monadic._
+import cats.effect.Timer
 import fs2.Stream
 import marketplace.config.SourceConfig
 
@@ -14,14 +13,12 @@ object Source {
 
   def apply[F[_], A](implicit ev: Source[F, A]): ev.type = ev
 
-  def make[I[_]: Monad, F[_]: Monad: Timer, A](config: SourceConfig)(fa: Stream[F, A]): Resource[I, Source[Stream[F, *], A]] =
-    Resource.liftF {
-      new Source[Stream[F, *], A] {
-        def source: Stream[F, A] =
-          Stream
-            .awakeEvery[F](config.every)
-            .zipRight(fa)
-            .repeat
-      }.pure[I]
+  def make[F[_]: Monad: Timer, A](config: SourceConfig)(fa: Stream[F, A]): Source[Stream[F, *], A] =
+    new Source[Stream[F, *], A] {
+      def source: Stream[F, A] =
+        Stream
+          .awakeEvery[F](config.every)
+          .zipRight(fa)
+          .repeat
     }
 }

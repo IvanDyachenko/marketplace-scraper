@@ -36,6 +36,8 @@ object Url {
   case class LayoutContainer(name: LayoutContainer.Name)
 
   object LayoutContainer {
+    object Default extends LayoutContainer(LayoutContainer.Name.Default)
+
     @AvroNamespace("ozon.models.url")
     sealed trait Name extends EnumEntry with Snakecase with Product with Serializable
 

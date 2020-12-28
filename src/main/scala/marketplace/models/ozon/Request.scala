@@ -4,6 +4,7 @@ import cats.implicits._
 import derevo.derive
 import tofu.logging.derivation.loggable
 import vulcan.Codec
+import supertagged.postfix._
 
 import marketplace.models.ozon.Url.{LayoutContainer, LayoutPageIndex, Page}
 
@@ -18,13 +19,16 @@ sealed trait Request {
 final case class GetCategorySearchResultsV2(
   categoryName: Category.Name,
   page: Page,
-  layoutContainer: LayoutContainer,
+  layoutContainer: LayoutContainer = LayoutContainer.Default,
   layoutPageIndex: LayoutPageIndex
 ) extends Request {
   val url = Url(s"/category/${categoryName.show}/", Some(page), Some(layoutContainer), Some(layoutPageIndex))
 }
 
 object GetCategorySearchResultsV2 {
+  def apply(categoryName: Category.Name, page: Page): GetCategorySearchResultsV2 =
+    GetCategorySearchResultsV2(categoryName, page, LayoutContainer.Default, page.self @@ LayoutPageIndex)
+
   implicit val vulcanCodec: Codec[GetCategorySearchResultsV2] =
     Codec.record[GetCategorySearchResultsV2](
       name = "GetCategorySearchResultsV2",

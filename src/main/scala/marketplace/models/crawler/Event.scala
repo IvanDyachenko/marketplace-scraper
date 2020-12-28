@@ -28,7 +28,7 @@ object CrawlerEvent {
     for {
       uuid    <- GenUUID[F].randomUUID
       instant <- Clock[F].instantNow
-      key      = request.path
+      key      = request.url.path
     } yield OzonRequestHandled(uuid @@ Event.Id, key @@ Event.Key, Timestamp(instant), raw)
 
   def yandexMarketRequestHandled[F[_]: FlatMap: Clock: GenUUID](request: YandexMarketRequest, raw: Json): F[CrawlerEvent] =

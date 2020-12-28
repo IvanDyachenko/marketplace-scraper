@@ -16,8 +16,8 @@ import fs2.kafka.{commitBatchWithin, KafkaConsumer, KafkaProducer, ProducerRecor
 import marketplace.config.ParserConfig
 import marketplace.context.AppContext
 import marketplace.services.Parse
-import marketplace.models.{CommandKey, EventKey}
-import marketplace.models.parser.{Command, Event}
+import marketplace.models.{Command, Event}
+import marketplace.models.parser.{ParserCommand, ParserEvent}
 
 @derive(representableK)
 trait Parser[S[_]] {
@@ -30,8 +30,8 @@ object Parser {
 
   def make[I[_]: Monad: Concurrent: Timer, F[_]: WithRun[*[_], I, AppContext], S[_]: LiftStream[*[_], I]](
     parse: Parse[F],
-    consumer: KafkaConsumer[I, CommandKey, Command],
-    producer: KafkaProducer[I, EventKey, Event]
+    consumer: KafkaConsumer[I, Command.Key, ParserCommand],
+    producer: KafkaProducer[I, Event.Key, ParserEvent]
   )(config: ParserConfig): Resource[I, Parser[S]] =
     Resource.liftF {
       Stream

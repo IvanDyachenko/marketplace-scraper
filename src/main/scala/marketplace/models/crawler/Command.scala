@@ -1,48 +1,45 @@
 package marketplace.models.crawler
 
-import supertagged.postfix._
 import cats.implicits._
 import cats.FlatMap
 import cats.effect.Clock
-import tofu.generate.GenUUID
-import vulcan.Codec
 import derevo.derive
 import tofu.logging.derivation.loggable
+import tofu.generate.GenUUID
+import vulcan.Codec
+import supertagged.postfix._
 
-import marketplace.models.{CommandId, CommandKey, Timestamp}
+import marketplace.models.{Command, Timestamp}
 import marketplace.models.ozon.{Request => OzonRequest}
 import marketplace.models.yandex.market.{Request => YandexMarketRequest}
 
 @derive(loggable)
-sealed trait Command {
-  def id: CommandId
-  def key: CommandKey
-  def created: Timestamp
-}
+sealed trait CrawlerCommand extends Command
 
 @derive(loggable)
-case class HandleOzonRequest(id: CommandId, key: CommandKey, created: Timestamp, request: OzonRequest) extends Command
+case class HandleOzonRequest(id: Command.Id, key: Command.Key, created: Timestamp, request: OzonRequest) extends CrawlerCommand
 
 @derive(loggable)
-case class HandleYandexMarketRequest(id: CommandId, key: CommandKey, created: Timestamp, request: YandexMarketRequest) extends Command
+case class HandleYandexMarketRequest(id: Command.Id, key: Command.Key, created: Timestamp, request: YandexMarketRequest)
+    extends CrawlerCommand
 
-object Command {
-  def handleOzonRequest[F[_]: FlatMap: Clock: GenUUID](request: OzonRequest): F[Command] =
+object CrawlerCommand {
+  def handleOzonRequest[F[_]: FlatMap: Clock: GenUUID](request: OzonRequest): F[CrawlerCommand] =
     for {
       uuid    <- GenUUID[F].randomUUID
       instant <- Clock[F].instantNow
       key      = request.url.path
-    } yield HandleOzonRequest(uuid @@ CommandId, key @@ CommandKey, Timestamp(instant), request)
+    } yield HandleOzonRequest(uuid @@ Command.Id, key @@ Command.Key, Timestamp(instant), request)
 
-  def handleYandexMarketRequest[F[_]: FlatMap: Clock: GenUUID](request: YandexMarketRequest): F[Command] =
+  def handleYandexMarketRequest[F[_]: FlatMap: Clock: GenUUID](request: YandexMarketRequest): F[CrawlerCommand] =
     for {
       uuid    <- GenUUID[F].randomUUID
       instant <- Clock[F].instantNow
       key      = request.method
-    } yield HandleYandexMarketRequest(uuid @@ CommandId, key @@ CommandKey, Timestamp(instant), request)
+    } yield HandleYandexMarketRequest(uuid @@ Command.Id, key @@ Command.Key, Timestamp(instant), request)
 
-  implicit val vulcanCodec: Codec[Command] =
-    Codec.union[Command](alt => alt[HandleOzonRequest] |+| alt[HandleYandexMarketRequest])
+  implicit val vulcanCodec: Codec[CrawlerCommand] =
+    Codec.union[CrawlerCommand](alt => alt[HandleOzonRequest] |+| alt[HandleYandexMarketRequest])
 }
 
 object HandleOzonRequest {

@@ -1,49 +1,45 @@
 package marketplace.models.crawler
 
-import supertagged.postfix._
 import cats.implicits._
 import cats.FlatMap
 import cats.effect.Clock
+import derevo.derive
+import tofu.logging.derivation.loggable
 import tofu.generate.GenUUID
 import io.circe.Json
 import vulcan.Codec
-import derevo.derive
-import tofu.logging.derivation.loggable
+import supertagged.postfix._
 
-import marketplace.models.{EventId, EventKey, Timestamp}
+import marketplace.models.{Event, Timestamp}
 import marketplace.models.ozon.{Request => OzonRequest}
 import marketplace.models.yandex.market.{Request => YandexMarketRequest}
 
 @derive(loggable)
-sealed trait Event {
-  def id: EventId
-  def key: EventKey
-  def created: Timestamp
-}
+sealed trait CrawlerEvent extends Event
 
 @derive(loggable)
-final case class OzonRequestHandled(id: EventId, key: EventKey, created: Timestamp, raw: Json) extends Event
+final case class OzonRequestHandled(id: Event.Id, key: Event.Key, created: Timestamp, raw: Json) extends CrawlerEvent
 
 @derive(loggable)
-final case class YandexMarketRequestHandled(id: EventId, key: EventKey, created: Timestamp, raw: Json) extends Event
+final case class YandexMarketRequestHandled(id: Event.Id, key: Event.Key, created: Timestamp, raw: Json) extends CrawlerEvent
 
-object Event {
-  def ozonRequestHandled[F[_]: FlatMap: Clock: GenUUID](request: OzonRequest, raw: Json): F[Event] =
+object CrawlerEvent {
+  def ozonRequestHandled[F[_]: FlatMap: Clock: GenUUID](request: OzonRequest, raw: Json): F[CrawlerEvent] =
     for {
       uuid    <- GenUUID[F].randomUUID
       instant <- Clock[F].instantNow
       key      = request.path
-    } yield OzonRequestHandled(uuid @@ EventId, key @@ EventKey, Timestamp(instant), raw)
+    } yield OzonRequestHandled(uuid @@ Event.Id, key @@ Event.Key, Timestamp(instant), raw)
 
-  def yandexMarketRequestHandled[F[_]: FlatMap: Clock: GenUUID](request: YandexMarketRequest, raw: Json): F[Event] =
+  def yandexMarketRequestHandled[F[_]: FlatMap: Clock: GenUUID](request: YandexMarketRequest, raw: Json): F[CrawlerEvent] =
     for {
       uuid    <- GenUUID[F].randomUUID
       instant <- Clock[F].instantNow
       key      = request.method
-    } yield YandexMarketRequestHandled(uuid @@ EventId, key @@ EventKey, Timestamp(instant), raw)
+    } yield YandexMarketRequestHandled(uuid @@ Event.Id, key @@ Event.Key, Timestamp(instant), raw)
 
-  implicit val vulcanCodec: Codec[Event] =
-    Codec.union[Event](alt => alt[OzonRequestHandled] |+| alt[YandexMarketRequestHandled])
+  implicit val vulcanCodec: Codec[CrawlerEvent] =
+    Codec.union[CrawlerEvent](alt => alt[OzonRequestHandled] |+| alt[YandexMarketRequestHandled])
 }
 
 object OzonRequestHandled {

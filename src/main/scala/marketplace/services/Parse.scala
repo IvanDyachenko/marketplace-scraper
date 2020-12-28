@@ -3,7 +3,6 @@ package marketplace.services
 import tofu.syntax.raise._
 import tofu.syntax.monadic._
 import tofu.syntax.logging._
-import supertagged.postfix._
 import derevo.derive
 import cats.Monad
 import cats.effect.{Clock, Resource}
@@ -12,11 +11,9 @@ import tofu.higherKind.Mid
 import tofu.higherKind.derived.representableK
 import tofu.generate.GenUUID
 import tofu.logging.{Logging, Logs}
-
 import io.circe.DecodingFailure
 
-import marketplace.models.{EventId, EventKey, Timestamp}
-import marketplace.models.parser.{Command, Event, ParseYandexMarketResponse, YandexMarketResponseParsed}
+import marketplace.models.parser.{ParserEvent => Event, ParserCommand => Command, ParseYandexMarketResponse}
 import marketplace.models.yandex.market.{Result => YandexMarketResult}
 
 @derive(representableK)
@@ -25,7 +22,6 @@ trait Parse[F[_]] {
 }
 
 object Parse {
-
   private final class Logger[F[_]: Monad: Logging] extends Parse[Mid[F, *]] {
     def handle(command: Command): Mid[F, Event] =
       info"Execution of the ${command} has started" *> _
@@ -34,11 +30,7 @@ object Parse {
   private final class Impl[F[_]: Monad: Clock: GenUUID: Raise[*[_], DecodingFailure]] extends Parse[F] {
     def handle(command: Command): F[Event] = command match {
       case ParseYandexMarketResponse(_, _, _, response) =>
-        for {
-          uuid    <- GenUUID[F].randomUUID
-          instant <- Clock[F].instantNow
-          result  <- response.as[YandexMarketResult].toRaise
-        } yield YandexMarketResponseParsed(uuid @@ EventId, "yandex.market" @@ EventKey, Timestamp(instant), result)
+        response.as[YandexMarketResult].toRaise >>= (result => Event.yandexMarketResponseParsed(result))
     }
   }
 

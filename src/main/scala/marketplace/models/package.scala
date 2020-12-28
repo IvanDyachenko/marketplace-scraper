@@ -20,17 +20,33 @@ package object models {
     implicit val vulcanCodec: Codec[Timestamp] = Codec.instant.imap(apply)(_.value)
   }
 
-  object CommandId extends TaggedType[UUID] with LiftedCats with LiftedLoggable with LiftedVulcanCodec {}
-  type CommandId = CommandId.Type
+  trait Command {
+    def id: Command.Id
+    def key: Command.Key
+    def created: Timestamp
+  }
 
-  object CommandKey extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedVulcanCodec {}
-  type CommandKey = CommandKey.Type
+  object Command {
+    object Id extends TaggedType[UUID] with LiftedCats with LiftedLoggable with LiftedVulcanCodec {}
+    type Id = Id.Type
 
-  object EventId extends TaggedType[UUID] with LiftedCats with LiftedLoggable with LiftedVulcanCodec {}
-  type EventId = EventId.Type
+    object Key extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedVulcanCodec {}
+    type Key = Key.Type
+  }
 
-  object EventKey extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedVulcanCodec {}
-  type EventKey = EventKey.Type
+  trait Event {
+    def id: Event.Id
+    def key: Event.Key
+    def created: Timestamp
+  }
+
+  object Event {
+    object Id extends TaggedType[UUID] with LiftedCats with LiftedLoggable with LiftedVulcanCodec {}
+    type Id = Id.Type
+
+    object Key extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedVulcanCodec {}
+    type Key = Key.Type
+  }
 
   trait LiftedCats {
     type Raw

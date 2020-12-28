@@ -3,28 +3,24 @@ package marketplace.models.parser
 import java.nio.charset.StandardCharsets.UTF_8
 
 import cats.implicits._
-import io.circe.Json
-import io.circe.parser.decode
-import vulcan.{AvroError, Codec}
 import derevo.derive
 import tofu.logging.Loggable
 import tofu.logging.derivation.loggable
+import io.circe.Json
+import io.circe.parser.decode
+import vulcan.{AvroError, Codec}
 
-import marketplace.models.{CommandId, CommandKey, Timestamp}
-
-@derive(loggable)
-sealed trait Command {
-  def id: CommandId
-  def key: CommandKey
-  def created: Timestamp
-}
+import marketplace.models.{Command, Timestamp}
 
 @derive(loggable)
-case class ParseYandexMarketResponse(id: CommandId, key: CommandKey, created: Timestamp, response: Json) extends Command
+sealed trait ParserCommand extends Command
 
-object Command {
-  implicit val vulcanCodec: Codec[Command] =
-    Codec.union[Command](alt => alt[ParseYandexMarketResponse])
+@derive(loggable)
+case class ParseYandexMarketResponse(id: Command.Id, key: Command.Key, created: Timestamp, response: Json) extends ParserCommand
+
+object ParserCommand {
+  implicit val vulcanCodec: Codec[ParserCommand] =
+    Codec.union[ParserCommand](alt => alt[ParseYandexMarketResponse])
 }
 
 object ParseYandexMarketResponse {

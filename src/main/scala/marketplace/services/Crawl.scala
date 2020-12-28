@@ -16,7 +16,7 @@ import io.circe.Json
 import marketplace.marshalling._
 import marketplace.clients.HttpClient
 import marketplace.clients.HttpClient.HttpClientError
-import marketplace.models.crawler.{Command, Event, HandleOzonRequest, HandleYandexMarketRequest}
+import marketplace.models.crawler.{CrawlerEvent => Event, CrawlerCommand => Command, HandleOzonRequest, HandleYandexMarketRequest}
 
 @derive(representableK)
 trait Crawl[F[_]] {

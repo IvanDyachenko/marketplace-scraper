@@ -1,26 +1,33 @@
 package marketplace.models.parser
 
 import cats.implicits._
-import vulcan.Codec
+import cats.FlatMap
+import cats.effect.Clock
 import derevo.derive
 import tofu.logging.derivation.loggable
+import tofu.generate.GenUUID
+import vulcan.Codec
+import supertagged.postfix._
 
-import marketplace.models.{EventId, EventKey, Timestamp}
+import marketplace.models.{Event, Timestamp}
 import marketplace.models.yandex.market.{Result => YandexMarketResult}
 
 @derive(loggable)
-sealed trait Event {
-  def id: EventId
-  def key: EventKey
-  def created: Timestamp
-}
+sealed trait ParserEvent extends Event
 
 @derive(loggable)
-final case class YandexMarketResponseParsed(id: EventId, key: EventKey, created: Timestamp, result: YandexMarketResult) extends Event
+final case class YandexMarketResponseParsed(id: Event.Id, key: Event.Key, created: Timestamp, result: YandexMarketResult)
+    extends ParserEvent
 
-object Event {
-  implicit val vulcanCodec: Codec[Event] =
-    Codec.union[Event](alt => alt[YandexMarketResponseParsed])
+object ParserEvent {
+  def yandexMarketResponseParsed[F[_]: FlatMap: Clock: GenUUID](result: YandexMarketResult): F[ParserEvent] =
+    for {
+      uuid    <- GenUUID[F].randomUUID
+      instant <- Clock[F].instantNow
+    } yield YandexMarketResponseParsed(uuid @@ Event.Id, "yandex.market" @@ Event.Key, Timestamp(instant), result)
+
+  implicit val vulcanCodec: Codec[ParserEvent] =
+    Codec.union[ParserEvent](alt => alt[YandexMarketResponseParsed])
 }
 
 object YandexMarketResponseParsed {

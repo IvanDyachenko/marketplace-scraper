@@ -16,8 +16,8 @@ import fs2.kafka.{commitBatchWithin, KafkaConsumer, KafkaProducer, ProducerRecor
 import marketplace.config.CrawlerConfig
 import marketplace.context.AppContext
 import marketplace.services.Crawl
-import marketplace.models.{CommandKey, EventKey}
-import marketplace.models.crawler.{Command, Event}
+import marketplace.models.{Command, Event}
+import marketplace.models.crawler.{CrawlerCommand, CrawlerEvent}
 
 @derive(representableK)
 trait Crawler[S[_]] {
@@ -28,10 +28,10 @@ object Crawler {
 
   def apply[F[_]](implicit ev: Crawler[F]): ev.type = ev
 
-  def make[I[_]: Monad: Concurrent: Timer, F[_]: WithRun[*[_], I, AppContext], S[_]: LiftStream[*[_], I]](crawl: Crawl[F])(
-    config: CrawlerConfig,
-    consumer: KafkaConsumer[I, CommandKey, Command],
-    producer: KafkaProducer[I, EventKey, Event]
+  def make[I[_]: Monad: Concurrent: Timer, F[_]: WithRun[*[_], I, AppContext], S[_]: LiftStream[*[_], I]](config: CrawlerConfig)(
+    crawl: Crawl[F],
+    consumer: KafkaConsumer[I, Command.Key, CrawlerCommand],
+    producer: KafkaProducer[I, Event.Key, CrawlerEvent]
   ): Resource[I, Crawler[S]] =
     Resource.liftF {
       Stream

@@ -14,7 +14,7 @@ import marketplace.context.AppContext
 import marketplace.models.{ozon, Command, Event}
 import marketplace.models.crawler.{CrawlerCommand, CrawlerEvent}
 import marketplace.clients.{HttpClient, KafkaClient}
-import marketplace.services.{Crawl, Source}
+import marketplace.services.Crawl
 import marketplace.modules.{Crawler, Publisher}
 import supertagged.postfix._
 
@@ -56,25 +56,31 @@ object Main extends TaskApp {
       cfg                         <- Resource.liftF(Config.make[AppI])
       producer                    <- KafkaClient.makeProducer[AppI, Command.Key, CrawlerCommand](cfg.kafkaConfig, cfg.schemaRegistryConfig)
       commands                     = cfg.sourcesConfig.sources.map(makeCrawlerCommandSource[AppI])
-      publisher                   <- Publisher.make[AppI, AppS, Command.Key, CrawlerCommand](commands)(cfg.crawlerConfig.commandsTopic, producer)
+      publisher                   <- Publisher.make[AppI, AppS, Command.Key, CrawlerCommand](commands, cfg.crawlerConfig.commandsTopic, producer)
     } yield publisher
 
-  def makeCrawlerCommandSource[F[_]: Monad: Timer: GenUUID](config: SourceConfig): Source[Stream[F, *], (Command.Key, CrawlerCommand)] =
+  def makeCrawlerCommandSource[F[_]: Monad: Timer: GenUUID](config: SourceConfig): Stream[F, (Command.Key, CrawlerCommand)] =
     config match {
-      case SourceConfig.OzonCategory(name, SourceConfig.Pages.Top, _) =>
-        Source.make(config) {
-          Stream
-            .eval(CrawlerCommand.handleOzonRequest[F](ozon.GetCategorySearchResultsV2(name, 1 @@ ozon.Url.Page)))
-            .map(cmd => cmd.key -> cmd)
-        }
-      case SourceConfig.OzonCategory(name, SourceConfig.Pages.All, _) =>
-        Source.make(config) {
-          Stream
-            .emits(1 to 20) // FixMe
-            .evalMap { page =>
-              CrawlerCommand.handleOzonRequest[F](ozon.GetCategorySearchResultsV2(name, page @@ ozon.Url.Page))
-            }
-            .map(cmd => cmd.key -> cmd)
-        }
+      case SourceConfig.OzonCategory(name, SourceConfig.Pages.Top, every) =>
+        Stream
+          .awakeEvery[F](every)
+          .zipRight {
+            Stream
+              .eval(CrawlerCommand.handleOzonRequest[F](ozon.GetCategorySearchResultsV2(name, 1 @@ ozon.Url.Page)))
+              .map(cmd => cmd.key -> cmd)
+          }
+          .repeat
+      case SourceConfig.OzonCategory(name, SourceConfig.Pages.All, every) =>
+        Stream
+          .awakeEvery[F](every)
+          .flatMap { _ =>
+            Stream
+              .emits(1 to 250)
+              .evalMap { page =>
+                CrawlerCommand.handleOzonRequest[F](ozon.GetCategorySearchResultsV2(name, page @@ ozon.Url.Page))
+              }
+              .map(cmd => cmd.key -> cmd)
+          }
+          .repeat
     }
 }

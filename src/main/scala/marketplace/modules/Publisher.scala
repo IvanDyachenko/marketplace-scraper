@@ -11,8 +11,6 @@ import tofu.fs2.LiftStream
 import fs2.Stream
 import fs2.kafka.{KafkaProducer, ProducerRecord, ProducerRecords}
 
-import marketplace.services.Source
-
 @derive(representableK)
 trait Publisher[S[_]] {
   def run: S[Unit]
@@ -22,7 +20,8 @@ object Publisher {
 
   def apply[S[_]](implicit ev: Publisher[S]): ev.type = ev
 
-  def make[I[_]: Monad: Concurrent: Timer, S[_]: LiftStream[*[_], I], K, V](sources: List[Source[Stream[I, *], (K, V)]])(
+  def make[I[_]: Monad: Concurrent: Timer, S[_]: LiftStream[*[_], I], K, V](
+    sources: List[Stream[I, (K, V)]],
     topic: String,
     producer: KafkaProducer[I, K, V]
   ): Resource[I, Publisher[S]] =
@@ -33,7 +32,7 @@ object Publisher {
 
             def run: Stream[I, Unit] =
               Stream
-                .emits(sources.map(_.source))
+                .emits(sources)
                 .parJoinUnbounded
                 .evalMap { case (key, value) => producer.produce(ProducerRecords.one(ProducerRecord(topic, key, value))) }
                 .parEvalMap(1000)(identity)

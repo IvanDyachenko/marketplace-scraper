@@ -1,12 +1,17 @@
-{ pkgs ? import <nixpkgs> { }, ... }:
-
-pkgs.stdenv.mkDerivation rec {
-  name = "development-env";
-  env = pkgs.buildEnv { name = name; paths = buildInputs; };
-  buildInputs =
+let
+  pkgs = import <nixpkgs> {
+    overlays =
+      (import <nixpkgs> {}).overlays ++
       [
-        # Development
-        pkgs.mitmproxy pkgs.metals-emacs
+        (import ./.nixpkgs/default.nix)
       ];
-}
+  };
+in
+  pkgs.mkShell {
+    buildInputs =
+      [
+        pkgs.kafkacat
+        pkgs.metals-emacs
+      ];
+  }
 

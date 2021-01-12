@@ -13,7 +13,8 @@ import tofu.generate.GenUUID
 import tofu.logging.{Logging, Logs}
 import io.circe.DecodingFailure
 
-import marketplace.models.parser.{ParserEvent => Event, ParserCommand => Command, ParseYandexMarketResponse}
+import marketplace.models.parser.{ParserEvent => Event, ParserCommand => Command, ParseOzonResponse, ParseYandexMarketResponse}
+import marketplace.models.ozon.{Result => OzonResult}
 import marketplace.models.yandex.market.{Result => YandexMarketResult}
 
 @derive(representableK)
@@ -29,6 +30,8 @@ object Parse {
 
   private final class Impl[F[_]: Monad: Clock: GenUUID: Raise[*[_], DecodingFailure]] extends Parse[F] {
     def handle(command: Command): F[Event] = command match {
+      case ParseOzonResponse(_, _, _, response)         =>
+        response.as[OzonResult].toRaise >>= (result => Event.ozonResponseParsed(result))
       case ParseYandexMarketResponse(_, _, _, response) =>
         response.as[YandexMarketResult].toRaise >>= (result => Event.yandexMarketResponseParsed(result))
     }

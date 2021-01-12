@@ -11,6 +11,7 @@ final case class ParserConfig(
   groupId: String,
   eventsTopic: String,
   commandsTopic: String,
+  maxConcurrent: Int,
   batchOffsets: Int,
   batchTimeWindow: FiniteDuration
 )

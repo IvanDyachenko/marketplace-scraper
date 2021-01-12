@@ -28,11 +28,11 @@ object Parser {
 
   def apply[F[_]](implicit ev: Parser[F]): ev.type = ev
 
-  def make[I[_]: Monad: Concurrent: Timer, F[_]: WithRun[*[_], I, AppContext], S[_]: LiftStream[*[_], I]](
+  def make[I[_]: Monad: Concurrent: Timer, F[_]: WithRun[*[_], I, AppContext], S[_]: LiftStream[*[_], I]](config: ParserConfig)(
     parse: Parse[F],
     consumer: KafkaConsumer[I, Command.Key, ParserCommand],
     producer: KafkaProducer[I, Event.Key, ParserEvent]
-  )(config: ParserConfig): Resource[I, Parser[S]] =
+  ): Resource[I, Parser[S]] =
     Resource.liftF {
       Stream
         .eval {
@@ -40,15 +40,12 @@ object Parser {
             def run: Stream[I, Unit] =
               consumer.partitionedStream.map { partition =>
                 partition
-                  .evalMap { committable =>
-                    runContext(parse.handle(committable.record.value))(AppContext()).map { event =>
-                      ProducerRecords.one(
-                        ProducerRecord(config.eventsTopic, event.key, event),
-                        committable.offset
-                      )
-                    }
+                  .parEvalMap(config.maxConcurrent) { committable =>
+                    runContext(parse.handle(committable.record.value))(AppContext()).map(_ -> committable.offset)
                   }
-                  .through(_.evalMap(producer.produce).mapAsync(1000)(identity))
+                  .map { case (event, offset) => ProducerRecords.one(ProducerRecord(config.eventsTopic, event.key, event), offset) }
+                  .evalMap(producer.produce)
+                  .parEvalMap(1000)(identity)
                   .map(_.passthrough)
                   .through(commitBatchWithin(config.batchOffsets, config.batchTimeWindow))
               }.parJoinUnbounded

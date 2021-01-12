@@ -10,16 +10,26 @@ import vulcan.Codec
 import supertagged.postfix._
 
 import marketplace.models.{Event, Timestamp}
+import marketplace.models.ozon.{Result => OzonResult}
 import marketplace.models.yandex.market.{Result => YandexMarketResult}
 
 @derive(loggable)
 sealed trait ParserEvent extends Event
 
 @derive(loggable)
+final case class OzonResponseParsed(id: Event.Id, key: Event.Key, created: Timestamp, result: OzonResult) extends ParserEvent
+
+@derive(loggable)
 final case class YandexMarketResponseParsed(id: Event.Id, key: Event.Key, created: Timestamp, result: YandexMarketResult)
     extends ParserEvent
 
 object ParserEvent {
+  def ozonResponseParsed[F[_]: FlatMap: Clock: GenUUID](result: OzonResult): F[ParserEvent] =
+    for {
+      uuid    <- GenUUID[F].randomUUID
+      instant <- Clock[F].instantNow
+    } yield OzonResponseParsed(uuid @@ Event.Id, "ozon" @@ Event.Key, Timestamp(instant), result)
+
   def yandexMarketResponseParsed[F[_]: FlatMap: Clock: GenUUID](result: YandexMarketResult): F[ParserEvent] =
     for {
       uuid    <- GenUUID[F].randomUUID
@@ -28,6 +38,14 @@ object ParserEvent {
 
   implicit val vulcanCodec: Codec[ParserEvent] =
     Codec.union[ParserEvent](alt => alt[YandexMarketResponseParsed])
+}
+
+object OzonResponseParsed {
+  implicit val vulcanCodec: Codec[OzonResponseParsed] =
+    Codec.record[OzonResponseParsed]("OzonResponseHandled", "parser.events")(field =>
+      (field("id", _.id), field("key", _.key), field("created", _.created), field("result", _.result))
+        .mapN(OzonResponseParsed.apply)
+    )
 }
 
 object YandexMarketResponseParsed {

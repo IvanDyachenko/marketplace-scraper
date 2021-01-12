@@ -80,6 +80,7 @@ lazy val projectDependencies =
     "org.manatki"           %% "derevo-cats-tagless"      % Versions.derevo,
     "io.circe"              %% "circe-core"               % Versions.circe,
     "io.circe"              %% "circe-parser"             % Versions.circe,
+    "io.circe"              %% "circe-generic-extras"     % Versions.circe,
     "io.circe"              %% "circe-derivation"         % Versions.circeDerivation,
     "com.github.fd4s"       %% "vulcan"                   % Versions.vulkan,
     "com.github.fd4s"       %% "vulcan-generic"           % Versions.vulkan,

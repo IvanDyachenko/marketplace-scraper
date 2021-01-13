@@ -1,4 +1,4 @@
-# Mar🐈place crawler ![Scala CI/CD](https://github.com/IvanDyachenko/marketplace-crawler/workflows/Scala%20CI/CD/badge.svg)
+# Mar🐈place crawler ![Scala CI/CD](https://github.com/IvanDyachenko/marketplace-crawler/workflows/Scala%20CI/CD/badge.svg) [![time tracker](https://wakatime.com/badge/github/IvanDyachenko/marketplace-crawler.svg)](https://wakatime.com/badge/github/IvanDyachenko/marketplace-crawler)
 
 ### Docker
 Run containers in the background:

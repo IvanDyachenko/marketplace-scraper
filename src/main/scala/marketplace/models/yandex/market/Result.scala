@@ -11,6 +11,7 @@ import tofu.logging.LoggableEnum
 import tofu.logging.derivation.{loggable, masked, MaskMode}
 
 @derive(loggable)
+@AvroNamespace("yandex.market.models")
 sealed trait Result {
   def status: Result.Status
 }

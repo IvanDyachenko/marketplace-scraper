@@ -4,7 +4,6 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import io.circe.parser.decode
-import io.circe.Json
 
 class ResultSpec extends AnyFlatSpec with Matchers {
 

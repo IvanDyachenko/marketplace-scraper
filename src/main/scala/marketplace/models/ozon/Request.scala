@@ -3,12 +3,13 @@ package marketplace.models.ozon
 import cats.implicits._
 import derevo.derive
 import tofu.logging.derivation.loggable
-import vulcan.Codec
+import vulcan.{AvroNamespace, Codec}
 import supertagged.postfix._
 
 import marketplace.models.ozon.Url.{LayoutContainer, LayoutPageIndex, Page}
 
 @derive(loggable)
+@AvroNamespace("ozon.models")
 sealed trait Request {
   def host: String = "api.ozon.ru"
   def path: String = "/composer-api.bx/page/json/v1"
@@ -45,5 +46,5 @@ object GetCategorySearchResultsV2 {
 }
 
 object Request {
-  implicit val avroCodec: Codec[Request] = Codec.union[Request](alt => alt[GetCategorySearchResultsV2])
+  implicit val vulcanCodec: Codec[Request] = Codec.union[Request](alt => alt[GetCategorySearchResultsV2])
 }

@@ -41,11 +41,11 @@ object ParserEvent {
 }
 
 object OzonResponseParsed {
-  implicit val vulcanCodec: Codec[OzonResponseParsed] =
-    Codec.record[OzonResponseParsed]("OzonResponseHandled", "parser.events")(field =>
-      (field("id", _.id), field("key", _.key), field("created", _.created), field("result", _.result))
-        .mapN(OzonResponseParsed.apply)
-    )
+  implicit val vulcanCodec: Codec[OzonResponseParsed] = ???
+//    Codec.record[OzonResponseParsed]("OzonResponseHandled", "parser.events")(field =>
+//      (field("id", _.id), field("key", _.key), field("created", _.created), field("result", _.result))
+//        .mapN(OzonResponseParsed.apply)
+//    )
 }
 
 object YandexMarketResponseParsed {

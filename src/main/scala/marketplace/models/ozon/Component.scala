@@ -24,8 +24,8 @@ object Component {
   @derive(loggable)
   final case class SearchResultsV2(stateId: Component.StateId) extends Component
 
-  implicit val configuration: Configuration     = Configuration(Predef.identity, decapitalize, false, Some("component"))
-  implicit val circeDecoder: Decoder[Component] = deriveConfiguredDecoder[Component]
+  implicit val circeDecoderConfig: Configuration = Configuration(Predef.identity, decapitalize, false, Some("component"))
+  implicit val circeDecoder: Decoder[Component]  = deriveConfiguredDecoder[Component]
 
   private def decapitalize(s: String): String =
     if (s == null || s.length == 0 || s.charAt(0).isLower) s

@@ -17,7 +17,25 @@ object Result {
   final case class FailureSearchResultsV2(error: String) extends Result
 
   object SearchResultsV2 {
-    implicit val circeDecoder: Decoder[SearchResultsV2] = ???
+    implicit val circeDecoder: Decoder[SearchResultsV2] = new Decoder[SearchResultsV2] {
+      final def apply(c: HCursor): Decoder.Result[SearchResultsV2] =
+        for {
+          layout          <- c.downField("layout").as[Layout]
+          searchResultsV2 <-
+            layout.searchResultsV2.fold[Decoder.Result[SearchResultsV2]](
+              Left(
+                DecodingFailure(
+                  "\"layout\" object doesn't contain component with \"component\" which is equal to \"searchResultsV2\"",
+                  c.history
+                )
+              )
+            ) { component =>
+              for {
+                items <- c.downField("catalog").downField("searchResultsV2").downField(component.stateId).get[List[Item]]("items")
+              } yield SearchResultsV2(items)
+            }
+        } yield searchResultsV2
+    }
   }
 
   object FailureSearchResultsV2 {
@@ -27,7 +45,12 @@ object Result {
           layout                 <- c.downField("layout").as[Layout]
           failureSearchResultsV2 <-
             layout.searchResultsV2.fold[Decoder.Result[FailureSearchResultsV2]](
-              Left(DecodingFailure("layout field doesn't contain searchResultsV2 component", c.history))
+              Left(
+                DecodingFailure(
+                  "\"layout\" object doesn't contain component with \"component\" which is equal to \"searchResultsV2\"",
+                  c.history
+                )
+              )
             ) { component =>
               for {
                 error <- c.downField("catalog").downField("searchResultsV2").downField(component.stateId).get[String]("error")

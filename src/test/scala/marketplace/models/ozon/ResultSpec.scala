@@ -4,68 +4,11 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import io.circe.parser.decode
+import io.circe.Json
 
 class ResultSpec extends AnyFlatSpec with Matchers {
-  it should "decode FailureSearchResultsV2 from a valid JSON" in {
-    val failureSearchResultsV2RawJson =
-      """
-        |{
-        |   "catalog" : {
-        |      "shared" : {
-        |         "catalog" : {
-        |            "totalPages" : 70,
-        |            "context" : "category",
-        |            "currentUrl" : "/category/dlya-gryzunov-12429/?page=131",
-        |            "categoryPredicted" : false,
-        |            "correctedText" : "",
-        |            "totalFound" : 2487,
-        |            "currentText" : "",
-        |            "category" : {
-        |               "catalogName" : "",
-        |               "imageUrls" : {
-        |                  "catalog_logo" : "https://cdn1.ozone.ru/multimedia/1033937063.jpg"
-        |               },
-        |               "isAdult" : false,
-        |               "name" : "Для грызунов",
-        |               "id" : 12429
-        |            },
-        |            "currentPage" : 131,
-        |            "brand" : null,
-        |            "activeSort" : "",
-        |            "breadCrumbs" : null
-        |         }
-        |      },
-        |      "searchResultsV2" : {
-        |         "searchResultsV2-189805-default-131" : {
-        |            "error" : "internal server error"
-        |         }
-        |      }
-        |   },
-        |   "pageInfo" : {
-        |      "context" : "ozon",
-        |      "layoutId" : 1571,
-        |      "url" : "/category/dlya-gryzunov-12429/?layout_container=default&layout_page_index=131&page=131",
-        |      "layoutVersion" : 65,
-        |      "pageType" : "category",
-        |      "ruleId" : 1389
-        |   },
-        |   "nextPage" : "/category/dlya-gryzunov-12429/?layout_container=no_results&layout_page_index=132&page=131",
-        |   "layout" : [
-        |      {
-        |         "vertical" : "catalog",
-        |         "version" : 1,
-        |         "stateId" : "searchResultsV2-189805-default-131",
-        |         "component" : "searchResultsV2"
-        |      }
-        |   ]
-        |}
-      """.stripMargin
 
-    decode[Result](failureSearchResultsV2RawJson).isRight shouldBe true
-    decode[Result.FailureSearchResultsV2](failureSearchResultsV2RawJson).isRight shouldBe true
-  }
-
-  ignore should "decode SearchResultsV2 from a valid JSON" in {
+  it should "decode SearchResultsV2 from a valid JSON" in {
     val searchResultsV2RawJson =
       """
         |{
@@ -177,7 +120,7 @@ class ResultSpec extends AnyFlatSpec with Matchers {
         |                "text" : "Корм сухой для котят с курицей, 400 г"
         |              },
         |              {
-        |                "id" : "universalAction"
+        |                "id" : "universalAction",
         |                "type" : "action",
         |                "button" : {
         |                  "isActive" : false,
@@ -221,6 +164,7 @@ class ResultSpec extends AnyFlatSpec with Matchers {
         |            ]
         |          }
         |        ]
+        |      }
         |    }
         |  }
         |}
@@ -228,5 +172,64 @@ class ResultSpec extends AnyFlatSpec with Matchers {
 
     decode[Result](searchResultsV2RawJson).isRight shouldBe true
     decode[Result.SearchResultsV2](searchResultsV2RawJson).isRight shouldBe true
+  }
+
+  it should "decode FailureSearchResultsV2 from a valid JSON" in {
+    val failureSearchResultsV2RawJson =
+      """
+        |{
+        |   "catalog" : {
+        |      "shared" : {
+        |         "catalog" : {
+        |            "totalPages" : 70,
+        |            "context" : "category",
+        |            "currentUrl" : "/category/dlya-gryzunov-12429/?page=131",
+        |            "categoryPredicted" : false,
+        |            "correctedText" : "",
+        |            "totalFound" : 2487,
+        |            "currentText" : "",
+        |            "category" : {
+        |               "catalogName" : "",
+        |               "imageUrls" : {
+        |                  "catalog_logo" : "https://cdn1.ozone.ru/multimedia/1033937063.jpg"
+        |               },
+        |               "isAdult" : false,
+        |               "name" : "Для грызунов",
+        |               "id" : 12429
+        |            },
+        |            "currentPage" : 131,
+        |            "brand" : null,
+        |            "activeSort" : "",
+        |            "breadCrumbs" : null
+        |         }
+        |      },
+        |      "searchResultsV2" : {
+        |         "searchResultsV2-189805-default-131" : {
+        |            "error" : "internal server error"
+        |         }
+        |      }
+        |   },
+        |   "pageInfo" : {
+        |      "context" : "ozon",
+        |      "layoutId" : 1571,
+        |      "url" : "/category/dlya-gryzunov-12429/?layout_container=default&layout_page_index=131&page=131",
+        |      "layoutVersion" : 65,
+        |      "pageType" : "category",
+        |      "ruleId" : 1389
+        |   },
+        |   "nextPage" : "/category/dlya-gryzunov-12429/?layout_container=no_results&layout_page_index=132&page=131",
+        |   "layout" : [
+        |      {
+        |         "vertical" : "catalog",
+        |         "version" : 1,
+        |         "stateId" : "searchResultsV2-189805-default-131",
+        |         "component" : "searchResultsV2"
+        |      }
+        |   ]
+        |}
+      """.stripMargin
+
+    decode[Result](failureSearchResultsV2RawJson).isRight shouldBe true
+    decode[Result.FailureSearchResultsV2](failureSearchResultsV2RawJson).isRight shouldBe true
   }
 }

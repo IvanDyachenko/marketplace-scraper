@@ -25,7 +25,7 @@ trait Parse[F[_]] {
 object Parse {
   private final class Logger[F[_]: Monad: Logging] extends Parse[Mid[F, *]] {
     def handle(command: Command): Mid[F, Event] =
-      info"Execution of the ${command} has started" *> _
+      info"Execution of the ${command} has started" *> _ <* info"Execution of the ${command} has been completed"
   }
 
   private final class Impl[F[_]: Monad: Clock: GenUUID: Raise[*[_], DecodingFailure]] extends Parse[F] {

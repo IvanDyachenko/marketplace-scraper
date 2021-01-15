@@ -24,10 +24,12 @@ trait Crawl[F[_]] {
 }
 
 object Crawl {
-
   private final class Logger[F[_]: Monad: Logging] extends Crawl[Mid[F, *]] {
     def handle(command: Command): Mid[F, Option[Event]] =
-      info"Execution of the ${command} has started" *> _
+      info"Execution of the ${command} has started" *> _.flatTap {
+        case None => error"Execution of the ${command} has been completed with an error"
+        case _    => info"Execution of the ${command} has been successfully completed"
+      }
   }
 
   private final class Impl[F[_]: Monad: Clock: GenUUID: HttpClient: Handle[*[_], HttpClientError]] extends Crawl[F] {

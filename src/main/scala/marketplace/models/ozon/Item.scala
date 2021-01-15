@@ -6,7 +6,7 @@ import tofu.logging.derivation.loggable
 import tofu.logging.LoggableEnum
 import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry}
 import enumeratum.EnumEntry.Lowercase
-import io.circe.{Decoder, HCursor}
+import io.circe.{Decoder, HCursor, Json}
 
 import supertagged.TaggedType
 
@@ -29,7 +29,7 @@ final case class Item(
   isPersonalized: Boolean,
   isPromotedProduct: Boolean,
   freeRest: Int,
-  //maxItems: Int,
+  template: List[Template.State],
   countItems: Int,
   index: Int
 )
@@ -50,24 +50,30 @@ object Item {
     final def apply(c: HCursor): Decoder.Result[Item] = {
       lazy val i = c.downField("cellTrackingInfo")
       (
-        i.downField("id").as[Item.Id],
-        i.downField("category").as[Category.Name],
+        i.get[Item.Id]("id"),
+        i.get[Category.Name]("category"),
         i.as[Brand],
-        i.downField("title").as[String],
-        i.downField("rating").as[Double],
+        i.get[String]("title"),
+        i.get[Double]("rating"),
         i.as[Price],
-        i.downField("type").as[Item.Type],
-        i.downField("marketplaceSellerId").as[MarketplaceSeller.Id],
-        i.downField("availability").as[Int],
-        i.downField("availableInDays").as[Int],
+        i.get[Item.Type]("type"),
+        i.get[MarketplaceSeller.Id]("marketplaceSellerId"),
+        i.get[Int]("availability"),
+        i.get[Int]("availableInDays"),
         i.as[Delivery],
-        i.downField("isSupermarket").as[Boolean],
-        i.downField("isPersonalized").as[Boolean],
-        i.downField("isPromotedProduct").as[Boolean],
-        i.downField("freeRest").as[Int],
-        i.downField("countItems").as[Int],
-        i.downField("index").as[Int]
+        i.get[Boolean]("isSupermarket"),
+        i.get[Boolean]("isPersonalized"),
+        i.get[Boolean]("isPromotedProduct"),
+        i.get[Int]("freeRest"),
+        c.get[List[Template.State]]("templateState")(decodeListTolerantly[Template.State]),
+        i.get[Int]("countItems"),
+        i.get[Int]("index")
       ).mapN(Item.apply)
     }
   }
+
+  private def decodeListTolerantly[A: Decoder]: Decoder[List[A]] =
+    Decoder
+      .decodeList(Decoder[A].either(Decoder[Json]))
+      .map(_.flatMap(_.left.toOption))
 }

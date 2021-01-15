@@ -29,7 +29,7 @@ final case class Item(
   isPersonalized: Boolean,
   isPromotedProduct: Boolean,
   freeRest: Int,
-  template: List[Template.State],
+  templateState: List[Template.State],
   countItems: Int,
   index: Int
 )

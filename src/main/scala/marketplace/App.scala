@@ -8,15 +8,15 @@ import tofu.logging.Logs
 import tofu.generate.GenUUID
 import fs2.Stream
 import tofu.fs2Instances._
+import supertagged.postfix._
 
 import marketplace.config.{Config, SourceConfig}
 import marketplace.context.AppContext
+import marketplace.clients.{HttpClient, KafkaClient}
+import marketplace.services.{Crawl, Parse}
+import marketplace.modules.{Crawler, Parser, Publisher}
 import marketplace.models.{ozon, Command, Event}
 import marketplace.models.crawler.{CrawlerCommand, CrawlerEvent}
-import marketplace.clients.{HttpClient, KafkaClient}
-import marketplace.services.Crawl
-import marketplace.modules.{Crawler, Publisher}
-import supertagged.postfix._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -24,7 +24,8 @@ object Main extends TaskApp {
 
   override def run(args: List[String]): Task[ExitCode] =
     Task
-      .parZip2(
+      .parZip3(
+        initParser.use(_.run.compile.drain),
         initCrawler.use(_.run.compile.drain),
         initPublisher.use(_.run.compile.drain)
       )
@@ -35,6 +36,20 @@ object Main extends TaskApp {
   type AppS[+A] = Stream[AppI, A]
 
   private implicit val logs: Logs[AppI, AppF] = Logs.withContext[AppI, AppF]
+
+  def initParser: Resource[Task, Parser[AppS]] =
+    for {
+      implicit0(blocker: Blocker) <- Blocker[AppI]
+      cfg                         <- Resource.liftF(Config.make[AppI])
+      parse                       <- Parse.make[AppI, AppF]
+      consumerOfCrawlerEvents     <- KafkaClient.makeConsumer[AppI, Command.Key, CrawlerEvent](cfg.kafkaConfig, cfg.schemaRegistryConfig)(
+                                       groupId = cfg.parserConfig.groupId,
+                                       topic = cfg.crawlerConfig.eventsTopic
+                                     )
+//    producerOfParserEvents      <- KafkaClient.makeProducer[AppI, Event.Key, ParserEvent](cfg.kafkaConfig, cfg.schemaRegistryConfig)
+      producerOfOzonItems         <- KafkaClient.makeProducer[AppI, String, ozon.Item](cfg.kafkaConfig, cfg.schemaRegistryConfig)
+      parser                      <- Parser.make[AppI, AppF, AppS](cfg.parserConfig)(parse, producerOfOzonItems, consumerOfCrawlerEvents)
+    } yield parser
 
   def initCrawler: Resource[Task, Crawler[AppS]] =
     for {

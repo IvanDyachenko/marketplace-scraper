@@ -19,7 +19,7 @@ final case class ParseYandexMarketResponse(id: Command.Id, key: Command.Key, cre
 
 object ParserCommand {
   implicit val vulcanCodec: Codec[ParserCommand] =
-    Codec.union[ParserCommand](alt => alt[ParseYandexMarketResponse])
+    Codec.union[ParserCommand](alt => alt[ParseOzonResponse] |+| alt[ParseYandexMarketResponse])
 }
 
 object ParseOzonResponse {

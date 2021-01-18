@@ -4,6 +4,7 @@ import cats.implicits._
 import derevo.derive
 import tofu.logging.derivation.{loggable, masked, MaskMode}
 import io.circe.{Decoder, DecodingFailure, HCursor}
+import vulcan.Codec
 
 @derive(loggable)
 sealed trait Result
@@ -36,6 +37,9 @@ object Result {
             }
         } yield searchResultsV2
     }
+
+    implicit val vulcanCodec: Codec[SearchResultsV2] =
+      Codec.record[SearchResultsV2]("SearchResultsV2", "ozon.models")(field => field("items", _.items).map(apply))
   }
 
   object FailureSearchResultsV2 {
@@ -58,11 +62,16 @@ object Result {
             }
         } yield failureSearchResultsV2
     }
+
+    implicit val vulcanCodec: Codec[FailureSearchResultsV2] =
+      Codec.record[FailureSearchResultsV2]("FailureSearchResultsV2", "ozon.models")(_("error", _.error).map(apply))
   }
 
   implicit val circeDecoder: Decoder[Result] =
     List[Decoder[Result]](
-      Decoder[SearchResultsV2].widen,
-      Decoder[FailureSearchResultsV2].widen
+      Decoder[FailureSearchResultsV2].widen,
+      Decoder[SearchResultsV2].widen
     ).reduceLeft(_ or _)
+
+  implicit val vulcanCodec: Codec[Result] = Codec.union[Result](alt => alt[SearchResultsV2] |+| alt[FailureSearchResultsV2])
 }

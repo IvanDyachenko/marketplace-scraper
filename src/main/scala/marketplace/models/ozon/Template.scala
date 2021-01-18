@@ -3,7 +3,7 @@ package marketplace.models.ozon
 import cats.implicits._
 import derevo.derive
 import derevo.circe.decoder
-import io.circe.{Decoder, HCursor}
+import io.circe.{Decoder, HCursor, Json}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import tofu.logging.derivation.loggable
@@ -12,6 +12,10 @@ import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry}
 import enumeratum.EnumEntry.LowerCamelcase
 
 import marketplace.syntax._
+import marketplace.models.ozon.Template.State.UniversalAction
+
+@derive(loggable)
+final case class Template(state: List[Template.State])
 
 object Template {
 
@@ -70,4 +74,14 @@ object Template {
     implicit val circeDecoderConfig: Configuration = Configuration(Predef.identity, _.decapitalize, false, Some("id"))
     implicit val circeDecoder: Decoder[State]      = deriveConfiguredDecoder[State]
   }
+
+  implicit final class TemplateOps(private val template: Template) extends AnyVal {
+    def addToCartMaxItems: Option[Int] = template.state.collectFirst {
+      case UniversalAction(UniversalAction.Button.AddToCartWithQuantity(_, maxItems)) => maxItems
+    }
+  }
+
+  implicit val circeDecoder: Decoder[Template] = Decoder
+    .decodeList(Decoder[State].either(Decoder[Json]))
+    .map(ls => Template.apply(ls.flatMap(_.left.toOption)))
 }

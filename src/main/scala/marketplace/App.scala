@@ -42,12 +42,12 @@ object Main extends TaskApp {
       cfg                                     <- Resource.liftF(Config.make[AppI])
       implicit0(httpClient: HttpClient[AppF]) <- HttpClient.make[AppI, AppF](cfg.httpConfig)
       crawl                                   <- Crawl.make[AppI, AppF]
-      consumer                                <- KafkaClient.makeConsumer[AppI, Command.Key, CrawlerCommand](cfg.kafkaConfig, cfg.schemaRegistryConfig)(
+      consumerOfCrawlerCommands               <- KafkaClient.makeConsumer[AppI, Command.Key, CrawlerCommand](cfg.kafkaConfig, cfg.schemaRegistryConfig)(
                                                    groupId = cfg.crawlerConfig.groupId,
                                                    topic = cfg.crawlerConfig.commandsTopic
                                                  )
-      producer                                <- KafkaClient.makeProducer[AppI, Event.Key, CrawlerEvent](cfg.kafkaConfig, cfg.schemaRegistryConfig)
-      crawler                                 <- Crawler.make[AppI, AppF, AppS](cfg.crawlerConfig)(crawl, consumer, producer)
+      producerOfCrawlerEvents                 <- KafkaClient.makeProducer[AppI, Event.Key, CrawlerEvent](cfg.kafkaConfig, cfg.schemaRegistryConfig)
+      crawler                                 <- Crawler.make[AppI, AppF, AppS](cfg.crawlerConfig)(crawl, producerOfCrawlerEvents, consumerOfCrawlerCommands)
     } yield crawler
 
   def initPublisher: Resource[Task, Publisher[AppS]] =

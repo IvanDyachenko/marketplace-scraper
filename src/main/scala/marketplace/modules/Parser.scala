@@ -1,9 +1,10 @@
 package marketplace.modules
 
 import cats.tagless.syntax.functorK._
-import cats.Monad
+import cats.{Applicative, Monad}
 import cats.effect.{Concurrent, Resource, Timer}
 import tofu.syntax.embed._
+import tofu.syntax.handle._
 import tofu.syntax.monadic._
 import tofu.syntax.context._
 import derevo.derive
@@ -21,6 +22,8 @@ import marketplace.models.{ozon, Command}
 import marketplace.models.parser.{ParseOzonResponse, ParseYandexMarketResponse}
 import marketplace.models.crawler.{CrawlerEvent, OzonRequestHandled, YandexMarketRequestHandled}
 import marketplace.models.parser.OzonResponseParsed
+import marketplace.models.parser.ParserEvent
+import marketplace.services.Parse.ParsingError
 
 @derive(representableK)
 trait Parser[S[_]] {
@@ -30,7 +33,9 @@ trait Parser[S[_]] {
 object Parser {
   def apply[F[_]](implicit ev: Parser[F]): ev.type = ev
 
-  private final class Impl[I[_]: Monad: Timer: Concurrent, F[_]: WithRun[*[_], I, AppContext]](config: ParserConfig)(
+  private final class Impl[I[_]: Monad: Timer: Concurrent, F[_]: Applicative: WithRun[*[_], I, AppContext]: ParsingError.Handling](
+    config: ParserConfig
+  )(
     parse: Parse[F],
 //  producerOfParserEvents: KafkaProducer[I, Event.Key, ParserEvent],
     producerOfOzonItems: KafkaProducer[I, String, ozon.Item],
@@ -48,9 +53,11 @@ object Parser {
                 ParseYandexMarketResponse(id @@@ Command.Id, key @@@ Command.Key, created, raw)
             }
 
-            runContext(parse.handle(command))(AppContext()).map(_ -> committable.offset)
+            runContext {
+              parse.handle(command).map(Some(_): Option[ParserEvent]).handle[ParsingError](_ => (None: Option[ParserEvent]))
+            }(AppContext()).map(_.map(_ -> committable.offset))
           }
-          .collect { case (OzonResponseParsed(_, _, _, ozon.Result.SearchResultsV2(items)), offset) =>
+          .collect { case Some((OzonResponseParsed(_, _, _, ozon.Result.SearchResultsV2(items)), offset)) =>
             ProducerRecords(items.map(ProducerRecord(config.clickhouseOzonItemsTopic, "ozon", _)), offset)
           }
           .evalMap(producerOfOzonItems.produce)
@@ -60,13 +67,13 @@ object Parser {
       }.parJoinUnbounded
   }
 
-  def make[I[_]: Monad: Concurrent: Timer, F[_]: WithRun[*[_], I, AppContext], S[_]: LiftStream[*[_], I]](config: ParserConfig)(
-    parse: Parse[F],
+  // format: off
+  def make[I[_]: Monad: Concurrent: Timer, F[_]: Applicative: WithRun[*[_], I, AppContext]: ParsingError.Handling, S[_]: LiftStream[*[_], I]](config: ParserConfig)( // format: on
+  parse: Parse[F],
 //  producerOfParserEvents: KafkaProducer[I, Event.Key, ParserEvent],
-    producerOfOzonItems: KafkaProducer[I, String, ozon.Item],
+  producerOfOzonItems: KafkaProducer[I, String, ozon.Item],
 //  consumerOfParserCommands: KafkaConsumer[I, Command.Key, ParserCommand]
-    consumerOfCrawlerEvents: KafkaConsumer[I, Command.Key, CrawlerEvent]
-  ): Resource[I, Parser[S]] =
+  consumerOfCrawlerEvents: KafkaConsumer[I, Command.Key, CrawlerEvent]): Resource[I, Parser[S]] =
     Resource.liftF {
       Stream
         .eval {

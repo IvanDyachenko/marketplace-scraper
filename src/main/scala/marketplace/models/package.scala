@@ -4,21 +4,15 @@ import java.util.UUID
 import java.time.Instant
 
 import cats.Show
-import supertagged.TaggedType
-import derevo.derive
 import tofu.logging.Loggable
-import tofu.logging.derivation.loggable
 import vulcan.Codec
 import io.circe.{Decoder, Encoder}
+import supertagged.TaggedType
 
 package object models {
 
-  @derive(loggable)
-  case class Timestamp(value: Instant)
-
-  object Timestamp {
-    implicit val vulcanCodec: Codec[Timestamp] = Codec.instant.imap(apply)(_.value)
-  }
+  object Timestamp extends TaggedType[Instant] with LiftedCats with LiftedLoggable with LiftedVulcanCodec {}
+  type Timestamp = Timestamp.Type
 
   trait Command {
     def id: Command.Id

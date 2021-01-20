@@ -10,28 +10,57 @@ import vulcan.Codec
 import supertagged.postfix._
 
 import marketplace.models.{Event, Timestamp}
-import marketplace.models.ozon.{Result => OzonResult}
+import marketplace.models.ozon.{Item => OzonItem, Result => OzonResult}
 
 @derive(loggable)
-sealed trait ParserEvent extends Event
+sealed trait ParserEvent extends Event {
+  def time: Timestamp
+}
 
 object ParserEvent {
   @derive(loggable)
-  final case class OzonResponseParsed(id: Event.Id, key: Event.Key, created: Timestamp, result: OzonResult) extends ParserEvent
+  final case class OzonItemParsed(id: Event.Id, key: Event.Key, created: Timestamp, time: Timestamp, item: OzonItem) extends ParserEvent
 
-  def ozonResponseParsed[F[_]: FlatMap: Clock: GenUUID](result: OzonResult): F[ParserEvent] =
+  @derive(loggable)
+  final case class OzonResponseParsed(id: Event.Id, key: Event.Key, created: Timestamp, time: Timestamp, result: OzonResult)
+      extends ParserEvent
+
+  def ozonItemParsed(id: Event.Id, key: Event.Key, created: Timestamp, time: Timestamp, item: OzonItem): ParserEvent =
+    OzonItemParsed(id, key, created, time, item)
+
+  def ozonItemParsed[F[_]: FlatMap: Clock: GenUUID](time: Timestamp, item: OzonItem): F[ParserEvent] =
     for {
       uuid    <- GenUUID[F].randomUUID
       instant <- Clock[F].instantNow
-    } yield OzonResponseParsed(uuid @@ Event.Id, "ozon" @@ Event.Key, instant @@ Timestamp, result)
+    } yield OzonItemParsed(uuid @@ Event.Id, "ozon" @@ Event.Key, instant @@ Timestamp, time, item)
+
+  def ozonResponseParsed[F[_]: FlatMap: Clock: GenUUID](time: Timestamp, result: OzonResult): F[ParserEvent] =
+    for {
+      uuid    <- GenUUID[F].randomUUID
+      instant <- Clock[F].instantNow
+    } yield OzonResponseParsed(uuid @@ Event.Id, "ozon" @@ Event.Key, instant @@ Timestamp, time, result)
+
+  object OzonItemParsed {
+    implicit val vulcanCodec: Codec[OzonItemParsed] =
+      Codec.record[OzonItemParsed]("OzonItemParsed", "parser.events")(field =>
+        (
+          field("_id", _.id),
+          field("_key", _.key),
+          field("_created", _.created),
+          field("time", _.time),
+          OzonItem.vulcanCodecFieldFA(field)(_.item)
+        ).mapN(apply)
+      )
+  }
 
   object OzonResponseParsed {
     implicit val vulcanCodec: Codec[OzonResponseParsed] =
       Codec.record[OzonResponseParsed]("OzonResponseParsed", "parser.events")(field =>
-        (field("id", _.id), field("key", _.key), field("created", _.created), field("result", _.result)).mapN(apply)
+        (field("_id", _.id), field("_key", _.key), field("_created", _.created), field("time", _.time), field("result", _.result))
+          .mapN(apply)
       )
   }
 
   implicit val vulcanCodec: Codec[ParserEvent] =
-    Codec.union[ParserEvent](alt => alt[OzonResponseParsed])
+    Codec.union[ParserEvent](alt => alt[OzonItemParsed] |+| alt[OzonResponseParsed])
 }

@@ -1,6 +1,7 @@
 package marketplace.models.ozon
 
 import cats.implicits._
+import cats.free.FreeApplicative
 import derevo.derive
 import tofu.logging.derivation.loggable
 import tofu.logging.LoggableEnum
@@ -23,7 +24,7 @@ final case class Item(
   rating: Rating,
   category: Category.Name,
   delivery: Delivery,
-//  template: Template,
+//template: Template,
   availability: Int,
   availableInDays: Int,
   marketplaceSeller: MarketplaceSeller.Id,
@@ -60,7 +61,7 @@ object Item {
         i.as[Rating],
         i.get[Category.Name]("category"),
         i.as[Delivery],
-//        c.get[Template]("templateState"),
+//      c.get[Template]("templateState"),
         i.get[Int]("availability"),
         i.get[Int]("availableInDays"),
         i.get[MarketplaceSeller.Id]("marketplaceSellerId"),
@@ -77,25 +78,27 @@ object Item {
     Codec.record(
       name = "Item",
       namespace = "ozon.models"
-    ) { field =>
-      (
-        field("item_id", _.id),
-        field("item_type", _.`type`),
-        field("item_title", _.title),
-        (field("brand_id", _.brand.id), field("brand_name", _.brand.name)).mapN(Brand.apply),                                                           // format: off
-        (field("price", _.price.price), field("price_final", _.price.finalPrice), field("price_percent_discount", _.price.discount)).mapN(Price.apply), // format: on
-        (field("rating_value", _.rating.value), field("rating_count", _.rating.count)).mapN(Rating.apply),
-        field("category_name", _.category),
-        (field("delivery_schema", _.delivery.schema), field("delivery_time_diff_days", _.delivery.timeDiffDays)).mapN(Delivery.apply),
-        field("availability", _.availability),
-        field("available_in_days", _.availableInDays),
-        field("marketplace_seller_id", _.marketplaceSeller),
-        field("is_supermarket", _.isSupermarket),
-        field("is_personalized", _.isPersonalized),
-        field("is_promoted_product", _.isPromotedProduct),
-        field("free_rest", _.freeRest),
-        field("index", _.index)
-      ).mapN(Item.apply)
-    }
+    )(vulcanCodecFieldFA(_)(identity))
+
+  def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => Item): FreeApplicative[Codec.Field[A, *], Item] =
+    (
+      field("itemId", f.andThen(_.id)),
+      field("itemType", f.andThen(_.`type`)),
+      field("itemTitle", f.andThen(_.title)),
+      Brand.vulcanCodecFieldFA(field)(f.andThen(_.brand)),
+      Price.vulcanCodecFieldFA(field)(f.andThen(_.price)),
+      Rating.vulcanCodecFieldFA(field)(f.andThen(_.rating)),
+      field("categoryName", f.andThen(_.category)),
+      Delivery.vulcanCodecFieldFA(field)(f.andThen(_.delivery)),
+//    Template.vulcanCodecFieldFA(field)(f.andThen(_.template)),
+      field("availability", f.andThen(_.availability)),
+      field("availableInDays", f.andThen(_.availableInDays)),
+      field("marketplaceSellerId", f.andThen(_.marketplaceSeller)),
+      field("isSupermarket", f.andThen(_.isSupermarket)),
+      field("isPersonalized", f.andThen(_.isPersonalized)),
+      field("isPromoted_product", f.andThen(_.isPromotedProduct)),
+      field("freeRest", f.andThen(_.freeRest)),
+      field("index", f.andThen(_.index))
+    ).mapN(Item.apply)
 
 }

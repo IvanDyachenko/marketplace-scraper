@@ -1,10 +1,13 @@
 package marketplace.models.ozon
 
+import cats.implicits._
+import cats.free.FreeApplicative
 import derevo.derive
 import tofu.logging.derivation.loggable
 import tofu.logging.LoggableEnum
 import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry, VulcanEnum}
 import enumeratum.EnumEntry.{Camelcase, Uppercase}
+import vulcan.Codec
 import vulcan.generic.AvroNamespace
 import io.circe.Decoder
 
@@ -27,4 +30,7 @@ object Delivery {
   }
 
   implicit val circeDecoder: Decoder[Delivery] = Decoder.forProduct2("deliverySchema", "deliveryTimeDiffDays")(apply)
+
+  def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => Delivery): FreeApplicative[Codec.Field[A, *], Delivery] =
+    (field("deliverySchema", f(_).schema), field("deliveryTimeDiffDays", f(_).timeDiffDays)).mapN(apply)
 }

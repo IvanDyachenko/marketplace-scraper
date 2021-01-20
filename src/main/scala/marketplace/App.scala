@@ -16,7 +16,7 @@ import marketplace.modules.{Crawler, Parser, Publisher}
 import marketplace.clients.{HttpClient, KafkaClient}
 import marketplace.services.{Crawl, Parse}
 import marketplace.models.{ozon, Command, Event}
-import marketplace.models.parser.{ParserCommand}
+import marketplace.models.parser.{ParserCommand, ParserEvent}
 import marketplace.models.crawler.{CrawlerCommand, CrawlerEvent}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -43,14 +43,14 @@ object Main extends TaskApp {
       implicit0(blocker: Blocker) <- Blocker[AppI]
       cfg                         <- Resource.liftF(Config.make[AppI])
       parse                       <- Parse.make[AppI, AppF]
-      consumerOfParserCommands    <-
+      producerOfEvents            <- KafkaClient.makeProducer[AppI, Event.Key, ParserEvent](cfg.kafkaConfig, cfg.schemaRegistryConfig)
+      consumerOfCommands          <-
         KafkaClient.makeConsumer[AppI, Command.Key, ParserCommand.ParseOzonResponse](cfg.kafkaConfig, cfg.schemaRegistryConfig)(
           groupId = cfg.parserConfig.groupId,
           topic = cfg.crawlerConfig.eventsTopic
         )
-//    producerOfParserEvents      <- KafkaClient.makeProducer[AppI, Event.Key, ParserEvent](cfg.kafkaConfig, cfg.schemaRegistryConfig)
-//    producerOfOzonItems         <- KafkaClient.makeProducer[AppI, String, ozon.Item](cfg.kafkaConfig, cfg.schemaRegistryConfig)
-      parser                      <- Parser.make[AppI, AppF, AppS](cfg.parserConfig)(parse, consumerOfParserCommands)
+
+      parser <- Parser.make[AppI, AppF, AppS](cfg.parserConfig)(parse, producerOfEvents, consumerOfCommands)
     } yield parser
 
   def initCrawler: Resource[Task, Crawler[AppS]] =
@@ -59,12 +59,13 @@ object Main extends TaskApp {
       cfg                                     <- Resource.liftF(Config.make[AppI])
       implicit0(httpClient: HttpClient[AppF]) <- HttpClient.make[AppI, AppF](cfg.httpConfig)
       crawl                                   <- Crawl.make[AppI, AppF]
-      consumerOfCrawlerCommands               <- KafkaClient.makeConsumer[AppI, Command.Key, CrawlerCommand](cfg.kafkaConfig, cfg.schemaRegistryConfig)(
+      producerOfEvents                        <- KafkaClient.makeProducer[AppI, Event.Key, CrawlerEvent](cfg.kafkaConfig, cfg.schemaRegistryConfig)
+      consumerOfCommands                      <- KafkaClient.makeConsumer[AppI, Command.Key, CrawlerCommand](cfg.kafkaConfig, cfg.schemaRegistryConfig)(
                                                    groupId = cfg.crawlerConfig.groupId,
                                                    topic = cfg.crawlerConfig.commandsTopic
                                                  )
-      producerOfCrawlerEvents                 <- KafkaClient.makeProducer[AppI, Event.Key, CrawlerEvent](cfg.kafkaConfig, cfg.schemaRegistryConfig)
-      crawler                                 <- Crawler.make[AppI, AppF, AppS](cfg.crawlerConfig)(crawl, producerOfCrawlerEvents, consumerOfCrawlerCommands)
+
+      crawler <- Crawler.make[AppI, AppF, AppS](cfg.crawlerConfig)(crawl, producerOfEvents, consumerOfCommands)
     } yield crawler
 
   def initPublisher: Resource[Task, Publisher[AppS]] =

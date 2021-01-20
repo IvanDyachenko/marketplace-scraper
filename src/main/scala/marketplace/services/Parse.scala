@@ -44,8 +44,8 @@ object Parse {
 
   private final class Impl[F[_]: Monad: Clock: GenUUID: ParsingError.Raising] extends Parse[F] {
     def handle(command: Command): F[Event] = command match {
-      case Command.ParseOzonResponse(_, _, _, response) =>
-        parse[OzonResult](response) >>= (_.toRaise) >>= (Event.ozonResponseParsed(_))
+      case Command.ParseOzonResponse(_, _, created, response) =>
+        parse[OzonResult](response) >>= (_.toRaise) >>= (Event.ozonResponseParsed(created, _))
     }
 
     private def parse[R: Decoder](data: Json): F[Result[R]] =

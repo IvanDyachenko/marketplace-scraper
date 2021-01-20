@@ -39,7 +39,7 @@ object Parse {
 
   private final class Logger[F[_]: Monad: Logging] extends Parse[Mid[F, *]] {
     def handle(command: Command): Mid[F, Event] =
-      info"Execution of the ${command} has started" *> _ <* info"Execution of the ${command} has been completed"
+      debug"Execution of the ${command} has started" *> _ <* debug"Execution of the ${command} has been completed"
   }
 
   private final class Impl[F[_]: Monad: Clock: GenUUID: ParsingError.Raising] extends Parse[F] {
@@ -54,7 +54,10 @@ object Parse {
 
   def apply[F[_]](implicit ev: Parse[F]): ev.type = ev
 
-  def make[I[_]: Monad, F[_]: Monad: Clock: GenUUID: ParsingError.Raising](implicit logs: Logs[I, F]): Resource[I, Parse[F]] =
+  def make[
+    I[_]: Monad,
+    F[_]: Monad: Clock: GenUUID: ParsingError.Raising
+  ](implicit logs: Logs[I, F]): Resource[I, Parse[F]] =
     Resource.liftF {
       logs
         .forService[Parse[F]]

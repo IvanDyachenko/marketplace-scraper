@@ -1,9 +1,11 @@
 package marketplace.clients
 
+import scala.util.control.NoStackTrace
+
 import cats.syntax.all._
 import cats.{FlatMap, Monad}
 import cats.effect.{ConcurrentEffect, Resource, Sync}
-import tofu.{Execute, Raise}
+import tofu.{Execute, Handle, Raise}
 import tofu.syntax.raise._
 import tofu.lift.Unlift
 import tofu.higherKind.Embed
@@ -27,16 +29,18 @@ trait HttpClient[F[_]] {
 }
 
 object HttpClient extends ContextEmbed[HttpClient] {
-
-  sealed abstract class HttpClientError(message: String) extends Throwable(message, null, true, false)
+  sealed trait HttpClientError extends NoStackTrace { def message: String }
 
   object HttpClientError {
-    case class DecodingError(message: String)      extends HttpClientError(message)
-    case class UnexpectedStatus(message: String)   extends HttpClientError(message)
-    case class InvalidMessageBody(message: String) extends HttpClientError(message)
+    type Raising[F[_]]  = Raise[F, HttpClientError]
+    type Handling[F[_]] = Handle[F, HttpClientError]
+
+    case class DecodingError(message: String)      extends HttpClientError
+    case class UnexpectedStatus(message: String)   extends HttpClientError
+    case class InvalidMessageBody(message: String) extends HttpClientError
   }
 
-  class Impl[F[_]: Sync: Logging: Raise[*[_], HttpClientError]](http4sClient: Client[F]) extends HttpClient[F] {
+  class Impl[F[_]: Sync: Logging: HttpClientError.Raising](http4sClient: Client[F]) extends HttpClient[F] {
 
     def send[Res](request: Http4sRequest[F])(implicit decoder: Decoder[Res]): F[Res] =
       http4sClient
@@ -80,7 +84,7 @@ object HttpClient extends ContextEmbed[HttpClient] {
 
   def make[
     I[_]: Monad: Execute: ConcurrentEffect: Unlift[*[_], F],
-    F[_]: Sync: Raise[*[_], DecodingFailure]: Raise[*[_], InvalidMessageBodyFailure]
+    F[_]: Sync: HttpClientError.Raising
   ](httpConfig: HttpConfig)(implicit logs: Logs[I, F]): Resource[I, HttpClient[F]] =
     buildHttp4sClient[I](httpConfig) >>= { http4sClient =>
       Resource.liftF(logs.forService[HttpClient[F]].map(implicit l => new Impl[F](translateHttp4sClient[I, F](http4sClient))))

@@ -15,10 +15,10 @@ object KafkaClient {
   ): Resource[F, KafkaProducer[F, K, V]] = {
     val avroSettings = AvroSettings(SchemaRegistryClientSettings[F](schemaRegistryConfig.baseUrl))
 
-    implicit val keySerializer: RecordSerializer[F, K]   = avroSerializer[K].using(avroSettings)
-    implicit val valueSerializer: RecordSerializer[F, V] = avroSerializer[V].using(avroSettings)
+    val keySerializer: RecordSerializer[F, K]   = avroSerializer[K].using(avroSettings)
+    val valueSerializer: RecordSerializer[F, V] = avroSerializer[V].using(avroSettings)
 
-    val producerSettings = ProducerSettings[F, K, V]
+    val producerSettings = ProducerSettings[F, K, V](keySerializer, valueSerializer)
       .withBootstrapServers(kafkaConfig.bootstrapServers)
 
     KafkaProducer.resource[F, K, V](producerSettings)
@@ -30,10 +30,10 @@ object KafkaClient {
   )(groupId: String, topic: String): Resource[F, KafkaConsumer[F, K, V]] = {
     val avroSettings = AvroSettings(SchemaRegistryClientSettings[F](schemaRegistryConfig.baseUrl))
 
-    implicit val keyDeserializer: RecordDeserializer[F, K]   = avroDeserializer[K].using(avroSettings)
-    implicit val valueDeserializer: RecordDeserializer[F, V] = avroDeserializer[V].using(avroSettings)
+    val keyDeserializer: RecordDeserializer[F, K]   = avroDeserializer[K].using(avroSettings)
+    val valueDeserializer: RecordDeserializer[F, V] = avroDeserializer[V].using(avroSettings)
 
-    val consumerSettings = ConsumerSettings[F, K, V]
+    val consumerSettings = ConsumerSettings[F, K, V](keyDeserializer, valueDeserializer)
       .withBootstrapServers(kafkaConfig.bootstrapServers)
       .withGroupId(groupId)
       .withAutoOffsetReset(AutoOffsetReset.Earliest)

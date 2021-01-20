@@ -7,8 +7,8 @@ import enumeratum.EnumEntry.Snakecase
 import derevo.derive
 import tofu.logging.LoggableEnum
 import tofu.logging.derivation.loggable
+import vulcan.Codec
 import vulcan.generic._
-import vulcan.{AvroNamespace, Codec}
 import org.http4s.{QueryParam, QueryParamEncoder, QueryParameterKey, QueryParameterValue, Uri}
 
 import marketplace.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcanCodec}

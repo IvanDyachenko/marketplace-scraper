@@ -1,17 +1,14 @@
 package marketplace.models.yandex.market
 
-import supertagged.TaggedType
-import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry, VulcanEnum}
-import enumeratum.EnumEntry.Uppercase
-import io.circe.Decoder
-import io.circe.derivation.deriveDecoder
-import vulcan.generic._
-import vulcan.{AvroNamespace, Codec}
 import derevo.derive
+import derevo.circe.decoder
 import tofu.logging.derivation.loggable
 import tofu.logging.LoggableEnum
+import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry}
+import enumeratum.EnumEntry.Uppercase
+import supertagged.TaggedType
 
-import marketplace.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcanCodec}
+import marketplace.models.{LiftedCats, LiftedCirce, LiftedLoggable}
 
 /** Параметры модели, по которым можно отфильтровать предложения.
   *
@@ -19,23 +16,21 @@ import marketplace.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcan
   * @param name Наименование фильтра.
   * @param type Тип фильтра.
   */
-@derive(loggable)
-@AvroNamespace("yandex.market.models")
+@derive(loggable, decoder)
 final case class Filter(id: Filter.FilterId, name: String, `type`: Filter.Type)
 
 object Filter {
 
   /** Идентификатор фильтра.
     */
-  object FilterId extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec {}
+  object FilterId extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce {}
   type FilterId = FilterId.Type
 
   /** Тип фильтра.
     */
-  @AvroNamespace("yandex.market.models")
   sealed abstract class Type extends EnumEntry with Uppercase with Product with Serializable
 
-  object Type extends Enum[Type] with CatsEnum[Type] with CirceEnum[Type] with LoggableEnum[Type] with VulcanEnum[Type] {
+  object Type extends Enum[Type] with CatsEnum[Type] with CirceEnum[Type] with LoggableEnum[Type] {
 
     case object Boolean extends Type // Логический тип.
     case object Number  extends Type // Числовой тип, задает диапазон допустимых значений.
@@ -47,7 +42,4 @@ object Filter {
 
     val values = findValues
   }
-
-  implicit val circeDecoder: Decoder[Filter] = deriveDecoder
-  implicit val avroCodec: Codec[Filter]      = Codec.derive[Filter]
 }

@@ -3,7 +3,8 @@ package marketplace.models.ozon
 import cats.implicits._
 import derevo.derive
 import tofu.logging.derivation.loggable
-import vulcan.{AvroNamespace, Codec}
+import vulcan.Codec
+import vulcan.generic.AvroNamespace
 import supertagged.postfix._
 
 import marketplace.models.ozon.Url.{LayoutContainer, LayoutPageIndex, Page}

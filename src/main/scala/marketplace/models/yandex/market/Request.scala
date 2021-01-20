@@ -1,14 +1,13 @@
 package marketplace.models.yandex.market
 
 import cats.implicits._
-import supertagged.TaggedType
+import derevo.derive
+import tofu.logging.derivation.{loggable, masked, MaskMode}
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
-import vulcan.Codec
 import org.http4s.{QueryParam, QueryParamEncoder, QueryParameterKey, QueryParameterValue}
-import derevo.derive
 import tofu.logging.Loggable
-import tofu.logging.derivation.{loggable, masked, MaskMode}
+import supertagged.TaggedType
 
 import marketplace.models.yandex.market.Request.{Fields, RearrFactors, Sections}
 
@@ -50,7 +49,6 @@ object Request {
   object Fields extends TaggedType[List[Field]] {
     implicit def fields(ls: List[Field]): Fields = Fields(ls)
     implicit val loggable: Loggable[Type]        = lift
-    implicit val avroCodec: Codec[Type]          = lift
 
     implicit val queryParam = new QueryParam[Type] with QueryParamEncoder[Type] {
       val key                                       = QueryParameterKey("fields")
@@ -64,7 +62,6 @@ object Request {
   object Sections extends TaggedType[List[Section]] {
     implicit def sections(ls: List[Section]): Sections = Sections(ls)
     implicit val loggable: Loggable[Type]              = lift
-    implicit val avroCodec: Codec[Type]                = lift
 
     implicit val queryParam = new QueryParam[Type] with QueryParamEncoder[Type] {
       val key                                       = QueryParameterKey("sections")
@@ -78,7 +75,6 @@ object Request {
   object RearrFactors extends TaggedType[List[RearrFactor]] {
     implicit def rearrFactors(ls: List[RearrFactor]): RearrFactors = RearrFactors(ls)
     implicit val loggable: Loggable[Type]                          = lift
-    implicit val avroCodec: Codec[Type]                            = lift
 
     implicit val queryParam = new QueryParam[Type] with QueryParamEncoder[Type] {
       val key = QueryParameterKey("rearr_factors")
@@ -94,7 +90,6 @@ object Request {
   type RearrFactors = RearrFactors.Type
 
   implicit val circeEncoder: Encoder[Request] = Encoder.instance { case request: GetCategoryModels => request.asJson }
-  implicit val avroCodec: Codec[Request]      = Codec.union[Request](alt => alt[GetCategoryModels])
 }
 
 object GetCategoryModels {
@@ -139,8 +134,8 @@ object GetCategoryModels {
         RearrFactor.Name.MarketBlueSubjectFederationDistrict(1),
         RearrFactor.Name.MarketBlueSearchAuctionSupplierBid(50),
         RearrFactor.Name.MarketPromoBlueGenericBundle(1),
-        RearrFactor.Name.MarketPromoBlueCheapestAsGift4(1)
-//      RearrFactor.Name.BuyerPriceNominalInclPromo(1)
+        RearrFactor.Name.MarketPromoBlueCheapestAsGift4(1),
+        RearrFactor.Name.BuyerPriceNominalInclPromo(1)
       )
 
     GetCategoryModels(uuid, geoId, categoryId, pageNumber, pageCount, fields, sections, rearrFactors)
@@ -148,21 +143,21 @@ object GetCategoryModels {
 
   implicit val circeEncoder: Encoder[GetCategoryModels] = Encoder.instance(_ => Json.obj("cartSnapshot" -> List.empty[String].asJson))
 
-  implicit val avroCodec: Codec[GetCategoryModels] =
-    Codec.record[GetCategoryModels](
-      name = "GetCategoryModels",
-      namespace = "yandex.market.models"
-    ) { field =>
-      field("host", _.host) *> field("apiVersion", _.apiVersion) *> field("method", _.method) *>
-        (
-          field("uuid", _.uuid),
-          field("geoId", _.geoId),
-          field("categoryId", _.categoryId),
-          field("page", _.pageNumber),
-          field("count", _.pageCount),
-          field("fields", _.fields),
-          field("sections", _.sections),
-          field("rearrFactors", _.rearrFactors)
-        ).mapN(GetCategoryModels.apply)
-    }
+//implicit val avroCodec: Codec[GetCategoryModels] =
+//  Codec.record[GetCategoryModels](
+//    name = "GetCategoryModels",
+//    namespace = "yandex.market.models"
+//  ) { field =>
+//    field("host", _.host) *> field("apiVersion", _.apiVersion) *> field("method", _.method) *>
+//      (
+//        field("uuid", _.uuid),
+//        field("geoId", _.geoId),
+//        field("categoryId", _.categoryId),
+//        field("page", _.pageNumber),
+//        field("count", _.pageCount),
+//        field("fields", _.fields),
+//        field("sections", _.sections),
+//        field("rearrFactors", _.rearrFactors)
+//      ).mapN(GetCategoryModels.apply)
+//  }
 }

@@ -5,8 +5,8 @@ import tofu.logging.derivation.loggable
 import tofu.logging.LoggableEnum
 import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry, VulcanEnum}
 import enumeratum.EnumEntry.{Camelcase, Uppercase}
+import vulcan.generic.AvroNamespace
 import io.circe.Decoder
-import vulcan.AvroNamespace
 
 @derive(loggable)
 final case class Delivery(schema: Delivery.Schema, timeDiffDays: Int)
@@ -20,7 +20,7 @@ object Delivery {
 
     case object FBO         extends Schema with Uppercase // Товар продается со склада Ozon.
     case object FBS         extends Schema with Uppercase // Товар продается со склада продавца.
-    case object Retail      extends Schema                // Трансграничная торговля.
+    case object Retail      extends Schema
     case object Crossborder extends Schema                // Трансграничная торговля.
 
     val values = findValues

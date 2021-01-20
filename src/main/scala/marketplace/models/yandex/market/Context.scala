@@ -1,16 +1,13 @@
 package marketplace.models.yandex.market
 
-import java.time.{OffsetDateTime, ZoneOffset}
+import java.time.OffsetDateTime
 
-import supertagged.TaggedType
-import io.circe.Decoder
-import io.circe.derivation.deriveDecoder
-import vulcan.generic._
-import vulcan.{AvroNamespace, Codec}
 import derevo.derive
+import derevo.circe.decoder
 import tofu.logging.derivation.loggable
+import supertagged.TaggedType
 
-import marketplace.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcanCodec}
+import marketplace.models.{LiftedCats, LiftedCirce, LiftedLoggable}
 
 /** Контекст обработки запроса.
   *
@@ -20,8 +17,7 @@ import marketplace.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcan
   * @param currency Валюта запроса.
   * @param page     Информация о параметрах страницы запроса.
   */
-@derive(loggable)
-@AvroNamespace("yandex.market.models")
+@derive(loggable, decoder)
 case class Context(
   id: Context.ContextId,
   time: OffsetDateTime,
@@ -34,11 +30,9 @@ object Context {
 
   /** Уникальный идентификатор запроса.
     */
-  object ContextId extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec {}
+  object ContextId extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce {}
   type ContextId = ContextId.Type
 
-  implicit val circeDecoder: Decoder[Context]                   = deriveDecoder
-  implicit val offsetDateTimeVulcanCodec: Codec[OffsetDateTime] =
-    Codec.instant.imap(OffsetDateTime.ofInstant(_, ZoneOffset.UTC))(_.toInstant())
-  implicit val avroCodec: Codec[Context]                        = Codec.derive[Context]
+//implicit val offsetDateTimeVulcanCodec: Codec[OffsetDateTime] =
+//  Codec.instant.imap(OffsetDateTime.ofInstant(_, ZoneOffset.UTC))(_.toInstant())
 }

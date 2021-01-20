@@ -1,15 +1,13 @@
 package marketplace.models.yandex.market
 
+import derevo.derive
+import derevo.circe.decoder
+import tofu.logging.derivation.loggable
+import io.circe.Decoder
 import supertagged.TaggedType
 import supertagged.lift.LiftF
-import io.circe.Decoder
-import io.circe.derivation.deriveDecoder
-import vulcan.generic._
-import vulcan.{AvroNamespace, Codec}
-import derevo.derive
-import tofu.logging.derivation.loggable
 
-import marketplace.models.{LiftedCats, LiftedLoggable, LiftedVulcanCodec}
+import marketplace.models.{LiftedCats, LiftedLoggable}
 
 /** Информация о модели.
   *
@@ -25,8 +23,7 @@ import marketplace.models.{LiftedCats, LiftedLoggable, LiftedVulcanCodec}
   * @param offer        Дефолтное товарное предложение на модель.
   * @param offerCount   Кол-во товарных предложений модели в регионе запроса.
   */
-@derive(loggable)
-@AvroNamespace("yandex.market.models")
+@derive(loggable, decoder)
 final case class Model(
   id: Model.ModelId,
   link: String,
@@ -45,20 +42,11 @@ object Model {
 
   /** Идентификатор модели.
     */
-  object ModelId extends TaggedType[Long] with LiftedCats with LiftedLoggable with LiftedVulcanCodec {
+  object ModelId extends TaggedType[Long] with LiftedCats with LiftedLoggable {
     implicit val circeDecoder: Decoder[Type] = LiftF[Decoder].lift[Raw, Tag](Decoder[Raw].or(Decoder[Raw].at("id")))
   }
   type ModelId = ModelId.Type
-
-  implicit val circeDecoder: Decoder[Model] = deriveDecoder
-  implicit val avroCodec: Codec[Model]      = Codec.derive[Model]
 }
 
-@derive(loggable)
-@AvroNamespace("yandex.market.models")
+@derive(loggable, decoder)
 final case class ModelPrice(min: String, avg: String, max: String, discount: Option[String], base: Option[String])
-
-object ModelPrice {
-  implicit val circeDecoder: Decoder[ModelPrice] = deriveDecoder
-  implicit val avroCodec: Codec[ModelPrice]      = Codec.derive[ModelPrice]
-}

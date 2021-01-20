@@ -12,15 +12,14 @@ import tofu.higherKind.derived.representableK
 import tofu.WithRun
 import tofu.fs2.LiftStream
 import fs2.Stream
-//import fs2.kafka.{commitBatchWithin, KafkaConsumer, KafkaProducer, ProducerRecord, ProducerRecords}
-import fs2.kafka.{commitBatchWithin, KafkaConsumer}
+import fs2.kafka.{commitBatchWithin, KafkaConsumer, KafkaProducer, ProducerRecord, ProducerRecords}
 
 import marketplace.config.ParserConfig
 import marketplace.context.AppContext
 import marketplace.services.Parse
 import marketplace.services.Parse.ParsingError
-import marketplace.models.Command
-import marketplace.models.parser.ParserCommand
+import marketplace.models.{ozon, Command, Event}
+import marketplace.models.parser.{ParserCommand, ParserEvent}
 
 @derive(representableK)
 trait Parser[S[_]] {
@@ -35,14 +34,22 @@ object Parser {
     F[_]: Applicative: WithRun[*[_], I, AppContext]: ParsingError.Handling
   ](config: ParserConfig)(
     parse: Parse[F],
-    consumerOfParserCommands: KafkaConsumer[I, Command.Key, ParserCommand.ParseOzonResponse]
+    producerOfEvents: KafkaProducer[I, Event.Key, ParserEvent],
+    consumerOfCommands: KafkaConsumer[I, Command.Key, ParserCommand.ParseOzonResponse]
   ) extends Parser[Stream[I, *]] {
     def run: Stream[I, Unit] =
-      consumerOfParserCommands.partitionedStream.map { partition =>
+      consumerOfCommands.partitionedStream.map { partition =>
         partition
           .parEvalMap(config.maxConcurrent) { committable =>
-            runContext(parse.handle(committable.record.value))(AppContext()).as(committable.offset)
+            runContext(parse.handle(committable.record.value))(AppContext()).map(_ -> committable.offset)
           }
+          .collect { case (ParserEvent.OzonResponseParsed(id, key, created, time, ozon.Result.SearchResultsV2(items)), offset) =>
+            val events = items.map(ParserEvent.ozonItemParsed(id, key, created, time, _))
+            ProducerRecords(events.map(ProducerRecord(config.ozonItemsTopic, key, _)), offset)
+          }
+          .evalMap(producerOfEvents.produce)
+          .parEvalMap(config.maxConcurrent)(identity)
+          .map(_.passthrough)
           .through(commitBatchWithin(config.batchOffsets, config.batchTimeWindow))
       }.parJoinUnbounded
   }
@@ -53,12 +60,13 @@ object Parser {
     S[_]: LiftStream[*[_], I]
   ](config: ParserConfig)(
     parse: Parse[F],
-    consumerOfParserCommands: KafkaConsumer[I, Command.Key, ParserCommand.ParseOzonResponse]
+    producerOfEvents: KafkaProducer[I, Event.Key, ParserEvent],
+    consumerOfCommands: KafkaConsumer[I, Command.Key, ParserCommand.ParseOzonResponse]
   ): Resource[I, Parser[S]] =
     Resource.liftF {
       Stream
         .eval {
-          val impl: Parser[Stream[I, *]] = new Impl[I, F](config)(parse, consumerOfParserCommands)
+          val impl: Parser[Stream[I, *]] = new Impl[I, F](config)(parse, producerOfEvents, consumerOfCommands)
 
           impl.pure[I]
         }

@@ -15,7 +15,7 @@ object Result {
   final case class SearchResultsV2(@masked(MaskMode.Erase) items: List[Item]) extends Result
 
   @derive(loggable)
-  final case class FailureSearchResultsV2(error: String) extends Result
+  final case class FailureSearchResultsV2(error: ErrorDescr) extends Result
 
   object SearchResultsV2 {
     implicit val circeDecoder: Decoder[SearchResultsV2] = new Decoder[SearchResultsV2] {
@@ -57,7 +57,7 @@ object Result {
               )
             ) { component =>
               for {
-                error <- c.downField("catalog").downField("searchResultsV2").downField(component.stateId).get[String]("error")
+                error <- c.downField("catalog").downField("searchResultsV2").downField(component.stateId).as[ErrorDescr]
               } yield FailureSearchResultsV2(error)
             }
         } yield failureSearchResultsV2

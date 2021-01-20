@@ -1,7 +1,10 @@
 package marketplace.models.ozon
 
+import cats.implicits._
+import cats.free.FreeApplicative
 import derevo.derive
 import tofu.logging.derivation.loggable
+import vulcan.Codec
 import io.circe.Decoder
 import supertagged.TaggedType
 
@@ -18,4 +21,7 @@ object Brand {
   type Name = Name.Type
 
   implicit val circeDecoder: Decoder[Brand] = Decoder.forProduct2("brandId", "brand")(apply)
+
+  def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => Brand): FreeApplicative[Codec.Field[A, *], Brand] =
+    (field("brandId", f(_).id), field("brandName", f(_).name)).mapN(apply)
 }

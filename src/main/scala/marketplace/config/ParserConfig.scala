@@ -9,9 +9,8 @@ import pureconfig.module.catseffect.syntax._
 
 final case class ParserConfig(
   groupId: String,
-  eventsTopic: String,
-  commandsTopic: String,
-  clickhouseOzonItemsTopic: String,
+  ozonItemsTopic: String,
+  ozonErrorsTopic: String,
   maxConcurrent: Int,
   batchOffsets: Int,
   batchTimeWindow: FiniteDuration

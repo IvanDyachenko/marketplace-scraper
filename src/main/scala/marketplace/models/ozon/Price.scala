@@ -19,7 +19,7 @@ object Price {
 
   def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => Price): FreeApplicative[Codec.Field[A, *], Price] =
     (
-      field("priceValue", f.andThen(_.price)),
+      field("priceBase", f.andThen(_.price)),
       field("priceFinal", f.andThen(_.finalPrice)),
       field("pricePercentDiscount", f.andThen(_.discount))
     )

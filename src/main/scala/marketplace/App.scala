@@ -49,8 +49,7 @@ object Main extends TaskApp {
           groupId = cfg.parserConfig.groupId,
           topic = cfg.crawlerConfig.eventsTopic
         )
-
-      parser <- Parser.make[AppI, AppF, AppS](cfg.parserConfig)(parse, producerOfEvents, consumerOfCommands)
+      parser                      <- Parser.make[AppI, AppF, AppS](cfg.parserConfig)(parse, producerOfEvents, consumerOfCommands)
     } yield parser
 
   def initCrawler: Resource[Task, Crawler[AppS]] =
@@ -64,8 +63,7 @@ object Main extends TaskApp {
                                                    groupId = cfg.crawlerConfig.groupId,
                                                    topic = cfg.crawlerConfig.commandsTopic
                                                  )
-
-      crawler <- Crawler.make[AppI, AppF, AppS](cfg.crawlerConfig)(crawl, producerOfEvents, consumerOfCommands)
+      crawler                                 <- Crawler.make[AppI, AppF, AppS](cfg.crawlerConfig)(crawl, producerOfEvents, consumerOfCommands)
     } yield crawler
 
   def initPublisher: Resource[Task, Publisher[AppS]] =

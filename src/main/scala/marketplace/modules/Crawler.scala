@@ -27,7 +27,10 @@ trait Crawler[S[_]] {
 object Crawler {
   def apply[F[_]](implicit ev: Crawler[F]): ev.type = ev
 
-  private final class Impl[I[_]: Monad: Timer: Concurrent, F[_]: WithRun[*[_], I, AppContext]](config: CrawlerConfig)(
+  private final class Impl[
+    I[_]: Monad: Timer: Concurrent,
+    F[_]: WithRun[*[_], I, AppContext]
+  ](config: CrawlerConfig)(
     crawl: Crawl[F],
     producerOfCrawlerEvents: KafkaProducer[I, Event.Key, CrawlerEvent],
     consumerOfCrawlerCommands: KafkaConsumer[I, Command.Key, CrawlerCommand]
@@ -48,7 +51,11 @@ object Crawler {
       }.parJoinUnbounded
   }
 
-  def make[I[_]: Monad: Concurrent: Timer, F[_]: WithRun[*[_], I, AppContext], S[_]: LiftStream[*[_], I]](config: CrawlerConfig)(
+  def make[
+    I[_]: Monad: Concurrent: Timer,
+    F[_]: WithRun[*[_], I, AppContext],
+    S[_]: LiftStream[*[_], I]
+  ](config: CrawlerConfig)(
     crawl: Crawl[F],
     producerOfCrawlerEvents: KafkaProducer[I, Event.Key, CrawlerEvent],
     consumerOfCrawlerCommands: KafkaConsumer[I, Command.Key, CrawlerCommand]

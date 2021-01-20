@@ -1,14 +1,11 @@
 package marketplace.models.yandex.market
 
-import supertagged.TaggedType
-import io.circe.Decoder
-import io.circe.derivation.deriveDecoder
-import vulcan.generic._
-import vulcan.{AvroNamespace, Codec}
 import derevo.derive
+import derevo.circe.decoder
 import tofu.logging.derivation.loggable
+import supertagged.TaggedType
 
-import marketplace.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcanCodec}
+import marketplace.models.{LiftedCats, LiftedCirce, LiftedLoggable}
 
 /** Информация о категории.
   *
@@ -17,8 +14,7 @@ import marketplace.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcan
   * @param fullName   Полное наименование категории.
   * @param childCount Количество дочерних категорий.
   */
-@derive(loggable)
-@AvroNamespace("yandex.market.models")
+@derive(loggable, decoder)
 final case class Category(
   id: Category.CategoryId,
   name: Option[String] = None,
@@ -30,9 +26,6 @@ object Category {
 
   /** Идентификатор категории.
     */
-  object CategoryId extends TaggedType[Int] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec {}
+  object CategoryId extends TaggedType[Int] with LiftedCats with LiftedLoggable with LiftedCirce {}
   type CategoryId = CategoryId.Type
-
-  implicit val circeDecoder: Decoder[Category] = deriveDecoder
-  implicit val avroCodec: Codec[Category]      = Codec.derive[Category]
 }

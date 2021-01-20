@@ -11,29 +11,22 @@ import marketplace.models.{Command, Timestamp}
 @derive(loggable)
 sealed trait ParserCommand extends Command
 
-@derive(loggable)
-final case class ParseOzonResponse(id: Command.Id, key: Command.Key, created: Timestamp, response: Json) extends ParserCommand
-
-@derive(loggable)
-final case class ParseYandexMarketResponse(id: Command.Id, key: Command.Key, created: Timestamp, response: Json) extends ParserCommand
-
 object ParserCommand {
+  @derive(loggable)
+  final case class ParseOzonResponse(id: Command.Id, key: Command.Key, created: Timestamp, response: Json) extends ParserCommand
+
+  object ParseOzonResponse {
+    implicit val vulcanCodec: Codec[ParseOzonResponse] =
+      Codec.record[ParseOzonResponse](
+        name = "ParseOzonResponse",
+        namespace = "parser.commands",
+        aliases = Seq("crawler.events.OzonRequestHandled")
+      ) { field =>
+        (field("id", _.id), field("key", _.key), field("created", _.created), field("response", _.response, aliases = Seq("raw")))
+          .mapN(apply)
+      }
+  }
+
   implicit val vulcanCodec: Codec[ParserCommand] =
-    Codec.union[ParserCommand](alt => alt[ParseOzonResponse] |+| alt[ParseYandexMarketResponse])
-}
-
-object ParseOzonResponse {
-  implicit val vulcanCodec: Codec[ParseOzonResponse] =
-    Codec.record[ParseOzonResponse]("ParseOzonResponse", "parser.commands")(field =>
-      (field("id", _.id), field("key", _.key), field("created", _.created), field("response", _.response))
-        .mapN(ParseOzonResponse.apply)
-    )
-}
-
-object ParseYandexMarketResponse {
-  implicit val vulcanCodec: Codec[ParseYandexMarketResponse] =
-    Codec.record[ParseYandexMarketResponse]("ParseYandexMarketResponse", "parser.commands")(field =>
-      (field("id", _.id), field("key", _.key), field("created", _.created), field("response", _.response))
-        .mapN(ParseYandexMarketResponse.apply)
-    )
+    Codec.union[ParserCommand](alt => alt[ParseOzonResponse])
 }

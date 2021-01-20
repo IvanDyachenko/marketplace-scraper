@@ -2,21 +2,21 @@ package marketplace.services
 
 import scala.util.control.NoStackTrace
 
+import cats.Monad
+import cats.effect.{Clock, Resource}
 import tofu.syntax.raise._
 import tofu.syntax.monadic._
 import tofu.syntax.logging._
-import derevo.derive
-import cats.Monad
-import cats.effect.{Clock, Resource}
 import tofu.{Handle, Raise}
 import tofu.higherKind.Mid
+import derevo.derive
 import tofu.higherKind.derived.representableK
 import tofu.generate.GenUUID
 import tofu.logging.{Logging, Logs}
+import io.circe.{Decoder, Json}
 
-import marketplace.models.parser.{ParserEvent => Event, ParserCommand => Command, ParseOzonResponse, ParseYandexMarketResponse}
 import marketplace.models.ozon.{Result => OzonResult}
-import marketplace.models.yandex.market.{Result => YandexMarketResult}
+import marketplace.models.parser.{ParserEvent => Event, ParserCommand => Command}
 
 @derive(representableK)
 trait Parse[F[_]] {
@@ -25,12 +25,17 @@ trait Parse[F[_]] {
 
 object Parse {
   sealed trait ParsingError extends NoStackTrace
+
   object ParsingError {
-    type Handling[F[_]] = Handle[F, ParsingError]
     type Raising[F[_]]  = Raise[F, ParsingError]
+    type Handling[F[_]] = Handle[F, ParsingError]
 
     case class DecodingError(message: String) extends ParsingError
+
+    def decodingError(message: String): ParsingError = DecodingError(message)
   }
+
+  private final type Result[A] = Either[ParsingError, A]
 
   private final class Logger[F[_]: Monad: Logging] extends Parse[Mid[F, *]] {
     def handle(command: Command): Mid[F, Event] =
@@ -39,15 +44,12 @@ object Parse {
 
   private final class Impl[F[_]: Monad: Clock: GenUUID: ParsingError.Raising] extends Parse[F] {
     def handle(command: Command): F[Event] = command match {
-      case ParseOzonResponse(_, _, _, response)         =>
-        response.as[OzonResult].left.map(failure => ParsingError.DecodingError(failure.toString)).toRaise >>= (result =>
-          Event.ozonResponseParsed(result)
-        )
-      case ParseYandexMarketResponse(_, _, _, response) =>
-        response.as[YandexMarketResult].left.map(failure => ParsingError.DecodingError(failure.toString)).toRaise >>= (result =>
-          Event.yandexMarketResponseParsed(result)
-        )
+      case Command.ParseOzonResponse(_, _, _, response) =>
+        parse[OzonResult](response) >>= (_.toRaise) >>= (Event.ozonResponseParsed(_))
     }
+
+    private def parse[R: Decoder](data: Json): F[Result[R]] =
+      data.as[R].left.map(failure => ParsingError.decodingError(failure.toString)).pure[F]
   }
 
   def apply[F[_]](implicit ev: Parse[F]): ev.type = ev

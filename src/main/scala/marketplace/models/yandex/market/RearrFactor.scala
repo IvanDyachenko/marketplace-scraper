@@ -2,29 +2,19 @@ package marketplace.models.yandex.market
 
 import cats.Show
 import cats.implicits._
-import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry, VulcanEnum}
-import enumeratum.EnumEntry.Snakecase
-import vulcan.generic._
-import vulcan.{AvroNamespace, Codec}
 import derevo.derive
 import tofu.logging.LoggableEnum
 import tofu.logging.derivation.loggable
+import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry}
+import enumeratum.EnumEntry.Snakecase
 
 @derive(loggable)
-@AvroNamespace("yandex.market.models")
 case class RearrFactor(name: RearrFactor.Name, value: Option[Int] = None)
 
 object RearrFactor {
-
-  implicit val show: Show[RearrFactor] = Show.show(_ match {
-    case RearrFactor(name, Some(value)) => s"${name.show}=${value.show}"
-    case RearrFactor(name, _)           => name.show
-  })
-
-  @AvroNamespace("yandex.market.models")
   sealed abstract class Name extends EnumEntry with Snakecase with Product with Serializable
 
-  object Name extends Enum[Name] with CatsEnum[Name] with CirceEnum[Name] with LoggableEnum[Name] with VulcanEnum[Name] {
+  object Name extends Enum[Name] with CatsEnum[Name] with CirceEnum[Name] with LoggableEnum[Name] {
 
     case object CommonlyPurchasedOrdered            extends Name
     case object MarketRebranded                     extends Name
@@ -43,5 +33,8 @@ object RearrFactor {
     }
   }
 
-  implicit val vulcanCodec: Codec[RearrFactor] = Codec.derive[RearrFactor]
+  implicit val show: Show[RearrFactor] = Show.show(_ match {
+    case RearrFactor(name, Some(value)) => s"${name.show}=${value.show}"
+    case RearrFactor(name, _)           => name.show
+  })
 }

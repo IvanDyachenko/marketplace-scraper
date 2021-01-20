@@ -12,46 +12,31 @@ import supertagged.postfix._
 
 import marketplace.models.{Event, Timestamp}
 import marketplace.models.ozon.{Request => OzonRequest}
-import marketplace.models.yandex.market.{Request => YandexMarketRequest}
 
 @derive(loggable)
 sealed trait CrawlerEvent extends Event
 
-@derive(loggable)
-final case class OzonRequestHandled(id: Event.Id, key: Event.Key, created: Timestamp, raw: Json) extends CrawlerEvent
-
-@derive(loggable)
-final case class YandexMarketRequestHandled(id: Event.Id, key: Event.Key, created: Timestamp, raw: Json) extends CrawlerEvent
-
 object CrawlerEvent {
+  @derive(loggable)
+  final case class OzonRequestHandled(id: Event.Id, key: Event.Key, created: Timestamp, raw: Json) extends CrawlerEvent
+
   def ozonRequestHandled[F[_]: FlatMap: Clock: GenUUID](request: OzonRequest, raw: Json): F[CrawlerEvent] =
     for {
       uuid    <- GenUUID[F].randomUUID
       instant <- Clock[F].instantNow
       key      = request.url.path
-    } yield OzonRequestHandled(uuid @@ Event.Id, key @@ Event.Key, Timestamp(instant), raw)
+    } yield OzonRequestHandled(uuid @@ Event.Id, key @@ Event.Key, instant @@ Timestamp, raw)
 
-  def yandexMarketRequestHandled[F[_]: FlatMap: Clock: GenUUID](request: YandexMarketRequest, raw: Json): F[CrawlerEvent] =
-    for {
-      uuid    <- GenUUID[F].randomUUID
-      instant <- Clock[F].instantNow
-      key      = request.method
-    } yield YandexMarketRequestHandled(uuid @@ Event.Id, key @@ Event.Key, Timestamp(instant), raw)
+  object OzonRequestHandled {
+    implicit val vulcanCodec: Codec[OzonRequestHandled] =
+      Codec.record[OzonRequestHandled](
+        name = "OzonRequestHandled",
+        namespace = "crawler.events"
+      ) { field =>
+        (field("id", _.id), field("key", _.key), field("created", _.created), field("raw", _.raw)).mapN(apply)
+      }
+  }
 
   implicit val vulcanCodec: Codec[CrawlerEvent] =
-    Codec.union[CrawlerEvent](alt => alt[OzonRequestHandled] |+| alt[YandexMarketRequestHandled])
-}
-
-object OzonRequestHandled {
-  implicit val vulcanCodec: Codec[OzonRequestHandled] =
-    Codec.record[OzonRequestHandled]("OzonRequestHandled", "crawler.events")(field =>
-      (field("id", _.id), field("key", _.key), field("created", _.created), field("raw", _.raw)).mapN(apply)
-    )
-}
-
-object YandexMarketRequestHandled {
-  implicit val vulcanCodec: Codec[YandexMarketRequestHandled] =
-    Codec.record[YandexMarketRequestHandled]("YandexMarketRequestHandled", "crawler.events")(field =>
-      (field("id", _.id), field("key", _.key), field("created", _.created), field("raw", _.raw)).mapN(apply)
-    )
+    Codec.union[CrawlerEvent](alt => alt[OzonRequestHandled])
 }

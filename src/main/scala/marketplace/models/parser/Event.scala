@@ -23,7 +23,7 @@ object ParserEvent {
     for {
       uuid    <- GenUUID[F].randomUUID
       instant <- Clock[F].instantNow
-    } yield OzonResponseParsed(uuid @@ Event.Id, "ozon" @@ Event.Key, Timestamp(instant), result)
+    } yield OzonResponseParsed(uuid @@ Event.Id, "ozon" @@ Event.Key, instant @@ Timestamp, result)
 
   object OzonResponseParsed {
     implicit val vulcanCodec: Codec[OzonResponseParsed] =

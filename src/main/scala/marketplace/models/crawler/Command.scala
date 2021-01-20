@@ -24,7 +24,7 @@ object CrawlerCommand {
       uuid    <- GenUUID[F].randomUUID
       instant <- Clock[F].instantNow
       key      = request.url.path
-    } yield HandleOzonRequest(uuid @@ Command.Id, key @@ Command.Key, Timestamp(instant), request)
+    } yield HandleOzonRequest(uuid @@ Command.Id, key @@ Command.Key, instant @@ Timestamp, request)
 
   object HandleOzonRequest {
     implicit val vulcanCodec: Codec[HandleOzonRequest] =

@@ -6,7 +6,6 @@ import tofu.syntax.logging._
 import derevo.derive
 import cats.Monad
 import cats.effect.{Clock, Resource}
-import tofu.Handle
 import tofu.higherKind.Mid
 import tofu.higherKind.derived.representableK
 import tofu.generate.GenUUID
@@ -24,26 +23,27 @@ trait Crawl[F[_]] {
 }
 
 object Crawl {
+  def apply[F[_]](implicit ev: Crawl[F]): ev.type = ev
+
   private final class Logger[F[_]: Monad: Logging] extends Crawl[Mid[F, *]] {
     def handle(command: Command): Mid[F, Option[Event]] =
       trace"Execution of the ${command} has started" *> _.flatTap {
         case None => error"Execution of the ${command} has been completed with an error"
-        case _    => trace"Execution of the ${command} has been successfully completed"
+        case _    => debug"Execution of the ${command} has been successfully completed"
       }
   }
 
-  private final class Impl[F[_]: Monad: Clock: GenUUID: HttpClient: Handle[*[_], HttpClientError]] extends Crawl[F] {
+  private final class Impl[F[_]: Monad: Clock: GenUUID: HttpClient: HttpClientError.Handling] extends Crawl[F] {
     def handle(command: Command): F[Option[Event]] = command match {
       case Command.HandleOzonRequest(_, _, _, request) =>
         HttpClient[F].send[Json](request).attempt >>= (_.toOption.traverse(Event.ozonRequestHandled[F](request, _)))
     }
   }
 
-  def apply[F[_]](implicit ev: Crawl[F]): ev.type = ev
-
-  def make[I[_]: Monad, F[_]: Monad: Clock: GenUUID: HttpClient: Handle[*[_], HttpClientError]](implicit
-    logs: Logs[I, F]
-  ): Resource[I, Crawl[F]] =
+  def make[
+    I[_]: Monad,
+    F[_]: Monad: Clock: GenUUID: HttpClient: HttpClientError.Handling
+  ](implicit logs: Logs[I, F]): Resource[I, Crawl[F]] =
     Resource.liftF {
       logs
         .forService[Crawl[F]]

@@ -22,12 +22,13 @@ final case class Item(
   brand: Brand,
   price: Price,
   rating: Rating,
-  category: Category.Name,
+  categoryName: Category.Name,
   delivery: Delivery,
-//template: Template,
   availability: Int,
   availableInDays: Int,
-  marketplaceSeller: MarketplaceSeller.Id,
+  marketplaceSellerId: MarketplaceSeller.Id,
+  addToCartQuantity: Int,
+  addToCartMaxItems: Int,
   isSupermarket: Boolean,
   isPersonalized: Boolean,
   isPromotedProduct: Boolean,
@@ -48,30 +49,29 @@ object Item {
     case object SKU extends Type
   }
 
-  implicit val circeDecoder: Decoder[Item] = new Decoder[Item] {
-    final def apply(c: HCursor): Decoder.Result[Item] = {
-      lazy val i = c.downField("cellTrackingInfo")
+  implicit val circeDecoder: Decoder[Item] = Decoder.instance[Item] { (c: HCursor) =>
+    lazy val i = c.downField("cellTrackingInfo")
 
-      (
-        i.get[Item.Id]("id"),
-        i.get[Item.Type]("type"),
-        i.get[String]("title"),
-        i.as[Brand],
-        i.as[Price],
-        i.as[Rating],
-        i.get[Category.Name]("category"),
-        i.as[Delivery],
-//      c.get[Template]("templateState"),
-        i.get[Int]("availability"),
-        i.get[Int]("availableInDays"),
-        i.get[MarketplaceSeller.Id]("marketplaceSellerId"),
-        i.get[Boolean]("isSupermarket"),
-        i.get[Boolean]("isPersonalized"),
-        i.get[Boolean]("isPromotedProduct"),
-        i.get[Int]("freeRest"),
-        i.get[Int]("index")
-      ).mapN(Item.apply)
-    }
+    (
+      i.get[Item.Id]("id"),
+      i.get[Item.Type]("type"),
+      i.get[String]("title"),
+      i.as[Brand],
+      i.as[Price],
+      i.as[Rating],
+      i.get[Category.Name]("category"),
+      i.as[Delivery],
+      i.get[Int]("availability"),
+      i.get[Int]("availableInDays"),
+      i.get[MarketplaceSeller.Id]("marketplaceSellerId"),
+      c.get[Template]("templateState").map(_.addToCartQuantity.getOrElse(-1)),
+      c.get[Template]("templateState").map(_.addToCartMaxItems.getOrElse(-1)),
+      i.get[Boolean]("isSupermarket"),
+      i.get[Boolean]("isPersonalized"),
+      i.get[Boolean]("isPromotedProduct"),
+      i.get[Int]("freeRest"),
+      i.get[Int]("index")
+    ).mapN(Item.apply)
   }
 
   implicit val vulcanCodec: Codec[Item] =
@@ -88,17 +88,17 @@ object Item {
       Brand.vulcanCodecFieldFA(field)(f.andThen(_.brand)),
       Price.vulcanCodecFieldFA(field)(f.andThen(_.price)),
       Rating.vulcanCodecFieldFA(field)(f.andThen(_.rating)),
-      field("categoryName", f.andThen(_.category)),
+      field("categoryName", f.andThen(_.categoryName)),
       Delivery.vulcanCodecFieldFA(field)(f.andThen(_.delivery)),
-//    Template.vulcanCodecFieldFA(field)(f.andThen(_.template)),
       field("availability", f.andThen(_.availability)),
       field("availableInDays", f.andThen(_.availableInDays)),
-      field("marketplaceSellerId", f.andThen(_.marketplaceSeller)),
+      field("marketplaceSellerId", f.andThen(_.marketplaceSellerId)),
+      field("addToCartQuantity", f.andThen(_.addToCartQuantity)),
+      field("addToCartMaxItems", f.andThen(_.addToCartMaxItems)),
       field("isSupermarket", f.andThen(_.isSupermarket)),
       field("isPersonalized", f.andThen(_.isPersonalized)),
       field("isPromoted_product", f.andThen(_.isPromotedProduct)),
       field("freeRest", f.andThen(_.freeRest)),
       field("index", f.andThen(_.index))
     ).mapN(Item.apply)
-
 }

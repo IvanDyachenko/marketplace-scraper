@@ -12,7 +12,6 @@ import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry}
 import enumeratum.EnumEntry.LowerCamelcase
 
 import marketplace.syntax._
-import marketplace.models.ozon.Template.State.UniversalAction
 
 @derive(loggable)
 final case class Template(state: List[Template.State])
@@ -76,8 +75,12 @@ object Template {
   }
 
   implicit final class TemplateOps(private val template: Template) extends AnyVal {
+    def addToCartQuantity: Option[Int] = template.state.collectFirst {
+      case State.UniversalAction(State.UniversalAction.Button.AddToCartWithQuantity(quantity, _)) => quantity
+    }
+
     def addToCartMaxItems: Option[Int] = template.state.collectFirst {
-      case UniversalAction(UniversalAction.Button.AddToCartWithQuantity(_, maxItems)) => maxItems
+      case State.UniversalAction(State.UniversalAction.Button.AddToCartWithQuantity(_, maxItems)) => maxItems
     }
   }
 

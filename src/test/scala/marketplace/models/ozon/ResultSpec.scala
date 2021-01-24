@@ -161,6 +161,129 @@ class ResultSpec extends AnyFlatSpec with Matchers {
         |                "id" : "deliveryInfo"
         |              }
         |            ]
+        |          },
+        |          {
+        |            "isInFavorites" : false,
+        |            "deepLink" : "ozon://products/202157525/",
+        |            "outerCols" : 0,
+        |            "type" : "tile_builder",
+        |            "isGrey" : false,
+        |            "innerCols" : 0,
+        |            "link" : "/product/korm-suhoy-farmina-n-d-ocean-dlya-koshek-s-yagnenkom-i-chernikoy-5-kg-202157525/",
+        |            "isInCompare" : false,
+        |            "template" : "search",
+        |            "isAlcohol" : false,
+        |            "isAdult" : false,
+        |            "cellTrackingInfo" : {
+        |              "finalPrice" : 4152,
+        |              "freeRest" : 0,
+        |              "isPromotedProduct" : false,
+        |              "marketingActionIds" : [
+        |                11050497706160
+        |              ],
+        |              "category" : "Товары для животных/Для кошек/Корма и лакомства/Сухие корма/Farmina",
+        |              "availableInDays" : 0,
+        |              "type" : "sku",
+        |              "index" : 8979,
+        |              "brand" : "Farmina",
+        |              "discount" : 0,
+        |              "marketplaceSellerId" : 71713,
+        |              "isPersonalized" : false,
+        |              "brandId" : 138842619,
+        |              "price" : 4152,
+        |              "countItems" : 4,
+        |              "availability" : 2,
+        |              "title" : "Корм сухой Farmina N&D Ocean для кошек, с ягнёнком и черникой, 5 кг",
+        |              "deliverySchema" : "FBS",
+        |              "rating" : 5,
+        |              "id" : 202157525,
+        |              "deliveryTimeDiffDays" : -1,
+        |              "isSupermarket" : false
+        |            },
+        |            "images" : [
+        |              "https://cdn1.ozone.ru/s3/multimedia-y/6029288194.jpg"
+        |            ],
+        |            "badges" : [
+        |              {
+        |                "backgroundColor" : "ozTextSecondary",
+        |                "text" : "Закончился",
+        |                "textColor" : "ozWhite1",
+        |                "coordinates" : {
+        |                  "y" : 1,
+        |                  "x" : 1
+        |                },
+        |                "type" : "text"
+        |              }
+        |            ],
+        |            "templateState" : [
+        |              {
+        |                "isSubscribed" : false,
+        |                "title" : "",
+        |                "align" : "topRight",
+        |                "components" : null,
+        |                "activeTitle" : "",
+        |                "isActive" : false,
+        |                "id" : "favorite",
+        |                "type" : "action"
+        |              },
+        |              {
+        |                "type" : "price",
+        |                "isPremium" : false,
+        |                "id" : "price",
+        |                "theme" : "default",
+        |                "price" : "4 152 ₽",
+        |                "components" : null
+        |              },
+        |              {
+        |                "maxLines" : 0,
+        |                "components" : null,
+        |                "id" : "name",
+        |                "type" : "title",
+        |                "markupType" : "",
+        |                "theme" : "default",
+        |                "textColor" : "ozTextPrimary",
+        |                "items" : null,
+        |                "text" : "Корм сухой Farmina N&D Ocean для кошек, с ягнёнком и черникой, 5 кг"
+        |              },
+        |              {
+        |                "type" : "rating",
+        |                "id" : "rating",
+        |                "rating" : 5,
+        |                "commentsCount" : 4,
+        |                "title" : "4 отзыва",
+        |                "components" : null
+        |              },
+        |              {
+        |                "id" : "universalAction",
+        |                "secondaryButton" : {
+        |                  "default" : {
+        |                    "theme" : "STYLE_TYPE_SECONDARY",
+        |                    "action" : {
+        |                      "link" : "catalogActionSheet?id=202157525",
+        |                      "behavior" : "BEHAVIOR_TYPE_ACTION_SHEET"
+        |                    },
+        |                    "icon" : "ic_m_kebab"
+        |                  },
+        |                  "isActive" : false
+        |                },
+        |                "type" : "action",
+        |                "button" : {
+        |                  "isActive" : false,
+        |                  "default" : {
+        |                    "type" : "smallButton",
+        |                    "smallButton" : {
+        |                      "action" : {
+        |                        "behavior" : "BEHAVIOR_TYPE_COMPOSER_NESTED_PAGE",
+        |                        "link" : "ozon://modal/analogs/?product_id=202157525"
+        |                      },
+        |                      "style" : "STYLE_TYPE_SECONDARY_SMALL",
+        |                      "text" : "Похожие",
+        |                      "theme" : "STYLE_TYPE_SECONDARY_SMALL"
+        |                    }
+        |                  }
+        |                }
+        |              }
+        |            ]
         |          }
         |        ]
         |      }

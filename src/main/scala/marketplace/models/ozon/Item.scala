@@ -7,7 +7,8 @@ import tofu.logging.LoggableEnum
 import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry, VulcanEnum}
 import enumeratum.values.{IntCirceEnum, IntEnum, IntEnumEntry, IntVulcanEnum}
 import enumeratum.EnumEntry.Lowercase
-import vulcan.generic.AvroNamespace
+import vulcan.Codec
+import vulcan.generic._
 import io.circe.{Decoder, DecodingFailure, HCursor}
 import supertagged.TaggedType
 
@@ -59,6 +60,7 @@ object Item {
   }
 
   @derive(loggable)
+  @AvroNamespace("ozon.models.item")
   final case class InStock(
     id: Item.Id,
     `type`: Item.Type,
@@ -84,6 +86,7 @@ object Item {
   }
 
   @derive(loggable)
+  @AvroNamespace("ozon.models.item")
   final case class OutOfStock(
     id: Item.Id,
     `type`: Item.Type,
@@ -144,6 +147,8 @@ object Item {
                     ).mapN(apply)
       } yield item
     }
+
+    implicit val vulcanCodec: Codec[InStock] = Codec.derive[InStock]
   }
 
   object OutOfStock {
@@ -177,6 +182,8 @@ object Item {
                 ).mapN(apply)
       } yield item
     }
+
+    implicit val vulcanCodec: Codec[OutOfStock] = Codec.derive[OutOfStock]
   }
 
   implicit val circeDecoder: Decoder[Item] =
@@ -184,4 +191,6 @@ object Item {
       Decoder[InStock].widen,
       Decoder[OutOfStock].widen
     ).reduceLeft(_ or _)
+
+  implicit val vulcanCodec: Codec[Item] = Codec.union[Item](alt => alt[InStock] |+| alt[OutOfStock])
 }

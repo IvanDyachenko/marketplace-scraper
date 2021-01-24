@@ -8,10 +8,11 @@ import tofu.logging.LoggableEnum
 import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry, VulcanEnum}
 import enumeratum.EnumEntry.{Camelcase, Uppercase}
 import vulcan.Codec
-import vulcan.generic.AvroNamespace
+import vulcan.generic._
 import io.circe.Decoder
 
 @derive(loggable)
+@AvroNamespace("ozon.models")
 final case class Delivery(schema: Delivery.Schema, timeDiffDays: Int)
 
 object Delivery {
@@ -30,7 +31,8 @@ object Delivery {
   }
 
   implicit val circeDecoder: Decoder[Delivery] = Decoder.forProduct2("deliverySchema", "deliveryTimeDiffDays")(apply)
+  implicit val vulcanCodec: Codec[Delivery]    = Codec.derive[Delivery]
 
-  def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => Delivery): FreeApplicative[Codec.Field[A, *], Delivery] =
+  private[models] def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => Delivery): FreeApplicative[Codec.Field[A, *], Delivery] =
     (field("deliverySchema", f(_).schema), field("deliveryTimeDiffDays", f(_).timeDiffDays)).mapN(apply)
 }

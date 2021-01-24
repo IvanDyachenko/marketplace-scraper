@@ -41,24 +41,18 @@ object ParserEvent {
     } yield OzonResponseParsed(uuid @@ Event.Id, "ozon" @@ Event.Key, instant @@ Timestamp, time, result)
 
   object OzonItemParsed {
-    implicit val vulcanCodec: Codec[OzonItemParsed] = ???
-//      Codec.record[OzonItemParsed]("OzonItemParsed", "parser.events")(field =>
-//        (
-//          field("_id", _.id),
-//          field("_key", _.key),
-//          field("_created", _.created),
-//          field("datetime", _.time),
-//          ???
-//        ).mapN(apply)
-//      )
+    implicit val vulcanCodec: Codec[OzonItemParsed] =
+      Codec.record[OzonItemParsed](name = "OzonItemParsed", namespace = "parser.events")(field =>
+        (field("_id", _.id), field("_key", _.key), field("_created", _.created), field("time", _.time), field("item", _.item)).mapN(apply)
+      )
   }
 
   object OzonResponseParsed {
-    implicit val vulcanCodec: Codec[OzonResponseParsed] = ???
-//      Codec.record[OzonResponseParsed]("OzonResponseParsed", "parser.events")(field =>
-//        (field("_id", _.id), field("_key", _.key), field("_created", _.created), field("time", _.time), field("result", _.result))
-//          .mapN(apply)
-//      )
+    implicit val vulcanCodec: Codec[OzonResponseParsed] =
+      Codec.record[OzonResponseParsed](name = "OzonResponseParsed", namespace = "parser.events")(field =>
+        (field("_id", _.id), field("_key", _.key), field("_created", _.created), field("time", _.time), field("result", _.result))
+          .mapN(apply)
+      )
   }
 
   implicit val vulcanCodec: Codec[ParserEvent] =

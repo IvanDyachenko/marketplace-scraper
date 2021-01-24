@@ -75,12 +75,8 @@ object Template {
   }
 
   implicit final class TemplateOps(private val template: Template) extends AnyVal {
-    def addToCartQuantity: Option[Int] = template.state.collectFirst {
-      case State.UniversalAction(State.UniversalAction.Button.AddToCartWithQuantity(quantity, _)) => quantity
-    }
-
-    def addToCartMaxItems: Option[Int] = template.state.collectFirst {
-      case State.UniversalAction(State.UniversalAction.Button.AddToCartWithQuantity(_, maxItems)) => maxItems
+    def addToCartWithQuantity: Option[State.UniversalAction.Button.AddToCartWithQuantity] = template.state.collectFirst {
+      case State.UniversalAction(button @ State.UniversalAction.Button.AddToCartWithQuantity(_, _)) => button
     }
   }
 

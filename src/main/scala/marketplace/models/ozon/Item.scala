@@ -62,8 +62,8 @@ object Item {
   @derive(loggable)
   @AvroNamespace("ozon.models.item")
   final case class InStock(
-    id: Item.Id,
-    `type`: Item.Type,
+    id: Id,
+    `type`: Type,
     title: String,
     brand: Brand,
     price: Price,
@@ -72,7 +72,7 @@ object Item {
     delivery: Delivery,
     availableInDays: Int,
     marketplaceSellerId: MarketplaceSeller.Id,
-    addToCartQuantity: Int,
+    addToCartMinItems: Int,
     addToCartMaxItems: Int,
     isAdult: Boolean,
     isAlcohol: Boolean,
@@ -88,8 +88,8 @@ object Item {
   @derive(loggable)
   @AvroNamespace("ozon.models.item")
   final case class OutOfStock(
-    id: Item.Id,
-    `type`: Item.Type,
+    id: Id,
+    `type`: Type,
     title: String,
     brand: Brand,
     price: Price,
@@ -120,8 +120,8 @@ object Item {
                         DecodingFailure(message, c.history)
                       }(_ == Availability.InStock)
         addToCart = c.get[Template]("templateState")
-                      .flatMap(_.addToCartWithQuantity.fold[Decoder.Result[Template.State.UniversalAction.Button.AddToCartWithQuantity]] {
-                        val message = "'templateState' doesn't contain an object which describes 'addToCartWithQuantity' action"
+                      .flatMap(_.addToCart.fold[Decoder.Result[(Int, Int)]] {
+                        val message = "'templateState' doesn't contain an object which describes 'addToCart...' action"
                         Left(DecodingFailure(message, c.history))
                       }(Right(_)))
         item     <- (
@@ -135,8 +135,8 @@ object Item {
                       i.as[Delivery],
                       i.get[Int]("availableInDays"),
                       i.get[MarketplaceSeller.Id]("marketplaceSellerId"),
-                      addToCart.map(_.quantity),
-                      addToCart.map(_.maxItems),
+                      addToCart.map(_._1),
+                      addToCart.map(_._2),
                       c.get[Boolean]("isAdult"),
                       c.get[Boolean]("isAlcohol"),
                       i.get[Boolean]("isSupermarket"),
@@ -186,11 +186,16 @@ object Item {
     implicit val vulcanCodec: Codec[OutOfStock] = Codec.derive[OutOfStock]
   }
 
-  implicit val circeDecoder: Decoder[Item] =
-    List[Decoder[Item]](
-      Decoder[InStock].widen,
-      Decoder[OutOfStock].widen
-    ).reduceLeft(_ or _)
+  implicit val circeDecoder: Decoder[Item] = Decoder.instance[Item] { (c: HCursor) =>
+    for {
+      availability <- c.downField("cellTrackingInfo").get[Availability]("availability")
+      decoder       = availability match {
+                        case Availability.InStock    => Decoder[InStock]
+                        case Availability.OutOfStock => Decoder[OutOfStock]
+                      }
+      item         <- decoder.widen[Item](c)
+    } yield item
+  }
 
   implicit val vulcanCodec: Codec[Item] = Codec.union[Item](alt => alt[InStock] |+| alt[OutOfStock])
 }

@@ -163,6 +163,144 @@ class ResultSpec extends AnyFlatSpec with Matchers {
         |            ]
         |          },
         |          {
+        |            "type": "tile_builder",
+        |            "images": [
+        |              "https://cdn1.ozone.ru/multimedia/1021895768.jpg"
+        |            ],
+        |            "isGrey": false,
+        |            "isAdult": false,
+        |            "isAlcohol": false,
+        |            "link": "/product/uho-govyazhe-xxl-167053322/?asb=u6mY9z7ZQecw9ik4xEmJ5htiCN9V%252FaftFlg3%252FkmEVmM%253D",
+        |            "deepLink": "ozon://products/167053322/?asb=u6mY9z7ZQecw9ik4xEmJ5htiCN9V%252FaftFlg3%252FkmEVmM%253D&miniapp=supermarket",
+        |            "cellTrackingInfo": {
+        |              "index": 145,
+        |              "type": "sku",
+        |              "id": 167053322,
+        |              "title": "Ухо говяжье XXL",
+        |              "availability": 1,
+        |              "price": 223,
+        |              "finalPrice": 203,
+        |              "deliverySchema": "Retail",
+        |              "marketplaceSellerId": 0,
+        |              "category": "OZON Express/Товары для животных/Для собак/Корма и лакомства",
+        |              "brand": "",
+        |              "brandId": 0,
+        |              "availableInDays": 0,
+        |              "freeRest": 5,
+        |              "stockCount": 5,
+        |              "discount": 8,
+        |              "marketingActionIds": [
+        |                11006108938110,
+        |                11050497706160
+        |              ],
+        |              "isPersonalized": false,
+        |              "deliveryTimeDiffDays": -1,
+        |              "isSupermarket": true,
+        |              "isPromotedProduct": false,
+        |              "rating": 4.885712623596191,
+        |              "countItems": 105,
+        |              "adv_second_bid": "u6mY9z7ZQecw9ik4xEmJ5htiCN9V/aftFlg3/kmEVmM=",
+        |              "availableDeliverySchema": [
+        |                131
+        |              ]
+        |            },
+        |            "template": "search",
+        |            "templateState": [
+        |              {
+        |                "type": "action",
+        |                "id": "favorite",
+        |                "components": null,
+        |                "title": "",
+        |                "activeTitle": "",
+        |                "align": "topRight",
+        |                "isActive": false,
+        |                "isSubscribed": false
+        |              },
+        |              {
+        |                "type": "price",
+        |                "id": "price",
+        |                "components": null,
+        |                "price": "223 ₽",
+        |                "finalPrice": "203 ₽",
+        |                "isPremium": false
+        |              },
+        |              {
+        |                "type" :"label",
+        |                "id": "label",
+        |                "components": null,
+        |                "items": [
+        |                  {
+        |                    "title": "Бестселлер",
+        |                    "isSelected": false,
+        |                    "color": null,
+        |                    "textColor": "ozOrange"
+        |                  }
+        |                ]
+        |              },
+        |              {
+        |                "type": "title",
+        |                "id": "name",
+        |                "components": null,
+        |                "items": null,
+        |                "text": "Ухо говяжье XXL",
+        |                "textColor": "ozTextPrimary",
+        |                "markupType": "",
+        |                "maxLines" :0
+        |              },
+        |              {
+        |                "type": "rating",
+        |                "id": "rating",
+        |                "components": null,
+        |                "rating": 4.885712623596191,
+        |                "commentsCount": 105,
+        |                "title": "105 отзывов"
+        |              },
+        |              {
+        |                "type": "action",
+        |                "id": "addToCartWithCount",
+        |                "components": null,
+        |                "title": "В корзину",
+        |                "activeTitle": "",
+        |                "align": "bottomLeft",
+        |                "isActive": false,
+        |                "maxItems": 51,
+        |                "minItems": 1,
+        |                "isSubscribed": false
+        |              },
+        |              {
+        |                "type": "textSmall",
+        |                "id": "deliveryInfo",
+        |                "components": null,
+        |                "items": null,
+        |                "text": "<font color='ozTextPrimary'>OZON</font>, доставка со склада <font color='ozAccentPrimary'><b>OZON</b></font>",
+        |                "textColor": "ozGray60",
+        |                "markupType": "html",
+        |                "maxLines": 3
+        |              }
+        |            ],
+        |            "badges": [
+        |              {
+        |                "type": "text",
+        |                "coordinates": { "x": 1, "y": 5 },
+        |                "text": "−8%",
+        |                "backgroundColor": "ozAccentAlert",
+        |                "textColor": "ozWhite1",
+        |                "isBold": true
+        |              },
+        |              {
+        |                "type": "text",
+        |                "coordinates": { "x": 3, "y": 5 },
+        |                "text": "Express",
+        |                "backgroundColor": "ozAccentSecondary",
+        |                "textColor": "ozWhite1"
+        |              }
+        |            ],
+        |            "isInFavorites": false,
+        |            "isInCompare": false,
+        |            "outerCols": 0,
+        |            "innerCols": 0
+        |          },
+        |          {
         |            "isInFavorites" : false,
         |            "deepLink" : "ozon://products/202157525/",
         |            "outerCols" : 0,

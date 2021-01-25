@@ -22,10 +22,5 @@ object Price {
   implicit val vulcanCodec: Codec[Price] = Codec.derive[Price]
 
   private[models] def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => Price): FreeApplicative[Codec.Field[A, *], Price] =
-    (
-      field("priceBase", f.andThen(_.price)),
-      field("priceFinal", f.andThen(_.finalPrice)),
-      field("pricePercentDiscount", f.andThen(_.discount))
-    )
-      .mapN(apply)
+    (field("priceBase", f(_).price), field("priceFinal", f(_).finalPrice), field("pricePercentDiscount", f(_).discount)).mapN(apply)
 }

@@ -38,6 +38,6 @@ object KafkaClient {
       .withGroupId(groupId)
       .withAutoOffsetReset(AutoOffsetReset.Earliest)
 
-    consumerResource[F, K, V](consumerSettings).evalTap(_.subscribeTo(topic))
+    KafkaConsumer.resourceKafkaConsumer.resource[F, K, V](consumerSettings).evalTap(_.subscribeTo(topic))
   }
 }

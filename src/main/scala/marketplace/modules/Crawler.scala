@@ -39,7 +39,7 @@ object Crawler {
       consumerOfCrawlerCommands.partitionedStream.map { partition =>
         partition
           .parEvalMap(config.maxConcurrent) { committable =>
-            runContext(crawl.handle(committable.record.value))(AppContext()).map(_.map(_ -> committable.offset))
+            runContext(crawl.handle(committable.record.value))(AppContext()).map(_.toOption.map(_ -> committable.offset))
           }
           .collect { case Some((event, offset)) =>
             ProducerRecords.one(ProducerRecord(config.eventsTopic, event.key, event), offset)

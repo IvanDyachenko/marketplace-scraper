@@ -19,24 +19,26 @@ import marketplace.models.crawler.{CrawlerEvent => Event, CrawlerCommand => Comm
 
 @derive(representableK)
 trait Crawl[F[_]] {
-  def handle(command: Command): F[Option[Event]]
+  def handle(command: Command): F[Crawl.Result]
 }
 
 object Crawl {
   def apply[F[_]](implicit ev: Crawl[F]): ev.type = ev
 
+  final type Result = Either[HttpClientError, Event]
+
   private final class Logger[F[_]: Monad: Logging] extends Crawl[Mid[F, *]] {
-    def handle(command: Command): Mid[F, Option[Event]] =
-      trace"Execution of the ${command} has started" *> _.flatTap {
-        case None => error"Execution of the ${command} has been completed with an error"
-        case _    => debug"Execution of the ${command} has been successfully completed"
+    def handle(command: Command): Mid[F, Result] =
+      trace"Execution of the ${command} has started" *> _ flatTap {
+        case Left(error)  => error"Execution of the ${command} has been completed with the ${error}"
+        case Right(event) => debug"${event} has been successfully created as a result of execution of the ${command}"
       }
   }
 
   private final class Impl[F[_]: Monad: Clock: GenUUID: HttpClient: HttpClientError.Handling] extends Crawl[F] {
-    def handle(command: Command): F[Option[Event]] = command match {
+    def handle(command: Command): F[Result] = command match {
       case Command.HandleOzonRequest(_, _, _, request) =>
-        HttpClient[F].send[Json](request).attempt >>= (_.toOption.traverse(Event.ozonRequestHandled[F](request, _)))
+        HttpClient[F].send[Json](request).attempt >>= (_.traverse(Event.ozonRequestHandled[F](request, _)))
     }
   }
 

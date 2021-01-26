@@ -18,12 +18,12 @@ sealed trait ParserEvent extends Event {
 }
 
 object ParserEvent {
+
   @derive(loggable)
   final case class OzonItemParsed(id: Event.Id, key: Event.Key, created: Timestamp, time: Timestamp, item: OzonItem) extends ParserEvent
 
   @derive(loggable)
-  final case class OzonResponseParsed(id: Event.Id, key: Event.Key, created: Timestamp, time: Timestamp, result: OzonResult)
-      extends ParserEvent
+  final case class OzonResponseParsed(id: Event.Id, key: Event.Key, created: Timestamp, time: Timestamp, result: OzonResult) extends ParserEvent
 
   def ozonItemParsed(id: Event.Id, key: Event.Key, created: Timestamp, time: Timestamp, item: OzonItem): ParserEvent =
     OzonItemParsed(id, key, created, time, item)
@@ -36,25 +36,17 @@ object ParserEvent {
 
   object OzonItemParsed {
     implicit val vulcanCodec: Codec[OzonItemParsed] =
-      Codec.record[OzonItemParsed](name = "OzonItemParsed", namespace = "parser.events")(field =>
-        (
-          field("_id", _.id),
-          field("_key", _.key),
-          field("_created", _.created),
-          field("time", _.time),
-          OzonItem.vulcanCodecFieldFA(field)(_.item)
-        ).mapN(apply)
-      )
+      Codec.record[OzonItemParsed](name = "OzonItemParsed", namespace = "parser.events") { fb =>
+        (fb("_id", _.id), fb("_key", _.key), fb("_created", _.created), fb("time", _.time), OzonItem.vulcanCodecFieldFA(fb)(_.item)).mapN(apply)
+      }
   }
 
   object OzonResponseParsed {
     implicit val vulcanCodec: Codec[OzonResponseParsed] =
-      Codec.record[OzonResponseParsed](name = "OzonResponseParsed", namespace = "parser.events")(field =>
-        (field("_id", _.id), field("_key", _.key), field("_created", _.created), field("time", _.time), field("result", _.result))
-          .mapN(apply)
-      )
+      Codec.record[OzonResponseParsed](name = "OzonResponseParsed", namespace = "parser.events") { fb =>
+        (fb("_id", _.id), fb("_key", _.key), fb("_created", _.created), fb("time", _.time), fb("result", _.result)).mapN(apply)
+      }
   }
 
-  implicit val vulcanCodec: Codec[ParserEvent] =
-    Codec.union[ParserEvent](alt => alt[OzonItemParsed] |+| alt[OzonResponseParsed])
+  implicit val vulcanCodec: Codec[ParserEvent] = Codec.union[ParserEvent](alt => alt[OzonItemParsed] |+| alt[OzonResponseParsed])
 }

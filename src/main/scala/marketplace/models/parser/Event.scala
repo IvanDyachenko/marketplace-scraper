@@ -28,12 +28,6 @@ object ParserEvent {
   def ozonItemParsed(id: Event.Id, key: Event.Key, created: Timestamp, time: Timestamp, item: OzonItem): ParserEvent =
     OzonItemParsed(id, key, created, time, item)
 
-  def ozonItemParsed[F[_]: FlatMap: Clock: GenUUID](time: Timestamp, item: OzonItem): F[ParserEvent] =
-    for {
-      uuid    <- GenUUID[F].randomUUID
-      instant <- Clock[F].instantNow
-    } yield OzonItemParsed(uuid @@ Event.Id, "ozon" @@ Event.Key, instant @@ Timestamp, time, item)
-
   def ozonResponseParsed[F[_]: FlatMap: Clock: GenUUID](time: Timestamp, result: OzonResult): F[ParserEvent] =
     for {
       uuid    <- GenUUID[F].randomUUID
@@ -43,7 +37,13 @@ object ParserEvent {
   object OzonItemParsed {
     implicit val vulcanCodec: Codec[OzonItemParsed] =
       Codec.record[OzonItemParsed](name = "OzonItemParsed", namespace = "parser.events")(field =>
-        (field("_id", _.id), field("_key", _.key), field("_created", _.created), field("time", _.time), field("item", _.item)).mapN(apply)
+        (
+          field("_id", _.id),
+          field("_key", _.key),
+          field("_created", _.created),
+          field("time", _.time),
+          OzonItem.vulcanCodecFieldFA(field)(_.item)
+        ).mapN(apply)
       )
   }
 

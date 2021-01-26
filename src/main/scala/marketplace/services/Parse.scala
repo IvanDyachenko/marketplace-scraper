@@ -2,17 +2,19 @@ package marketplace.services
 
 import scala.util.control.NoStackTrace
 
+import cats.syntax.show._
+import cats.syntax.traverse._
 import cats.Monad
 import cats.effect.{Clock, Resource}
 import tofu.syntax.monadic._
 import tofu.syntax.logging._
-import tofu.{Handle, Raise}
-import tofu.higherKind.Mid
 import derevo.derive
+import tofu.higherKind.Mid
 import tofu.higherKind.derived.representableK
-import tofu.generate.GenUUID
+import tofu.logging.derivation.loggable //{loggable, masked, MaskMode}
 import tofu.logging.{Logging, Logs}
-import tofu.logging.derivation.loggable
+import tofu.{Handle, Raise}
+import tofu.generate.GenUUID
 import io.circe.{Decoder, Json}
 
 import marketplace.models.ozon.{Result => OzonResult}
@@ -24,6 +26,8 @@ trait Parse[F[_]] {
 }
 
 object Parse {
+  def apply[F[_]](implicit ev: Parse[F]): ev.type = ev
+
   @derive(loggable)
   sealed trait ParsingError extends NoStackTrace
 
@@ -37,12 +41,12 @@ object Parse {
     def decodingError(message: String): ParsingError = DecodingError(message)
   }
 
-  private final type Result = Either[ParsingError, Event]
+  final type Result = Either[ParsingError, Event]
 
   private final class Logger[F[_]: Monad: Logging] extends Parse[Mid[F, *]] {
     def handle(command: Command): Mid[F, Result] =
-      debug"Execution of the ${command} has started" *> _.flatTap {
-        case Left(error)  => error"Execution of the ${command} has been completed with an error: ${error}"
+      debug"Execution of the ${command} has started" *> _ flatTap {
+        case Left(error)  => error"Execution of the ${command} has been completed with the ${error}"
         case Right(event) => debug"${event} has been successfully created as a result of execution of the ${command}"
       }
   }
@@ -50,17 +54,12 @@ object Parse {
   private final class Impl[F[_]: Monad: Clock: GenUUID] extends Parse[F] {
     def handle(command: Command): F[Result] = command match {
       case Command.ParseOzonResponse(_, _, created, response) =>
-        parse[OzonResult](response) >>= (_ match {
-          case Left(error)   => (Left(error): Result).pure[F]
-          case Right(result) => Event.ozonResponseParsed(created, result).map(Right(_))
-        })
+        parse[OzonResult](response) >>= (_.traverse(Event.ozonResponseParsed[F](created, _)))
     }
 
     private def parse[R: Decoder](data: Json): F[Either[ParsingError, R]] =
-      data.as[R].left.map(failure => ParsingError.decodingError(failure.toString)).pure[F]
+      data.as[R].left.map(failure => ParsingError.decodingError(failure.show)).pure[F]
   }
-
-  def apply[F[_]](implicit ev: Parse[F]): ev.type = ev
 
   def make[
     I[_]: Monad,

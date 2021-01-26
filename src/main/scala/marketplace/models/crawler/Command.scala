@@ -16,6 +16,7 @@ import marketplace.models.ozon.{Request => OzonRequest}
 sealed trait CrawlerCommand extends Command
 
 object CrawlerCommand {
+
   @derive(loggable)
   case class HandleOzonRequest(id: Command.Id, key: Command.Key, created: Timestamp, request: OzonRequest) extends CrawlerCommand
 
@@ -28,11 +29,10 @@ object CrawlerCommand {
 
   object HandleOzonRequest {
     implicit val vulcanCodec: Codec[HandleOzonRequest] =
-      Codec.record[HandleOzonRequest]("HandleOzonRequest", "crawler.commands")(field =>
-        (field("id", _.id), field("key", _.key), field("created", _.created), field("request", _.request)).mapN(apply)
+      Codec.record[HandleOzonRequest](name = "HandleOzonRequest", namespace = "crawler.commands")(fb =>
+        (fb("id", _.id), fb("key", _.key), fb("created", _.created), fb("request", _.request)).mapN(apply)
       )
   }
 
-  implicit val vulcanCodec: Codec[CrawlerCommand] =
-    Codec.union[CrawlerCommand](alt => alt[HandleOzonRequest])
+  implicit val vulcanCodec: Codec[CrawlerCommand] = Codec.union[CrawlerCommand](alt => alt[HandleOzonRequest])
 }

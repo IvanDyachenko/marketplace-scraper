@@ -12,7 +12,7 @@ sealed trait Result
 object Result {
 
   @derive(loggable)
-  final case class SearchResultsV2(@masked(MaskMode.Erase) items: List[Item]) extends Result
+  final case class SearchResultsV2(@masked(MaskMode.ForLength(0, 50)) items: List[Item]) extends Result
 
   @derive(loggable)
   final case class FailureSearchResultsV2(error: ErrorDescr) extends Result

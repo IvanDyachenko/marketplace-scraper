@@ -17,6 +17,7 @@ import marketplace.models.ozon.{Request => OzonRequest}
 sealed trait CrawlerEvent extends Event
 
 object CrawlerEvent {
+
   @derive(loggable)
   final case class OzonRequestHandled(id: Event.Id, key: Event.Key, created: Timestamp, raw: Json) extends CrawlerEvent
 
@@ -29,14 +30,10 @@ object CrawlerEvent {
 
   object OzonRequestHandled {
     implicit val vulcanCodec: Codec[OzonRequestHandled] =
-      Codec.record[OzonRequestHandled](
-        name = "OzonRequestHandled",
-        namespace = "crawler.events"
-      ) { field =>
-        (field("id", _.id), field("key", _.key), field("created", _.created), field("raw", _.raw)).mapN(apply)
-      }
+      Codec.record[OzonRequestHandled](name = "OzonRequestHandled", namespace = "crawler.events")(fb =>
+        (fb("id", _.id), fb("key", _.key), fb("created", _.created), fb("raw", _.raw)).mapN(apply)
+      )
   }
 
-  implicit val vulcanCodec: Codec[CrawlerEvent] =
-    Codec.union[CrawlerEvent](alt => alt[OzonRequestHandled])
+  implicit val vulcanCodec: Codec[CrawlerEvent] = Codec.union[CrawlerEvent](alt => alt[OzonRequestHandled])
 }

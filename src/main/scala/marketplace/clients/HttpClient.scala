@@ -5,16 +5,17 @@ import scala.util.control.NoStackTrace
 import cats.syntax.all._
 import cats.{FlatMap, Monad}
 import cats.effect.{ConcurrentEffect, Resource, Sync}
-import tofu.{Execute, Handle, Raise}
 import tofu.syntax.raise._
+import tofu.syntax.logging._
+import derevo.derive
+import tofu.logging.derivation.loggable
+import tofu.{Execute, Handle, Raise}
 import tofu.lift.Unlift
 import tofu.higherKind.Embed
 import tofu.data.derived.ContextEmbed
 import tofu.logging.{Logging, Logs}
-import tofu.syntax.logging._
 import io.circe.{Decoder, DecodingFailure}
-import org.http4s.{Request => Http4sRequest, InvalidMessageBodyFailure}
-import org.http4s.Status.Successful
+import org.http4s.{Request => Http4sRequest, InvalidMessageBodyFailure, Status}
 import org.http4s.circe.jsonOf
 import org.http4s.client.Client
 import org.http4s.client.blaze.BlazeClientBuilder
@@ -29,14 +30,22 @@ trait HttpClient[F[_]] {
 }
 
 object HttpClient extends ContextEmbed[HttpClient] {
-  sealed trait HttpClientError extends NoStackTrace { def message: String }
+  def apply[F[_]](implicit ev: HttpClient[F]): ev.type = ev
+
+  @derive(loggable)
+  sealed trait HttpClientError extends NoStackTrace
 
   object HttpClientError {
     type Raising[F[_]]  = Raise[F, HttpClientError]
     type Handling[F[_]] = Handle[F, HttpClientError]
 
-    case class DecodingError(message: String)      extends HttpClientError
-    case class UnexpectedStatus(message: String)   extends HttpClientError
+    @derive(loggable)
+    case class DecodingError(message: String) extends HttpClientError
+
+    @derive(loggable)
+    case class UnexpectedStatus(message: String) extends HttpClientError
+
+    @derive(loggable)
     case class InvalidMessageBody(message: String) extends HttpClientError
   }
 
@@ -46,35 +55,30 @@ object HttpClient extends ContextEmbed[HttpClient] {
       http4sClient
         .toKleisli { response =>
           response match {
-            case Successful(_) =>
+            case Status.Successful(_) =>
               jsonOf(Sync[F], decoder)
                 .decode(response, strict = false)
                 .rethrowT
-            case unexpected    =>
-              // format: off
-              val msg = s"Received ${unexpected.status.code} status during execution of the request to ${request.uri.path.show}"
-              val err = HttpClientError.UnexpectedStatus(msg)
-              errorCause"${msg}" (err) *> err.raise[F, Res]
-              // format: on
+            case unexpected           =>
+              val message     = s"Received ${unexpected.status.code} status during execution of the request to ${request.uri.path.show}"
+              val clientError = HttpClientError.UnexpectedStatus(message)
+              errorCause"${message}" (clientError) *> clientError.raise[F, Res]
           }
         }
         .run(request)
         .recoverWith {
-          // format: off
           case error: InvalidMessageBodyFailure =>
-            val msg = s"Received invalid response body during execution of the request to ${request.uri.path.show}: ${error.details.dropWhile(_ != '{')}"
-            val err = HttpClientError.InvalidMessageBody(msg)
-            errorCause"${msg}" (error) *> err.raise[F, Res]
+            val message     =
+              s"Received invalid response body during execution of the request to ${request.uri.path.show}: ${error.details.dropWhile(_ != '{')}"
+            val clientError = HttpClientError.InvalidMessageBody(message)
+            errorCause"${message}" (error) *> clientError.raise[F, Res]
           case error: DecodingFailure           =>
-            val msg = s"A response received as a result of the request to ${request.uri.path.show} was rejected because of a decoding failure: ${error.message}"
-            val err = HttpClientError.DecodingError(msg)
-            errorCause"${msg}" (error) *> err.raise[F, Res]
-          // format: on
+            val message     =
+              s"A response received as a result of the request to ${request.uri.path.show} was rejected because of a decoding failure: ${error.message}"
+            val clientError = HttpClientError.DecodingError(message)
+            errorCause"${message}" (error) *> clientError.raise[F, Res]
         }
-        .flatTap(result => debug"Received ... during execution of request to ${request.uri.show}")
   }
-
-  def apply[F[_]](implicit ev: HttpClient[F]): ev.type = ev
 
   implicit val embed: Embed[HttpClient] = new Embed[HttpClient] {
     def embed[F[_]: FlatMap](ft: F[HttpClient[F]]): HttpClient[F] = new HttpClient[F] {

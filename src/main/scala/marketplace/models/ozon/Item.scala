@@ -8,7 +8,7 @@ import tofu.logging.LoggableEnum
 import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry, VulcanEnum}
 import enumeratum.values.{IntCirceEnum, IntEnum, IntEnumEntry, IntVulcanEnum}
 import enumeratum.EnumEntry.Lowercase
-import vulcan.{Codec, AvroError}
+import vulcan.{AvroError, Codec}
 import vulcan.generic._
 import io.circe.{Decoder, DecodingFailure, HCursor}
 import supertagged.TaggedType

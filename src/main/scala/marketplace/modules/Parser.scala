@@ -4,7 +4,6 @@ import cats.tagless.syntax.functorK._
 import cats.{Applicative, Monad}
 import cats.effect.{Concurrent, Resource, Timer}
 import tofu.syntax.embed._
-//import tofu.syntax.handle._
 import tofu.syntax.monadic._
 import tofu.syntax.context._
 import derevo.derive
@@ -17,7 +16,6 @@ import fs2.kafka.{commitBatchWithin, KafkaConsumer, KafkaProducer, ProducerRecor
 import marketplace.config.ParserConfig
 import marketplace.context.AppContext
 import marketplace.services.Parse
-import marketplace.services.Parse.ParsingError
 import marketplace.models.{ozon, Command, Event}
 import marketplace.models.parser.{ParserCommand, ParserEvent}
 
@@ -31,7 +29,7 @@ object Parser {
 
   private final class Impl[
     I[_]: Monad: Timer: Concurrent,
-    F[_]: Applicative: WithRun[*[_], I, AppContext]: ParsingError.Handling
+    F[_]: Applicative: WithRun[*[_], I, AppContext]
   ](config: ParserConfig)(
     parse: Parse[F],
     producerOfEvents: KafkaProducer[I, Event.Key, ParserEvent],
@@ -41,9 +39,9 @@ object Parser {
       consumerOfCommands.partitionedStream.map { partition =>
         partition
           .parEvalMap(config.maxConcurrent) { committable =>
-            runContext(parse.handle(committable.record.value))(AppContext()).map(_ -> committable.offset)
+            runContext(parse.handle(committable.record.value))(AppContext()).map(_.toOption.map(_ -> committable.offset))
           }
-          .collect { case (ParserEvent.OzonResponseParsed(id, key, created, time, ozon.Result.SearchResultsV2(items)), offset) =>
+          .collect { case Some((ParserEvent.OzonResponseParsed(id, key, created, time, ozon.Result.SearchResultsV2(items)), offset)) =>
             val events = items.map(ParserEvent.ozonItemParsed(id, key, created, time, _))
             ProducerRecords(events.map(ProducerRecord(config.ozonItemsTopic, key, _)), offset)
           }
@@ -56,7 +54,7 @@ object Parser {
 
   def make[
     I[_]: Monad: Concurrent: Timer,
-    F[_]: Applicative: WithRun[*[_], I, AppContext]: ParsingError.Handling,
+    F[_]: Applicative: WithRun[*[_], I, AppContext],
     S[_]: LiftStream[*[_], I]
   ](config: ParserConfig)(
     parse: Parse[F],

@@ -9,8 +9,8 @@ docker-compose up --remove-orphans --detach
 #### ClickHouse
 Connect to ClickHouse server using native command-line client:
 ```bash
-docker-compose exec ch-client sh
-# clickhouse-client --host=ch-server
+docker-compose exec clickhouse-client sh
+# clickhouse-client --host=clickhouse-server
 ```
 
 #### Schema registry

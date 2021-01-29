@@ -84,6 +84,9 @@ services:
       - "./.persistence/clickhouse/log:/var/log/clickhouse-server"
       - "./.clickhouse/V1__Initial_version.sql:/docker-entrypoint-initdb.d/V1__Initial_version.sql"
       - "./.clickhouse/config/users.xml:/etc/clickhouse-server/users.xml"
+    depends_on:
+      - broker
+      - schema-registry
 
   clickhouse-client:
     image: 'docker.io/yandex/clickhouse-client:latest'

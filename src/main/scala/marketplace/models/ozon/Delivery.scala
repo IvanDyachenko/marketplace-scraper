@@ -13,7 +13,7 @@ import io.circe.Decoder
 
 @derive(loggable)
 @AvroNamespace("ozon.models")
-final case class Delivery(schema: Delivery.Schema, timeDiffDays: Int)
+final case class Delivery(schema: Delivery.Schema, timeDiffDays: Short)
 
 object Delivery {
 

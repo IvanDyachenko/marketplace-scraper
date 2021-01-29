@@ -6,7 +6,7 @@ import derevo.derive
 import tofu.logging.derivation.loggable
 import tofu.logging.LoggableEnum
 import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry, VulcanEnum}
-import enumeratum.values.{IntCirceEnum, IntEnum, IntEnumEntry, IntVulcanEnum}
+import enumeratum.values.{ByteCirceEnum, ByteEnum, ByteEnumEntry, ByteVulcanEnum}
 import enumeratum.EnumEntry.Lowercase
 import vulcan.{AvroError, Codec}
 import vulcan.generic._
@@ -23,10 +23,10 @@ sealed trait Item {
   def brand: Brand
   def price: Price
   def rating: Rating
-  def categoryName: Category.Name
+  def categoryPath: Category.Path
   def delivery: Delivery
   def availability: Item.Availability
-  def availableInDays: Int
+  def availableInDays: Short
   def marketplaceSellerId: MarketplaceSeller.Id
   def isAdult: Boolean
   def isAlcohol: Boolean
@@ -52,8 +52,9 @@ object Item {
   }
 
   @AvroNamespace("ozon.models.item")
-  sealed abstract class Availability(val value: Int) extends IntEnumEntry
-  object Availability                                extends IntEnum[Availability] with IntCirceEnum[Availability] with IntVulcanEnum[Availability] {
+  sealed abstract class Availability(val value: Byte) extends ByteEnumEntry
+
+  object Availability extends ByteEnum[Availability] with ByteCirceEnum[Availability] with ByteVulcanEnum[Availability] {
     val values = findValues
 
     case object InStock    extends Availability(1)
@@ -69,9 +70,9 @@ object Item {
     brand: Brand,
     price: Price,
     rating: Rating,
-    categoryName: Category.Name,
+    categoryPath: Category.Path,
     delivery: Delivery,
-    availableInDays: Int,
+    availableInDays: Short,
     marketplaceSellerId: MarketplaceSeller.Id,
     addToCartMinItems: Int,
     addToCartMaxItems: Int,
@@ -95,9 +96,9 @@ object Item {
     brand: Brand,
     price: Price,
     rating: Rating,
-    categoryName: Category.Name,
+    categoryPath: Category.Path,
     delivery: Delivery,
-    availableInDays: Int,
+    availableInDays: Short,
     marketplaceSellerId: MarketplaceSeller.Id,
     isAdult: Boolean,
     isAlcohol: Boolean,
@@ -132,9 +133,9 @@ object Item {
                       i.as[Brand],
                       i.as[Price],
                       i.as[Rating],
-                      i.get[Category.Name]("category"),
+                      i.get[Category.Path]("category"),
                       i.as[Delivery],
-                      i.get[Int]("availableInDays"),
+                      i.get[Short]("availableInDays"),
                       i.get[MarketplaceSeller.Id]("marketplaceSellerId"),
                       addToCart.map(_._1),
                       addToCart.map(_._2),
@@ -169,9 +170,9 @@ object Item {
                   i.as[Brand],
                   i.as[Price],
                   i.as[Rating],
-                  i.get[Category.Name]("category"),
+                  i.get[Category.Path]("category"),
                   i.as[Delivery],
-                  i.get[Int]("availableInDays"),
+                  i.get[Short]("availableInDays"),
                   i.get[MarketplaceSeller.Id]("marketplaceSellerId"),
                   c.get[Boolean]("isAdult"),
                   c.get[Boolean]("isAlcohol"),
@@ -209,7 +210,7 @@ object Item {
       Brand.vulcanCodecFieldFA(field)(f(_).brand),
       Price.vulcanCodecFieldFA(field)(f(_).price),
       Rating.vulcanCodecFieldFA(field)(f(_).rating),
-      field("categoryName", f(_).categoryName),
+      field("categoryPath", f(_).categoryPath),
       Delivery.vulcanCodecFieldFA(field)(f(_).delivery),
       field("availability", f(_).availability),
       field("availableInDays", f(_).availableInDays),
@@ -237,15 +238,10 @@ object Item {
       field("freeRest", f(_).freeRest)
     ).mapN {
       // format: off
-      case (itemId, itemType, itemTitle, brand, price, rating, categoryName, delivery, Availability.InStock, availableInDays,
-            marketplaceSellerId, Some(addToCartMinItems), Some(addToCartMaxItems), isAdult, isAlcohol, isSupermarket, isPersonalized,
-            isPromotedProduct, index, freeRest) =>
-        Item.InStock(itemId, itemType, itemTitle, brand, price, rating, categoryName, delivery, availableInDays, marketplaceSellerId,
-          addToCartMinItems, addToCartMaxItems, isAdult, isAlcohol, isSupermarket, isPersonalized, isPromotedProduct, index, freeRest)
-      case (itemId, itemType, itemTitle, brand, price, rating, categoryName, delivery, Availability.OutOfStock, availableInDays,
-            marketplaceSellerId, None, None, isAdult, isAlcohol, isSupermarket, isPersonalized, isPromotedProduct, index, freeRest) =>
-        Item.OutOfStock(itemId, itemType, itemTitle, brand, price, rating, categoryName, delivery, availableInDays, marketplaceSellerId,
-          isAdult, isAlcohol, isSupermarket, isPersonalized, isPromotedProduct, index, freeRest)
+      case (itemId, itemType, itemTitle, brand, price, rating, categoryName, delivery, Availability.InStock, availableInDays, marketplaceSellerId, Some(addToCartMinItems), Some(addToCartMaxItems), isAdult, isAlcohol, isSupermarket, isPersonalized, isPromotedProduct, index, freeRest) =>
+        Item.InStock(itemId, itemType, itemTitle, brand, price, rating, categoryName, delivery, availableInDays, marketplaceSellerId, addToCartMinItems, addToCartMaxItems, isAdult, isAlcohol, isSupermarket, isPersonalized, isPromotedProduct, index, freeRest)
+      case (itemId, itemType, itemTitle, brand, price, rating, categoryName, delivery, Availability.OutOfStock, availableInDays, marketplaceSellerId, None, None, isAdult, isAlcohol, isSupermarket, isPersonalized, isPromotedProduct, index, freeRest) =>
+        Item.OutOfStock(itemId, itemType, itemTitle, brand, price, rating, categoryName, delivery, availableInDays, marketplaceSellerId, isAdult, isAlcohol, isSupermarket, isPersonalized, isPromotedProduct, index, freeRest)
       case _ => throw AvroError("Got unexpected variation of fields while decoding 'ozon.Item'").throwable
       // format: on
     }

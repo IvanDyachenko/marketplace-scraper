@@ -16,7 +16,7 @@ import marketplace.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcan
 final case class Price(price: Int, finalPrice: Int, discount: Price.Percent)
 
 object Price {
-  object Percent extends TaggedType[Long] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec {}
+  object Percent extends TaggedType[Byte] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec {}
   type Percent = Percent.Type
 
   implicit val vulcanCodec: Codec[Price] = Codec.derive[Price]

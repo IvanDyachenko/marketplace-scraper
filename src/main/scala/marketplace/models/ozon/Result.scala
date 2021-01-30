@@ -3,9 +3,18 @@ package marketplace.models.ozon
 import derevo.derive
 import tofu.logging.derivation.loggable
 import io.circe.{Decoder, HCursor}
+import vulcan.Codec
+import vulcan.generic._
 
 @derive(loggable)
-final case class Result(layout: Layout, catalog: Catalog)
+@AvroNamespace("ozon.models")
+final case class Result(layout: Layout, catalog: Catalog) {
+
+  def isFailure: Boolean = catalog.searchResultsV2 match {
+    case _: SearchResultsV2.Failure => true
+    case _                          => false
+  }
+}
 
 object Result {
   implicit val circeDecoder: Decoder[Result] = new Decoder[Result] {
@@ -15,4 +24,6 @@ object Result {
         catalog <- c.get[Catalog]("catalog")(Catalog.circeDecoder(layout))
       } yield Result(layout, catalog)
   }
+
+  implicit val vulcanCodec: Codec[Result] = Codec.derive[Result]
 }

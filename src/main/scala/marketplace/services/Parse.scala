@@ -11,7 +11,7 @@ import tofu.syntax.logging._
 import derevo.derive
 import tofu.higherKind.Mid
 import tofu.higherKind.derived.representableK
-import tofu.logging.derivation.loggable //{loggable, masked, MaskMode}
+import tofu.logging.derivation.loggable
 import tofu.logging.{Logging, Logs}
 import tofu.{Handle, Raise}
 import tofu.generate.GenUUID
@@ -53,8 +53,7 @@ object Parse {
 
   private final class Impl[F[_]: Monad: Clock: GenUUID] extends Parse[F] {
     def handle(command: Command): F[Result] = command match {
-      case Command.ParseOzonResponse(_, _, created, response) =>
-        parse[OzonResult](response) >>= (_.traverse(Event.ozonResponseParsed[F](created, _)))
+      case Command.ParseOzonResponse(_, _, created, response) => parse[OzonResult](response) >>= (_.traverse(Event.ozonResponseParsed[F](created, _)))
     }
 
     private def parse[R: Decoder](data: Json): F[Either[ParsingError, R]] =

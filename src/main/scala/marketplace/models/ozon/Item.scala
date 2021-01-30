@@ -1,14 +1,13 @@
 package marketplace.models.ozon
 
 import cats.implicits._
-import cats.free.FreeApplicative
 import derevo.derive
 import tofu.logging.derivation.loggable
 import tofu.logging.LoggableEnum
 import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry, VulcanEnum}
 import enumeratum.values.{ByteCirceEnum, ByteEnum, ByteEnumEntry, ByteVulcanEnum}
 import enumeratum.EnumEntry.Lowercase
-import vulcan.{AvroError, Codec}
+import vulcan.Codec
 import vulcan.generic._
 import io.circe.{Decoder, DecodingFailure, HCursor}
 import supertagged.TaggedType
@@ -45,7 +44,8 @@ object Item {
 
   @AvroNamespace("ozon.models.item")
   sealed trait Type extends EnumEntry with Lowercase with Product with Serializable
-  object Type       extends Enum[Type] with CatsEnum[Type] with CirceEnum[Type] with LoggableEnum[Type] with VulcanEnum[Type] {
+
+  object Type extends Enum[Type] with CatsEnum[Type] with CirceEnum[Type] with LoggableEnum[Type] with VulcanEnum[Type] {
     val values = findValues
 
     case object SKU extends Type
@@ -62,7 +62,7 @@ object Item {
   }
 
   @derive(loggable)
-  @AvroNamespace("ozon.models.item")
+  @AvroNamespace("ozon.models.items")
   final case class InStock(
     id: Id,
     `type`: Type,
@@ -88,7 +88,7 @@ object Item {
   }
 
   @derive(loggable)
-  @AvroNamespace("ozon.models.item")
+  @AvroNamespace("ozon.models.items")
   final case class OutOfStock(
     id: Id,
     `type`: Type,
@@ -200,49 +200,4 @@ object Item {
   }
 
   implicit val vulcanCodec: Codec[Item] = Codec.union[Item](alt => alt[InStock] |+| alt[OutOfStock])
-
-  // FixMe: it's terrible
-  private[models] def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => Item): FreeApplicative[Codec.Field[A, *], Item] =
-    (
-      field("itemId", f(_).id),
-      field("itemType", f(_).`type`),
-      field("itemTitle", f(_).title),
-      Brand.vulcanCodecFieldFA(field)(f(_).brand),
-      Price.vulcanCodecFieldFA(field)(f(_).price),
-      Rating.vulcanCodecFieldFA(field)(f(_).rating),
-      field("categoryPath", f(_).categoryPath),
-      Delivery.vulcanCodecFieldFA(field)(f(_).delivery),
-      field("availability", f(_).availability),
-      field("availableInDays", f(_).availableInDays),
-      field("marketplaceSellerId", f(_).marketplaceSellerId),
-      field(
-        "addToCartMinItems",
-        f(_) match {
-          case item: InStock => Some(item.addToCartMinItems)
-          case _             => None
-        }
-      ),
-      field(
-        "addToCartMaxItems",
-        f(_) match {
-          case item: InStock => Some(item.addToCartMaxItems)
-          case _             => None
-        }
-      ),
-      field("isAdult", f(_).isAdult),
-      field("isAlcohol", f(_).isAlcohol),
-      field("isSupermarket", f(_).isSupermarket),
-      field("isPersonalized", f(_).isPersonalized),
-      field("isPromotedProduct", f(_).isPromotedProduct),
-      field("index", f(_).index),
-      field("freeRest", f(_).freeRest)
-    ).mapN {
-      // format: off
-      case (itemId, itemType, itemTitle, brand, price, rating, categoryName, delivery, Availability.InStock, availableInDays, marketplaceSellerId, Some(addToCartMinItems), Some(addToCartMaxItems), isAdult, isAlcohol, isSupermarket, isPersonalized, isPromotedProduct, index, freeRest) =>
-        Item.InStock(itemId, itemType, itemTitle, brand, price, rating, categoryName, delivery, availableInDays, marketplaceSellerId, addToCartMinItems, addToCartMaxItems, isAdult, isAlcohol, isSupermarket, isPersonalized, isPromotedProduct, index, freeRest)
-      case (itemId, itemType, itemTitle, brand, price, rating, categoryName, delivery, Availability.OutOfStock, availableInDays, marketplaceSellerId, None, None, isAdult, isAlcohol, isSupermarket, isPersonalized, isPromotedProduct, index, freeRest) =>
-        Item.OutOfStock(itemId, itemType, itemTitle, brand, price, rating, categoryName, delivery, availableInDays, marketplaceSellerId, isAdult, isAlcohol, isSupermarket, isPersonalized, isPromotedProduct, index, freeRest)
-      case _ => throw AvroError("Got unexpected variation of fields while decoding 'ozon.Item'").throwable
-      // format: on
-    }
 }

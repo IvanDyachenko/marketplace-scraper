@@ -9,7 +9,7 @@ import pureconfig.module.catseffect.syntax._
 
 final case class ParserConfig(
   groupId: String,
-  ozonItemsTopic: String,
+  ozonResultsTopic: String,
   ozonErrorsTopic: String,
   maxConcurrent: Int,
   batchOffsets: Int,

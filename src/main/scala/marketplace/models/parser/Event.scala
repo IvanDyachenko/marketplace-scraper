@@ -10,43 +10,30 @@ import vulcan.Codec
 import supertagged.postfix._
 
 import marketplace.models.{Event, Timestamp}
-import marketplace.models.ozon.{Item => OzonItem, Result => OzonResult}
+import marketplace.models.ozon.{Result => OzonResult}
 
 @derive(loggable)
 sealed trait ParserEvent extends Event {
-  def time: Timestamp
+  def timestamp: Timestamp
 }
 
 object ParserEvent {
 
   @derive(loggable)
-  final case class OzonItemParsed(id: Event.Id, key: Event.Key, created: Timestamp, time: Timestamp, item: OzonItem) extends ParserEvent
+  final case class OzonResponseParsed(id: Event.Id, key: Event.Key, created: Timestamp, timestamp: Timestamp, result: OzonResult) extends ParserEvent
 
-  @derive(loggable)
-  final case class OzonResponseParsed(id: Event.Id, key: Event.Key, created: Timestamp, time: Timestamp, result: OzonResult) extends ParserEvent
-
-  def ozonItemParsed(id: Event.Id, key: Event.Key, created: Timestamp, time: Timestamp, item: OzonItem): ParserEvent =
-    OzonItemParsed(id, key, created, time, item)
-
-  def ozonResponseParsed[F[_]: FlatMap: Clock: GenUUID](time: Timestamp, result: OzonResult): F[ParserEvent] =
+  def ozonResponseParsed[F[_]: FlatMap: Clock: GenUUID](timestamp: Timestamp, result: OzonResult): F[ParserEvent] =
     for {
       uuid    <- GenUUID[F].randomUUID
       instant <- Clock[F].instantNow
-    } yield OzonResponseParsed(uuid @@ Event.Id, "ozon" @@ Event.Key, instant @@ Timestamp, time, result)
-
-  object OzonItemParsed {
-    implicit val vulcanCodec: Codec[OzonItemParsed] =
-      Codec.record[OzonItemParsed](name = "OzonItemParsed", namespace = "parser.events") { fb =>
-        (fb("_id", _.id), fb("_key", _.key), fb("_created", _.created), fb("time", _.time), OzonItem.vulcanCodecFieldFA(fb)(_.item)).mapN(apply)
-      }
-  }
+    } yield OzonResponseParsed(uuid @@ Event.Id, result.catalog.category.id.show @@ Event.Key, instant @@ Timestamp, timestamp, result)
 
   object OzonResponseParsed {
     implicit val vulcanCodec: Codec[OzonResponseParsed] =
       Codec.record[OzonResponseParsed](name = "OzonResponseParsed", namespace = "parser.events") { fb =>
-        (fb("_id", _.id), fb("_key", _.key), fb("_created", _.created), fb("time", _.time), fb("result", _.result)).mapN(apply)
+        (fb("_id", _.id), fb("_key", _.key), fb("_created", _.created), fb("timestamp", _.timestamp), fb("result", _.result)).mapN(apply)
       }
   }
 
-  implicit val vulcanCodec: Codec[ParserEvent] = Codec.union[ParserEvent](alt => alt[OzonItemParsed] |+| alt[OzonResponseParsed])
+  implicit val vulcanCodec: Codec[ParserEvent] = Codec.union[ParserEvent](alt => alt[OzonResponseParsed])
 }

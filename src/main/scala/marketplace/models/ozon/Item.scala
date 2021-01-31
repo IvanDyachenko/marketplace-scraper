@@ -7,8 +7,6 @@ import tofu.logging.LoggableEnum
 import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry, VulcanEnum}
 import enumeratum.values.{ByteCirceEnum, ByteEnum, ByteEnumEntry, ByteVulcanEnum}
 import enumeratum.EnumEntry.Lowercase
-import vulcan.Codec
-import vulcan.generic._
 import io.circe.{Decoder, DecodingFailure, HCursor}
 import supertagged.TaggedType
 
@@ -35,7 +33,6 @@ sealed trait Item {
   def isSupermarket: Boolean
   def isPersonalized: Boolean
   def isPromotedProduct: Boolean
-  def page: Page
   def freeRest: Int
 }
 
@@ -44,7 +41,6 @@ object Item {
   object Id extends TaggedType[Long] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec {}
   type Id = Id.Type
 
-  @AvroNamespace("ozon.models.item")
   sealed trait Type extends EnumEntry with Lowercase with Product with Serializable
 
   object Type extends Enum[Type] with CatsEnum[Type] with CirceEnum[Type] with LoggableEnum[Type] with VulcanEnum[Type] {
@@ -53,7 +49,6 @@ object Item {
     case object SKU extends Type
   }
 
-  @AvroNamespace("ozon.models.item")
   sealed abstract class Availability(val value: Byte) extends ByteEnumEntry
 
   object Availability extends ByteEnum[Availability] with ByteCirceEnum[Availability] with ByteVulcanEnum[Availability] {
@@ -64,7 +59,6 @@ object Item {
   }
 
   @derive(loggable)
-  @AvroNamespace("ozon.models.items")
   final case class InStock(
     id: Id,
     index: Int,
@@ -85,14 +79,12 @@ object Item {
     isSupermarket: Boolean,
     isPersonalized: Boolean,
     isPromotedProduct: Boolean,
-    page: Page,
     freeRest: Int
   ) extends Item {
     val availability: Availability = Availability.InStock
   }
 
   @derive(loggable)
-  @AvroNamespace("ozon.models.items")
   final case class OutOfStock(
     id: Id,
     index: Int,
@@ -111,14 +103,13 @@ object Item {
     isSupermarket: Boolean,
     isPersonalized: Boolean,
     isPromotedProduct: Boolean,
-    page: Page,
     freeRest: Int
   ) extends Item {
     val availability: Availability = Availability.OutOfStock
   }
 
   object InStock {
-    implicit def circeDecoder(category: Category, page: Page): Decoder[InStock] = Decoder.instance[InStock] { (c: HCursor) =>
+    implicit def circeDecoder(category: Category): Decoder[InStock] = Decoder.instance[InStock] { (c: HCursor) =>
       lazy val i = c.downField("cellTrackingInfo")
 
       for {
@@ -152,17 +143,14 @@ object Item {
                       i.get[Boolean]("isSupermarket"),
                       i.get[Boolean]("isPersonalized"),
                       i.get[Boolean]("isPromotedProduct"),
-                      page.asRight[DecodingFailure],
                       i.get[Int]("freeRest")
                     ).mapN(apply)
       } yield item
     }
-
-    implicit val vulcanCodec: Codec[InStock] = Codec.derive[InStock]
   }
 
   object OutOfStock {
-    implicit def circeDecoder(category: Category, page: Page): Decoder[OutOfStock] = Decoder.instance[OutOfStock] { (c: HCursor) =>
+    implicit def circeDecoder(category: Category): Decoder[OutOfStock] = Decoder.instance[OutOfStock] { (c: HCursor) =>
       lazy val i = c.downField("cellTrackingInfo")
 
       for {
@@ -189,25 +177,20 @@ object Item {
                   i.get[Boolean]("isSupermarket"),
                   i.get[Boolean]("isPersonalized"),
                   i.get[Boolean]("isPromotedProduct"),
-                  page.asRight[DecodingFailure],
                   i.get[Int]("freeRest")
                 ).mapN(apply)
       } yield item
     }
-
-    implicit val vulcanCodec: Codec[OutOfStock] = Codec.derive[OutOfStock]
   }
 
-  implicit def circeDecoder(category: Category, page: Page): Decoder[Item] = Decoder.instance[Item] { (c: HCursor) =>
+  implicit def circeDecoder(category: Category): Decoder[Item] = Decoder.instance[Item] { (c: HCursor) =>
     for {
       availability <- c.downField("cellTrackingInfo").get[Availability]("availability")
       decoder       = availability match {
-                        case Availability.InStock    => InStock.circeDecoder(category, page)
-                        case Availability.OutOfStock => OutOfStock.circeDecoder(category, page)
+                        case Availability.InStock    => InStock.circeDecoder(category)
+                        case Availability.OutOfStock => OutOfStock.circeDecoder(category)
                       }
       item         <- decoder.widen[Item](c)
     } yield item
   }
-
-  implicit val vulcanCodec: Codec[Item] = Codec.union[Item](alt => alt[InStock] |+| alt[OutOfStock])
 }

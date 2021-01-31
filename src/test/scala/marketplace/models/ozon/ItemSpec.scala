@@ -141,11 +141,10 @@ class ItemSpec extends AnyFlatSpec with Matchers {
         |}
       """.stripMargin
 
-    val page     = Page(250, 278, 10539)
-    val category = Category(12348L @@ Category.Id, "Корм для кошек" @@ Category.Name, "Корма и лакомства" @@ Catalog.Name)
+    val category = Category(12348L @@ Category.Id, "Корм для кошек" @@ Category.Name, "Корма и лакомства" @@ Catalog.Name, 250, 278, 10539)
 
-    implicit val itemDecoder        = Item.circeDecoder(category, page)
-    implicit val itemInStockDecoder = Item.InStock.circeDecoder(category, page)
+    implicit val itemDecoder        = Item.circeDecoder(category)
+    implicit val itemInStockDecoder = Item.InStock.circeDecoder(category)
 
     decode[Item](itemRawJson).isRight shouldBe true
     decode[Item.InStock](itemRawJson).isRight shouldBe true
@@ -294,11 +293,10 @@ class ItemSpec extends AnyFlatSpec with Matchers {
         |}
       """.stripMargin
 
-    val page     = Page(250, 278, 10539)
-    val category = Category(12348L @@ Category.Id, "Корм для кошек" @@ Category.Name, "Корма и лакомства" @@ Catalog.Name)
+    val category = Category(12348L @@ Category.Id, "Корм для кошек" @@ Category.Name, "Корма и лакомства" @@ Catalog.Name, 250, 278, 10539)
 
-    implicit val itemDecoder        = Item.circeDecoder(category, page)
-    implicit val itemInStockDecoder = Item.InStock.circeDecoder(category, page)
+    implicit val itemDecoder        = Item.circeDecoder(category)
+    implicit val itemInStockDecoder = Item.InStock.circeDecoder(category)
 
     decode[Item](itemRawJson).isRight shouldBe true
     decode[Item.InStock](itemRawJson).isRight shouldBe true
@@ -432,11 +430,10 @@ class ItemSpec extends AnyFlatSpec with Matchers {
         |}
       """.stripMargin
 
-    val page     = Page(250, 278, 10539)
-    val category = Category(12348L @@ Category.Id, "Корм для кошек" @@ Category.Name, "Корма и лакомства" @@ Catalog.Name)
+    val category = Category(12348L @@ Category.Id, "Корм для кошек" @@ Category.Name, "Корма и лакомства" @@ Catalog.Name, 250, 278, 10539)
 
-    implicit val itemDecoder           = Item.circeDecoder(category, page)
-    implicit val itemOutOfStockDecoder = Item.OutOfStock.circeDecoder(category, page)
+    implicit val itemDecoder           = Item.circeDecoder(category)
+    implicit val itemOutOfStockDecoder = Item.OutOfStock.circeDecoder(category)
 
     decode[Item](itemRawJson).isRight shouldBe true
     decode[Item.OutOfStock](itemRawJson).isRight shouldBe true
@@ -537,10 +534,9 @@ class ItemSpec extends AnyFlatSpec with Matchers {
         |}
       """.stripMargin
 
-    val page     = Page(250, 278, 10539)
-    val category = Category(12348L @@ Category.Id, "Корм для кошек" @@ Category.Name, "Корма и лакомства" @@ Catalog.Name)
+    val category = Category(12348L @@ Category.Id, "Корм для кошек" @@ Category.Name, "Корма и лакомства" @@ Catalog.Name, 250, 278, 10539)
 
-    implicit val itemDecoder = Item.circeDecoder(category, page)
+    implicit val itemDecoder = Item.circeDecoder(category)
 
     decode[Item](itemRawJson).isRight shouldBe true
     //decode[Item.???](itemRawJson).isRight shouldBe true

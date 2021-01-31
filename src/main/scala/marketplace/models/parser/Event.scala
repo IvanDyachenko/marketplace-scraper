@@ -32,7 +32,7 @@ object ParserEvent {
   object OzonResponseParsed {
     implicit val vulcanCodec: Codec[OzonResponseParsed] =
       Codec.record[OzonResponseParsed](name = "OzonResponseParsed", namespace = "parser.events") { fb =>
-        (fb("_id", _.id), fb("_key", _.key), fb("_created", _.created), fb("timestamp", _.timestamp), fb("result", _.result)).mapN(apply)
+        (fb("_id", _.id), fb("_key", _.key), fb("_created", _.created), fb("timestamp", _.timestamp), ???).mapN(apply)
       }
   }
 

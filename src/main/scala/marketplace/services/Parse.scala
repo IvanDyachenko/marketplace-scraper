@@ -38,10 +38,15 @@ object Parse {
     @derive(loggable)
     case class DecodingError(message: String) extends ParsingError
 
+    @derive(loggable)
+    case class UnexpectedResult(message: String) extends ParsingError
+
     def decodingError(message: String): ParsingError = DecodingError(message)
+
+    def unexpectedResult(message: String): ParsingError = UnexpectedResult(message)
   }
 
-  final type Result = Either[ParsingError, Event]
+  final type Result = Either[ParsingError, List[Event]]
 
   private final class Logger[F[_]: Monad: Logging] extends Parse[Mid[F, *]] {
     def handle(command: Command): Mid[F, Result] =
@@ -54,7 +59,13 @@ object Parse {
   private final class Impl[F[_]: Monad: Clock: GenUUID] extends Parse[F] {
     def handle(command: Command): F[Result] = command match {
       case Command.ParseOzonResponse(_, _, created, response) =>
-        parse[OzonSearchResultsV2](response) >>= (_.traverse(Event.ozonResponseParsed[F](created, _)))
+        // format: off
+        parse[OzonSearchResultsV2](response) >>= (_.traverse { // format: on
+          _ match {
+            case OzonSearchResultsV2.Success(items) => items.traverse(Event.ozonItemParsed(created, _))
+            case OzonSearchResultsV2.Failure(error) => List.empty[Event].pure[F] // ToDo: raise an error
+          }
+        })
     }
 
     private def parse[R: Decoder](data: Json): F[Either[ParsingError, R]] =

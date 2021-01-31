@@ -17,7 +17,7 @@ import tofu.{Handle, Raise}
 import tofu.generate.GenUUID
 import io.circe.{Decoder, Json}
 
-import marketplace.models.ozon.{Result => OzonResult}
+import marketplace.models.ozon.{SearchResultsV2 => OzonSearchResultsV2}
 import marketplace.models.parser.{ParserEvent => Event, ParserCommand => Command}
 
 @derive(representableK)
@@ -53,7 +53,8 @@ object Parse {
 
   private final class Impl[F[_]: Monad: Clock: GenUUID] extends Parse[F] {
     def handle(command: Command): F[Result] = command match {
-      case Command.ParseOzonResponse(_, _, created, response) => parse[OzonResult](response) >>= (_.traverse(Event.ozonResponseParsed[F](created, _)))
+      case Command.ParseOzonResponse(_, _, created, response) =>
+        parse[OzonSearchResultsV2](response) >>= (_.traverse(Event.ozonResponseParsed[F](created, _)))
     }
 
     private def parse[R: Decoder](data: Json): F[Either[ParsingError, R]] =

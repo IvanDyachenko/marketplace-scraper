@@ -1,12 +1,14 @@
 package marketplace.models.ozon
 
 import cats.implicits._
+import cats.free.FreeApplicative
 import derevo.derive
 import tofu.logging.derivation.loggable
 import tofu.logging.LoggableEnum
 import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry, VulcanEnum}
 import enumeratum.values.{ByteCirceEnum, ByteEnum, ByteEnumEntry, ByteVulcanEnum}
 import enumeratum.EnumEntry.Lowercase
+import vulcan.Codec
 import io.circe.{Decoder, DecodingFailure, HCursor}
 import supertagged.TaggedType
 
@@ -193,4 +195,100 @@ object Item {
       item         <- decoder.widen[Item](c)
     } yield item
   }
+
+  // FixMe :(
+  private[models] def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => Item): FreeApplicative[Codec.Field[A, *], Item] =
+    (
+      field("itemId", f(_).id),
+      field("itemIndex", f(_).index),
+      field("itemType", f(_).`type`),
+      field("itemTitle", f(_).title),
+      Brand.vulcanCodecFieldFA(field)(f(_).brand),
+      Price.vulcanCodecFieldFA(field)(f(_).price),
+      Rating.vulcanCodecFieldFA(field)(f(_).rating),
+      Category.vulcanCodecFieldFA(field)(f(_).category),
+      field("categoryPath", f(_).categoryPath),
+      Delivery.vulcanCodecFieldFA(field)(f(_).delivery),
+      field("availability", f(_).availability),
+      field("availableInDays", f(_).availableInDays),
+      field("marketplaceSellerId", f(_).marketplaceSellerId),
+      field("addToCartMinItems", f(_) match { case item: InStock => Some(item.addToCartMinItems); case _ => None }),
+      field("addToCartMaxItems", f(_) match { case item: InStock => Some(item.addToCartMaxItems); case _ => None }),
+      field("isAdult", f(_).isAdult),
+      field("isAlcohol", f(_).isAlcohol),
+      field("isAvailable", f(_).isAvailable),
+      field("isSupermarket", f(_).isSupermarket),
+      field("isPersonalized", f(_).isPersonalized),
+      field("isPromotedProduct", f(_).isPromotedProduct),
+      field("freeRest", f(_).freeRest)
+    ).mapN {
+      case (
+            itemId,
+            itemIndex,
+            itemType,
+            itemTitle,
+            brand,
+            price,
+            rating,
+            category,
+            categoryPath,
+            delivery,
+            availability,
+            availableInDays,
+            marketplaceSellerId,
+            addToCartMinItems,
+            addToCartMaxItems,
+            isAdult,
+            isAlcohol,
+            _,
+            isSupermarket,
+            isPersonalized,
+            isPromotedProduct,
+            freeRest
+          ) =>
+        if (availability == Availability.InStock)
+          InStock(
+            itemId,
+            itemIndex,
+            itemType,
+            itemTitle,
+            brand,
+            price,
+            rating,
+            category,
+            categoryPath,
+            delivery,
+            availableInDays,
+            marketplaceSellerId,
+            addToCartMinItems.get,
+            addToCartMaxItems.get,
+            isAdult,
+            isAlcohol,
+            isSupermarket,
+            isPersonalized,
+            isPromotedProduct,
+            freeRest
+          )
+        else
+          OutOfStock(
+            itemId,
+            itemIndex,
+            itemType,
+            itemTitle,
+            brand,
+            price,
+            rating,
+            category,
+            categoryPath,
+            delivery,
+            availableInDays,
+            marketplaceSellerId,
+            isAdult,
+            isAlcohol,
+            isSupermarket,
+            isPersonalized,
+            isPromotedProduct,
+            freeRest
+          )
+    }
 }

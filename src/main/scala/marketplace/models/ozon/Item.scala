@@ -17,11 +17,13 @@ import marketplace.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcan
 @derive(loggable)
 sealed trait Item {
   def id: Item.Id
+  def index: Int
   def `type`: Item.Type
   def title: String
   def brand: Brand
   def price: Price
   def rating: Rating
+  def category: Category
   def categoryPath: Category.Path
   def delivery: Delivery
   def availability: Item.Availability
@@ -33,7 +35,7 @@ sealed trait Item {
   def isSupermarket: Boolean
   def isPersonalized: Boolean
   def isPromotedProduct: Boolean
-  def index: Int
+  def page: Page
   def freeRest: Int
 }
 
@@ -65,11 +67,13 @@ object Item {
   @AvroNamespace("ozon.models.items")
   final case class InStock(
     id: Id,
+    index: Int,
     `type`: Type,
     title: String,
     brand: Brand,
     price: Price,
     rating: Rating,
+    category: Category,
     categoryPath: Category.Path,
     delivery: Delivery,
     availableInDays: Short,
@@ -81,7 +85,7 @@ object Item {
     isSupermarket: Boolean,
     isPersonalized: Boolean,
     isPromotedProduct: Boolean,
-    index: Int,
+    page: Page,
     freeRest: Int
   ) extends Item {
     val availability: Availability = Availability.InStock
@@ -91,11 +95,13 @@ object Item {
   @AvroNamespace("ozon.models.items")
   final case class OutOfStock(
     id: Id,
+    index: Int,
     `type`: Type,
     title: String,
     brand: Brand,
     price: Price,
     rating: Rating,
+    category: Category,
     categoryPath: Category.Path,
     delivery: Delivery,
     availableInDays: Short,
@@ -105,14 +111,14 @@ object Item {
     isSupermarket: Boolean,
     isPersonalized: Boolean,
     isPromotedProduct: Boolean,
-    index: Int,
+    page: Page,
     freeRest: Int
   ) extends Item {
     val availability: Availability = Availability.OutOfStock
   }
 
   object InStock {
-    implicit val circeDecoder: Decoder[InStock] = Decoder.instance[InStock] { (c: HCursor) =>
+    implicit def circeDecoder(category: Category, page: Page): Decoder[InStock] = Decoder.instance[InStock] { (c: HCursor) =>
       lazy val i = c.downField("cellTrackingInfo")
 
       for {
@@ -128,11 +134,13 @@ object Item {
                       }(Right(_)))
         item     <- (
                       i.get[Item.Id]("id"),
+                      i.get[Int]("index"),
                       i.get[Item.Type]("type"),
                       i.get[String]("title"),
                       i.as[Brand],
                       i.as[Price],
                       i.as[Rating],
+                      category.asRight[DecodingFailure],
                       i.get[Category.Path]("category"),
                       i.as[Delivery],
                       i.get[Short]("availableInDays"),
@@ -144,7 +152,7 @@ object Item {
                       i.get[Boolean]("isSupermarket"),
                       i.get[Boolean]("isPersonalized"),
                       i.get[Boolean]("isPromotedProduct"),
-                      i.get[Int]("index"),
+                      page.asRight[DecodingFailure],
                       i.get[Int]("freeRest")
                     ).mapN(apply)
       } yield item
@@ -154,7 +162,7 @@ object Item {
   }
 
   object OutOfStock {
-    implicit val circeDecoder: Decoder[OutOfStock] = Decoder.instance[OutOfStock] { (c: HCursor) =>
+    implicit def circeDecoder(category: Category, page: Page): Decoder[OutOfStock] = Decoder.instance[OutOfStock] { (c: HCursor) =>
       lazy val i = c.downField("cellTrackingInfo")
 
       for {
@@ -165,11 +173,13 @@ object Item {
                   }(_ == Availability.OutOfStock)
         item <- (
                   i.get[Item.Id]("id"),
+                  i.get[Int]("index"),
                   i.get[Item.Type]("type"),
                   i.get[String]("title"),
                   i.as[Brand],
                   i.as[Price],
                   i.as[Rating],
+                  category.asRight[DecodingFailure],
                   i.get[Category.Path]("category"),
                   i.as[Delivery],
                   i.get[Short]("availableInDays"),
@@ -179,7 +189,7 @@ object Item {
                   i.get[Boolean]("isSupermarket"),
                   i.get[Boolean]("isPersonalized"),
                   i.get[Boolean]("isPromotedProduct"),
-                  i.get[Int]("index"),
+                  page.asRight[DecodingFailure],
                   i.get[Int]("freeRest")
                 ).mapN(apply)
       } yield item
@@ -188,12 +198,12 @@ object Item {
     implicit val vulcanCodec: Codec[OutOfStock] = Codec.derive[OutOfStock]
   }
 
-  implicit val circeDecoder: Decoder[Item] = Decoder.instance[Item] { (c: HCursor) =>
+  implicit def circeDecoder(category: Category, page: Page): Decoder[Item] = Decoder.instance[Item] { (c: HCursor) =>
     for {
       availability <- c.downField("cellTrackingInfo").get[Availability]("availability")
       decoder       = availability match {
-                        case Availability.InStock    => Decoder[InStock]
-                        case Availability.OutOfStock => Decoder[OutOfStock]
+                        case Availability.InStock    => InStock.circeDecoder(category, page)
+                        case Availability.OutOfStock => OutOfStock.circeDecoder(category, page)
                       }
       item         <- decoder.widen[Item](c)
     } yield item

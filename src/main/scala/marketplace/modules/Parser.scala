@@ -41,9 +41,8 @@ object Parser {
           .parEvalMap(config.maxConcurrent) { committable =>
             runContext(parse.handle(committable.record.value))(AppContext()).map(_.toOption.map(_ -> committable.offset))
           }
-          .collect {
-            case Some((event @ ParserEvent.OzonResponseParsed(_, key, _, _, result), offset)) if !result.isFailure =>
-              ProducerRecords.one(ProducerRecord(config.ozonResultsTopic, key, event), offset)
+          .collect { case Some((event @ ParserEvent.OzonResponseParsed(_, key, _, _, result), offset)) =>
+            ProducerRecords.one(ProducerRecord(config.ozonResultsTopic, key, event), offset)
           }
           .evalMap(producerOfEvents.produce)
           .parEvalMap(config.maxConcurrent)(identity)

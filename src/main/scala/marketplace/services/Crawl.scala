@@ -31,7 +31,7 @@ object Crawl {
     def handle(command: Command): Mid[F, Result] =
       trace"Execution of the ${command} has started" *> _ flatTap {
         case Left(error)  => error"Execution of the ${command} has been completed with the ${error}"
-        case Right(event) => debug"${event} has been successfully created as a result of execution of the ${command}"
+        case Right(event) => trace"${event} has been successfully created as a result of execution of the ${command}"
       }
   }
 

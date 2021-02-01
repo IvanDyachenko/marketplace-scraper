@@ -18,21 +18,17 @@ object SearchResultsV2 {
   final case class Failure(error: String) extends SearchResultsV2
 
   object Success {
-    implicit def circeDecoder(category: Category): Decoder[Success] = new Decoder[Success] {
-      final def apply(c: HCursor): Decoder.Result[Success] =
-        for {
-          items <- c.as(Decoder.decodeList[Item](Item.circeDecoder(category)))
-        } yield Success(items)
-    }
+    implicit def circeDecoder(category: Category): Decoder[Success] =
+      Decoder.forProduct1("items")(apply)(Decoder.decodeList[Item](Item.circeDecoder(category)))
   }
 
   implicit val circeDecoder: Decoder[SearchResultsV2] = new Decoder[SearchResultsV2] {
     final def apply(c: HCursor): Decoder.Result[SearchResultsV2] = {
-      lazy val i = c.downField("shared").downField("catalog")
+      lazy val i = c.downField("catalog")
 
       for {
         layout          <- c.get[Layout]("layout")
-        category        <- i.get[Category]("category")
+        category        <- i.downField("shared").get[Category]("catalog")
         searchResultsV2 <- layout.searchResultsV2.fold[Decoder.Result[SearchResultsV2]](
                              Left(
                                DecodingFailure(
@@ -41,9 +37,13 @@ object SearchResultsV2 {
                                )
                              )
                            ) { component =>
-                             implicit val circeDecoder =
-                               List[Decoder[SearchResultsV2]](Decoder[Failure].widen, Success.circeDecoder(category).widen).reduceLeft(_ or _)
-                             c.downField("searchResultsV2").downField(component.stateId).as[SearchResultsV2]
+                             val circeDecoder =
+                               List[Decoder[SearchResultsV2]](
+                                 Decoder[Failure].widen,
+                                 Success.circeDecoder(category).widen
+                               ).reduceLeft(_ or _)
+
+                             i.downField("searchResultsV2").downField(component.stateId).as[SearchResultsV2](circeDecoder)
                            }
       } yield searchResultsV2
     }

@@ -1,10 +1,5 @@
 import com.typesafe.sbt.packager.docker.Cmd
 
-ThisBuild / version := "0.1.0-SNAPSHOT"
-ThisBuild / scalaVersion := scala2_13
-
-lazy val scala2_13 = "2.13.3"
-
 lazy val `marketplace-crawler` =
   project
     .in(file("."))
@@ -51,14 +46,13 @@ lazy val `marketplace-crawler` =
     )
 
 lazy val projectSettings = Seq(
-  scalaVersion := scala2_13,
+  scalaVersion := "2.13.3",
+  resolvers += Resolver.sonatypeRepo("snapshots"),
+  resolvers += "confluent".at("https://packages.confluent.io/maven/"),
   fork in Global := true, // https://github.com/sbt/sbt/issues/2274
   cancelable in Global := true,
   scalafmtOnCompile := true
 )
-
-resolvers += "confluent".at("https://packages.confluent.io/maven/")
-resolvers += Resolver.sonatypeRepo("snapshots")
 
 lazy val projectDependencies =
   libraryDependencies ++= List(

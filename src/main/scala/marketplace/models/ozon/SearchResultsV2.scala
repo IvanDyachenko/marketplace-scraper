@@ -18,8 +18,8 @@ object SearchResultsV2 {
   final case class Failure(error: String) extends SearchResultsV2
 
   object Success {
-    implicit def circeDecoder(category: Category): Decoder[Success] =
-      Decoder.forProduct1("items")(apply)(Decoder.decodeList[Item](Item.circeDecoder(category)))
+    implicit def circeDecoder(catalog: Catalog): Decoder[Success] =
+      Decoder.forProduct1("items")(apply)(Decoder.decodeList[Item](Item.circeDecoder(catalog)))
   }
 
   implicit val circeDecoder: Decoder[SearchResultsV2] = new Decoder[SearchResultsV2] {
@@ -28,7 +28,7 @@ object SearchResultsV2 {
 
       for {
         layout          <- c.get[Layout]("layout")
-        category        <- i.downField("shared").get[Category]("catalog")
+        catalog         <- i.downField("shared").get[Catalog]("catalog")
         searchResultsV2 <- layout.searchResultsV2.fold[Decoder.Result[SearchResultsV2]](
                              Left(
                                DecodingFailure(
@@ -40,7 +40,7 @@ object SearchResultsV2 {
                              val circeDecoder =
                                List[Decoder[SearchResultsV2]](
                                  Decoder[Failure].widen,
-                                 Success.circeDecoder(category).widen
+                                 Success.circeDecoder(catalog).widen
                                ).reduceLeft(_ or _)
 
                              i.downField("searchResultsV2").downField(component.stateId).as[SearchResultsV2](circeDecoder)

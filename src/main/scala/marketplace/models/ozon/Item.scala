@@ -23,7 +23,7 @@ sealed trait Item {
   def brand: Brand
   def price: Price
   def rating: Rating
-  def category: Category
+  def catalog: Catalog
   def categoryPath: Category.Path
   def delivery: Delivery
   def availability: Item.Availability
@@ -69,7 +69,7 @@ object Item {
     brand: Brand,
     price: Price,
     rating: Rating,
-    category: Category,
+    catalog: Catalog,
     categoryPath: Category.Path,
     delivery: Delivery,
     availableInDays: Short,
@@ -95,7 +95,7 @@ object Item {
     brand: Brand,
     price: Price,
     rating: Rating,
-    category: Category,
+    catalog: Catalog,
     categoryPath: Category.Path,
     delivery: Delivery,
     availableInDays: Short,
@@ -111,7 +111,7 @@ object Item {
   }
 
   object InStock {
-    implicit def circeDecoder(category: Category): Decoder[InStock] = Decoder.instance[InStock] { (c: HCursor) =>
+    implicit def circeDecoder(catalog: Catalog): Decoder[InStock] = Decoder.instance[InStock] { (c: HCursor) =>
       lazy val i = c.downField("cellTrackingInfo")
 
       for {
@@ -133,7 +133,7 @@ object Item {
                       i.as[Brand],
                       i.as[Price],
                       i.as[Rating],
-                      category.asRight[DecodingFailure],
+                      catalog.asRight[DecodingFailure],
                       i.get[Category.Path]("category"),
                       i.as[Delivery],
                       i.get[Short]("availableInDays"),
@@ -152,7 +152,7 @@ object Item {
   }
 
   object OutOfStock {
-    implicit def circeDecoder(category: Category): Decoder[OutOfStock] = Decoder.instance[OutOfStock] { (c: HCursor) =>
+    implicit def circeDecoder(catalog: Catalog): Decoder[OutOfStock] = Decoder.instance[OutOfStock] { (c: HCursor) =>
       lazy val i = c.downField("cellTrackingInfo")
 
       for {
@@ -169,7 +169,7 @@ object Item {
                   i.as[Brand],
                   i.as[Price],
                   i.as[Rating],
-                  category.asRight[DecodingFailure],
+                  catalog.asRight[DecodingFailure],
                   i.get[Category.Path]("category"),
                   i.as[Delivery],
                   i.get[Short]("availableInDays"),
@@ -185,12 +185,12 @@ object Item {
     }
   }
 
-  implicit def circeDecoder(category: Category): Decoder[Item] = Decoder.instance[Item] { (c: HCursor) =>
+  implicit def circeDecoder(catalog: Catalog): Decoder[Item] = Decoder.instance[Item] { (c: HCursor) =>
     for {
       availability <- c.downField("cellTrackingInfo").get[Availability]("availability")
       decoder       = availability match {
-                        case Availability.InStock    => InStock.circeDecoder(category)
-                        case Availability.OutOfStock => OutOfStock.circeDecoder(category)
+                        case Availability.InStock    => InStock.circeDecoder(catalog)
+                        case Availability.OutOfStock => OutOfStock.circeDecoder(catalog)
                       }
       item         <- decoder.widen[Item](c)
     } yield item
@@ -206,7 +206,7 @@ object Item {
       Brand.vulcanCodecFieldFA(field)(f(_).brand),
       Price.vulcanCodecFieldFA(field)(f(_).price),
       Rating.vulcanCodecFieldFA(field)(f(_).rating),
-      Category.vulcanCodecFieldFA(field)(f(_).category),
+      Catalog.vulcanCodecFieldFA(field)(f(_).catalog),
       field("categoryPath", f(_).categoryPath),
       Delivery.vulcanCodecFieldFA(field)(f(_).delivery),
       field("availability", f(_).availability),
@@ -230,7 +230,7 @@ object Item {
             brand,
             price,
             rating,
-            category,
+            catalog,
             categoryPath,
             delivery,
             availability,
@@ -255,7 +255,7 @@ object Item {
             brand,
             price,
             rating,
-            category,
+            catalog,
             categoryPath,
             delivery,
             availableInDays,
@@ -278,7 +278,7 @@ object Item {
             brand,
             price,
             rating,
-            category,
+            catalog,
             categoryPath,
             delivery,
             availableInDays,

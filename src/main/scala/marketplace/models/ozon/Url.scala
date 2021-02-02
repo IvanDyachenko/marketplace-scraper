@@ -17,9 +17,9 @@ import marketplace.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcan
 @AvroNamespace("ozon.models")
 case class Url(
   path: String,
-  page: Option[Url.Page],
-  layoutContainer: Option[Url.LayoutContainer],
-  layoutPageIndex: Option[Url.LayoutPageIndex]
+  page: Option[Url.Page] = None,
+  layoutContainer: Option[Url.LayoutContainer] = None,
+  layoutPageIndex: Option[Url.LayoutPageIndex] = None
 )
 
 object Url {

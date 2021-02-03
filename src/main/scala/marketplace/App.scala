@@ -82,7 +82,7 @@ object Main extends TaskApp {
           .awakeEvery[F](every)
           .zipRight {
             Stream
-              .eval(CrawlerCommand.handleOzonRequest[F](ozon.GetCategorySearchResultsV2(name, 1 @@ ozon.Url.Page)))
+              .eval(CrawlerCommand.handleOzonRequest[F](ozon.Request.GetCategorySearchResultsV2(name, 1 @@ ozon.Url.Page)))
               .map(cmd => cmd.key -> cmd)
           }
           .repeat
@@ -93,7 +93,7 @@ object Main extends TaskApp {
             Stream
               .emits(1 to 250)
               .evalMap { page =>
-                CrawlerCommand.handleOzonRequest[F](ozon.GetCategorySearchResultsV2(name, page @@ ozon.Url.Page))
+                CrawlerCommand.handleOzonRequest[F](ozon.Request.GetCategorySearchResultsV2(name, page @@ ozon.Url.Page))
               }
               .map(cmd => cmd.key -> cmd)
           }

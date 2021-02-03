@@ -141,7 +141,7 @@ class ItemSpec extends AnyFlatSpec with Matchers {
         |}
       """.stripMargin
 
-    val category = Category(12348L @@ Category.Id, "Корм для кошек" @@ Category.Name, Some("Корма и лакомства" @@ Catalog.Name))
+    val category = Category(12348L @@ Category.Id, "Корм для кошек" @@ Category.Name, "Корма и лакомства" @@ Catalog.Name)
     val catalog  = Catalog(category, 250, 278, 10539)
 
     implicit val itemDecoder        = Item.circeDecoder(catalog)
@@ -294,7 +294,7 @@ class ItemSpec extends AnyFlatSpec with Matchers {
         |}
       """.stripMargin
 
-    val category = Category(12348L @@ Category.Id, "Корм для кошек" @@ Category.Name, Some("Корма и лакомства" @@ Catalog.Name))
+    val category = Category(12348L @@ Category.Id, "Корм для кошек" @@ Category.Name, "Корма и лакомства" @@ Catalog.Name)
     val catalog  = Catalog(category, 250, 278, 10539)
 
     implicit val itemDecoder        = Item.circeDecoder(catalog)
@@ -432,7 +432,7 @@ class ItemSpec extends AnyFlatSpec with Matchers {
         |}
       """.stripMargin
 
-    val category = Category(12348L @@ Category.Id, "Корм для кошек" @@ Category.Name, Some("Корма и лакомства" @@ Catalog.Name))
+    val category = Category(12348L @@ Category.Id, "Корм для кошек" @@ Category.Name, "Корма и лакомства" @@ Catalog.Name)
     val catalog  = Catalog(category, 250, 278, 10539)
 
     implicit val itemDecoder           = Item.circeDecoder(catalog)
@@ -537,7 +537,7 @@ class ItemSpec extends AnyFlatSpec with Matchers {
         |}
       """.stripMargin
 
-    val category = Category(12348L @@ Category.Id, "Корм для кошек" @@ Category.Name, Some("Корма и лакомства" @@ Catalog.Name))
+    val category = Category(12348L @@ Category.Id, "Корм для кошек" @@ Category.Name, "Корма и лакомства" @@ Catalog.Name)
     val catalog  = Catalog(category, 250, 278, 10539)
 
     implicit val itemDecoder = Item.circeDecoder(catalog)

@@ -1,7 +1,7 @@
 package marketplace.models.ozon
 
 import cats.implicits._
-import cats.free.FreeApplicative
+import cats.free.{Cofree, FreeApplicative}
 import derevo.derive
 import tofu.logging.derivation.loggable
 import vulcan.Codec
@@ -11,11 +11,13 @@ import supertagged.TaggedType
 import marketplace.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcanCodec}
 
 @derive(loggable)
-final case class Category(id: Category.Id, name: Category.Name, catalogName: Option[Catalog.Name]) {
+final case class Category(id: Category.Id, name: Category.Name, childrens: List[Category] = List.empty, catalogName: Option[Catalog.Name] = None) {
   val link: Url = Url(s"/category/${id.show}")
 }
 
 object Category {
+  type Tree[F[_]] = Cofree[F, List[Category]]
+
   object Id extends TaggedType[Long] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec {}
   type Id = Id.Type
 
@@ -25,8 +27,16 @@ object Category {
   object Path extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec {}
   type Path = Path.Type
 
-  implicit val circeDecoder: Decoder[Category] = Decoder.forProduct3("id", "name", "catalogName")(apply)
+  def apply(id: Id, name: Name, catalogName: Catalog.Name): Category = apply(id, name, catalogName = Some(catalogName))
+
+  implicit val circeDecoder: Decoder[Category] =
+    Decoder.forProduct4[Category, Id, Name, Option[List[Category]], Option[Catalog.Name]]("id", "name", "categories", "catalogName") {
+      case (id, name, Some(childrens), catalogName) => apply(id, name, childrens, catalogName)
+      case (id, name, _, catalogName)               => apply(id, name, catalogName = catalogName)
+    }
 
   private[models] def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => Category): FreeApplicative[Codec.Field[A, *], Category] =
-    (field("categoryId", f(_).id), field("categoryName", f(_).name), field("categoryCatalogName", f(_).catalogName)).mapN(apply)
+    (field("categoryId", f(_).id), field("categoryName", f(_).name), field("categoryCatalogName", f(_).catalogName)).mapN((id, name, catalogName) =>
+      Category(id, name, catalogName = catalogName)
+    )
 }

@@ -32,7 +32,7 @@ object SearchResultsV2 {
         searchResultsV2 <- layout.searchResultsV2.fold[Decoder.Result[SearchResultsV2]](
                              Left(
                                DecodingFailure(
-                                 "\"layout\" object doesn't contain component with \"component\" which is equal to \"searchResultsV2\"",
+                                 "\"layout\" object doesn't contain component with \"component\" which is corresponds to \"searchResultsV2\"",
                                  c.history
                                )
                              )
@@ -48,5 +48,4 @@ object SearchResultsV2 {
       } yield searchResultsV2
     }
   }
-
 }

@@ -20,7 +20,7 @@ sealed trait Request {
 object Request {
 
   @derive(loggable)
-  final case class GetCategory(categoryId: Category.Id) extends Request {
+  final case class GetCategoryMenu(categoryId: Category.Id) extends Request {
     val url = Url(s"/modal/categoryMenu/category/${categoryId.show}/")
   }
 
@@ -34,9 +34,9 @@ object Request {
     val url = Url(s"/category/${categoryName.show}/", Some(page), Some(layoutContainer), Some(layoutPageIndex))
   }
 
-  object GetCategory {
-    implicit val vulcanCodec: Codec[GetCategory] =
-      Codec.record[GetCategory](name = "GetCategory", namespace = "ozon.models")(field =>
+  object GetCategoryMenu {
+    implicit val vulcanCodec: Codec[GetCategoryMenu] =
+      Codec.record[GetCategoryMenu](name = "GetCategoryMenu", namespace = "ozon.models")(field =>
         field("host", _.host) *> field("path", _.path) *> field("url", _.url) *> field("categoryId", _.categoryId).map(apply)
       )
   }
@@ -57,5 +57,5 @@ object Request {
       }
   }
 
-  implicit val vulcanCodec: Codec[Request] = Codec.union[Request](alt => alt[GetCategory] |+| alt[GetCategorySearchResultsV2])
+  implicit val vulcanCodec: Codec[Request] = Codec.union[Request](alt => alt[GetCategoryMenu] |+| alt[GetCategorySearchResultsV2])
 }

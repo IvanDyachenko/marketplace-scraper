@@ -6,7 +6,33 @@ import org.scalatest.matchers.should.Matchers
 import io.circe.parser.decode
 
 class ComponentSpec extends AnyFlatSpec with Matchers {
-  it should "decode SearchResultsV2-component from a valid JSON" in {
+
+  it should "decode Component.CategoryMenu from a valid JSON" in {
+    val componentRawJson =
+      """
+        |{
+        |  "vertical": "catalog",
+        |  "component": "categoryMenu",
+        |  "stateId": "categoryMenu-281296-default-1",
+        |  "version": 1,
+        |  "widgetTrackingInfo": {
+        |    "name": "catalog.categoryMenu",
+        |    "vertical": "catalog",
+        |    "component": "categoryMenu",
+        |    "version": 1,
+        |    "id": 281296,
+        |    "revisionId": 472482,
+        |    "index": 1,
+        |    "timeSpent": 28996143
+        |  },
+        |  "widgetToken": ""
+        |}
+      """.stripMargin
+
+    decode[Component](componentRawJson).isRight shouldBe true
+  }
+
+  it should "decode Component.SearchResultsV2 from a valid JSON" in {
     val componentRawJson =
       """
         |{
@@ -30,7 +56,7 @@ class ComponentSpec extends AnyFlatSpec with Matchers {
     decode[Component](componentRawJson).isRight shouldBe true
   }
 
-  it should "decode UWidgetSKU-component from a valid JSON" in {
+  it should "decode Component.UWidgetSKU from a valid JSON" in {
     val componentRawJson =
       """
         |{

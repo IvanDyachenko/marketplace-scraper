@@ -5,7 +5,7 @@ import cats.free.{Cofree, FreeApplicative}
 import derevo.derive
 import tofu.logging.derivation.loggable
 import vulcan.Codec
-import io.circe.Decoder
+import io.circe.{Decoder, HCursor}
 import supertagged.TaggedType
 
 import marketplace.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcanCodec}
@@ -29,11 +29,17 @@ object Category {
 
   def apply(id: Id, name: Name, catalogName: Catalog.Name): Category = apply(id, name, catalogName = Some(catalogName))
 
-  implicit val circeDecoder: Decoder[Category] =
-    Decoder.forProduct4[Category, Id, Name, Option[List[Category]], Option[Catalog.Name]]("id", "name", "categories", "catalogName") {
+  implicit val circeDecoder: Decoder[Category] = Decoder.instance[Category] { (c: HCursor) =>
+    (
+      c.get[Id]("id"),
+      c.get[Name]("name"),
+      c.get[Option[List[Category]]]("categories"),
+      c.get[Option[Catalog.Name]]("catalogNam")
+    ).mapN {
       case (id, name, Some(childrens), catalogName) => apply(id, name, childrens, catalogName)
       case (id, name, _, catalogName)               => apply(id, name, catalogName = catalogName)
     }
+  }
 
   private[models] def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => Category): FreeApplicative[Codec.Field[A, *], Category] =
     (field("categoryId", f(_).id), field("categoryName", f(_).name), field("categoryCatalogName", f(_).catalogName)).mapN((id, name, catalogName) =>

@@ -3,6 +3,7 @@ package marketplace.models.ozon
 import cats.implicits._
 import cats.free.{Cofree, FreeApplicative}
 import derevo.derive
+import tofu.logging.Loggable
 import tofu.logging.derivation.loggable
 import vulcan.Codec
 import io.circe.{Decoder, HCursor}
@@ -11,7 +12,12 @@ import supertagged.TaggedType
 import marketplace.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcanCodec}
 
 @derive(loggable)
-final case class Category(id: Category.Id, name: Category.Name, childrens: List[Category] = List.empty, catalogName: Option[Catalog.Name] = None) {
+final case class Category(
+  id: Category.Id,
+  name: Category.Name,
+  childrens: Map[Category.Id, Category] = Map.empty,
+  catalogName: Option[Catalog.Name] = None
+) {
   val link: Url = Url(s"/category/${id.show}")
 }
 
@@ -29,15 +35,18 @@ object Category {
 
   def apply(id: Id, name: Name, catalogName: Catalog.Name): Category = apply(id, name, catalogName = Some(catalogName))
 
-  implicit val circeDecoder: Decoder[Category] = Decoder.instance[Category] { (c: HCursor) =>
+  implicit final def childrensLoggable: Loggable[Map[Id, Category]] = Loggable.empty
+
+  implicit final val circeDecoder: Decoder[Category] = Decoder.instance[Category] { (c: HCursor) =>
     (
       c.get[Id]("id"),
       c.get[Name]("name"),
       c.get[Option[List[Category]]]("categories"),
-      c.get[Option[Catalog.Name]]("catalogNam")
+      c.get[Option[Catalog.Name]]("catalogName")
     ).mapN {
-      case (id, name, Some(childrens), catalogName) => apply(id, name, childrens, catalogName)
-      case (id, name, _, catalogName)               => apply(id, name, catalogName = catalogName)
+      case (id, name, None, catalogName)            => apply(id, name, catalogName = catalogName)
+      case (id, name, Some(childrens), catalogName) =>
+        apply(id, name, childrens.groupMapReduce[Id, Category](_.id)(identity)((c1, c2) => c1), catalogName) // questionable decision
     }
   }
 

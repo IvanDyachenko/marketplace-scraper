@@ -11,13 +11,13 @@ import tofu.syntax.logging._
 import derevo.derive
 import tofu.higherKind.Mid
 import tofu.higherKind.derived.representableK
-import tofu.logging.derivation.loggable //{loggable, masked, MaskMode}
+import tofu.logging.derivation.loggable
 import tofu.logging.{Logging, Logs}
 import tofu.{Handle, Raise}
 import tofu.generate.GenUUID
 import io.circe.{Decoder, Json}
 
-import marketplace.models.ozon.{Result => OzonResult}
+import marketplace.models.ozon.{SearchResultsV2 => OzonSearchResultsV2}
 import marketplace.models.parser.{ParserEvent => Event, ParserCommand => Command}
 
 @derive(representableK)
@@ -38,23 +38,34 @@ object Parse {
     @derive(loggable)
     case class DecodingError(message: String) extends ParsingError
 
+    @derive(loggable)
+    case class UnexpectedResult(message: String) extends ParsingError
+
     def decodingError(message: String): ParsingError = DecodingError(message)
+
+    def unexpectedResult(message: String): ParsingError = UnexpectedResult(message)
   }
 
-  final type Result = Either[ParsingError, Event]
+  final type Result = Either[ParsingError, List[Event]]
 
   private final class Logger[F[_]: Monad: Logging] extends Parse[Mid[F, *]] {
     def handle(command: Command): Mid[F, Result] =
-      debug"Execution of the ${command} has started" *> _ flatTap {
+      trace"Execution of the ${command} has started" *> _ flatTap {
         case Left(error)  => error"Execution of the ${command} has been completed with the ${error}"
-        case Right(event) => debug"${event} has been successfully created as a result of execution of the ${command}"
+        case Right(event) => trace"${event} has been successfully created as a result of execution of the ${command}"
       }
   }
 
   private final class Impl[F[_]: Monad: Clock: GenUUID] extends Parse[F] {
     def handle(command: Command): F[Result] = command match {
       case Command.ParseOzonResponse(_, _, created, response) =>
-        parse[OzonResult](response) >>= (_.traverse(Event.ozonResponseParsed[F](created, _)))
+        // format: off
+        parse[OzonSearchResultsV2](response) >>= (_.traverse { // format: on
+          _ match {
+            case OzonSearchResultsV2.Success(items) => items.traverse(Event.ozonItemParsed(created, _))
+            case OzonSearchResultsV2.Failure(error) => List.empty[Event].pure[F] // ToDo: raise an error
+          }
+        })
     }
 
     private def parse[R: Decoder](data: Json): F[Either[ParsingError, R]] =

@@ -24,6 +24,9 @@
                  For example, '2018-06-08T01:02:03.000Z'.
             -->
             <date_time_input_format>best_effort</date_time_input_format>
+
+            <!-- Sets Confluent Schema Registry URL to use with AvroConfluent format. -->
+            <format_avro_schema_registry_url>http://schema-registry:8081</format_avro_schema_registry_url>
         </default>
 
         <!-- Profile that allows only read queries. -->

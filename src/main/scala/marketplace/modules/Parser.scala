@@ -16,7 +16,7 @@ import fs2.kafka.{commitBatchWithin, KafkaConsumer, KafkaProducer, ProducerRecor
 import marketplace.config.ParserConfig
 import marketplace.context.AppContext
 import marketplace.services.Parse
-import marketplace.models.{ozon, Command, Event}
+import marketplace.models.{Command, Event}
 import marketplace.models.parser.{ParserCommand, ParserEvent}
 
 @derive(representableK)
@@ -41,9 +41,8 @@ object Parser {
           .parEvalMap(config.maxConcurrent) { committable =>
             runContext(parse.handle(committable.record.value))(AppContext()).map(_.toOption.map(_ -> committable.offset))
           }
-          .collect { case Some((ParserEvent.OzonResponseParsed(id, key, created, time, ozon.Result.SearchResultsV2(items)), offset)) =>
-            val events = items.map(ParserEvent.ozonItemParsed(id, key, created, time, _))
-            ProducerRecords(events.map(ProducerRecord(config.ozonItemsTopic, key, _)), offset)
+          .collect { case Some((events, offset)) =>
+            ProducerRecords(events.map(event => ProducerRecord(config.ozonResultsTopic, event.key, event)), offset)
           }
           .evalMap(producerOfEvents.produce)
           .parEvalMap(config.maxConcurrent)(identity)

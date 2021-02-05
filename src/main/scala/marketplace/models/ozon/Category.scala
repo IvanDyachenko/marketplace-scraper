@@ -15,14 +15,19 @@ import marketplace.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcan
 final case class Category(
   id: Category.Id,
   name: Category.Name,
-  childrens: Map[Category.Id, Category] = Map.empty,
+  children: Map[Category.Id, Category] = Map.empty,
   catalogName: Option[Catalog.Name] = None
 ) {
-  val link: Url = Url(s"/category/${id.show}")
+  val link: Url       = Url(s"/category/${id.show}")
+  val isLeaf: Boolean = children.isEmpty
+
+  def find(categoryId: Category.Id): Option[Category] = tree.collectFirst { case category if category.id == categoryId => category }
+
+  private lazy val tree: Category.Tree[List] = Cofree.unfold[List, Category](this)(_.children.values.toList)
 }
 
 object Category {
-  type Tree[F[_]] = Cofree[F, List[Category]]
+  type Tree[F[_]] = Cofree[F, Category]
 
   object Id extends TaggedType[Long] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec {}
   type Id = Id.Type
@@ -35,7 +40,7 @@ object Category {
 
   def apply(id: Id, name: Name, catalogName: Catalog.Name): Category = apply(id, name, catalogName = Some(catalogName))
 
-  implicit final def childrensLoggable: Loggable[Map[Id, Category]] = Loggable.empty
+  implicit final val childrensLoggable: Loggable[Map[Id, Category]] = Loggable.empty
 
   implicit final val circeDecoder: Decoder[Category] = Decoder.instance[Category] { (c: HCursor) =>
     (
@@ -44,9 +49,8 @@ object Category {
       c.get[Option[List[Category]]]("categories"),
       c.get[Option[Catalog.Name]]("catalogName")
     ).mapN {
-      case (id, name, None, catalogName)            => apply(id, name, catalogName = catalogName)
-      case (id, name, Some(childrens), catalogName) =>
-        apply(id, name, childrens.groupMapReduce[Id, Category](_.id)(identity)((c1, c2) => c1), catalogName) // questionable decision
+      case (id, name, None, catalogName)           => apply(id, name, catalogName = catalogName)
+      case (id, name, Some(children), catalogName) => apply(id, name, children.groupMapReduce[Id, Category](_.id)(identity)((c, _) => c), catalogName)
     }
   }
 

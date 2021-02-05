@@ -5,7 +5,9 @@ import tofu.logging.derivation.{loggable, masked, MaskMode}
 import io.circe.{Decoder, DecodingFailure, HCursor}
 
 @derive(loggable)
-final case class CategoryMenu(@masked(MaskMode.ForLength(0, 50)) categories: List[Category])
+final case class CategoryMenu(@masked(MaskMode.ForLength(0, 50)) categories: List[Category]) {
+  def category(categoryId: Category.Id): Option[Category] = categories.map(_.find(categoryId)).flatten.headOption
+}
 
 object CategoryMenu {
 

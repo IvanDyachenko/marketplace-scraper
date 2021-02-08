@@ -12,10 +12,12 @@ import tofu.fs2.LiftStream
 
 import marketplace.marshalling._
 import marketplace.clients.{HttpClient, HttpClientError}
-import marketplace.models.ozon.{Category, CategoryMenu, Request}
+import marketplace.models.ozon.{Category, CategoryMenu, Request, SearchResultsV2, Url}
 
 trait OzonApi[F[_], S[_]] {
   def getCategory(id: Category.Id): F[Option[Category]]
+  def getCategoryMenu(id: Category.Id): F[CategoryMenu]
+  def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): F[SearchResultsV2]
   def getCategories(rootId: Category.Id)(p: Category => Boolean): S[Category]
 }
 
@@ -24,6 +26,12 @@ object OzonApi {
   final class Impl[F[_]: Functor: Concurrent: HttpClient: HttpClient.Handling] extends OzonApi[F, Stream[F, *]] {
 
     def getCategory(id: Category.Id): F[Option[Category]] = getCategoryMenu(id).map(_.category(id))
+
+    def getCategoryMenu(id: Category.Id): F[CategoryMenu] =
+      HttpClient[F].send[CategoryMenu](Request.GetCategoryMenu(id)).retryOnly[HttpClientError](3)
+
+    def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): F[SearchResultsV2] =
+      HttpClient[F].send[SearchResultsV2](Request.GetCategorySearchResultsV2(id, page)).retryOnly[HttpClientError](2)
 
     def getCategories(rootId: Category.Id)(p: Category => Boolean): Stream[F, Category] = {
       def go(tree: Category.Tree[Stream[F, *]]): Stream[F, Category] =
@@ -44,9 +52,6 @@ object OzonApi {
           }
           .pure[F]
       ))
-
-    private def getCategoryMenu(id: Category.Id): F[CategoryMenu] =
-      HttpClient[F].send[CategoryMenu](Request.GetCategoryMenu(id)).retryOnly[HttpClientError](2)
   }
 
   def make[
@@ -63,8 +68,10 @@ object OzonApi {
     new BifunctorK[OzonApi] {
       def bimapK[F[_]: Functor, G[_]: Functor, W[_], Q[_]](ufg: OzonApi[F, G])(fw: F ~> W)(gq: G ~> Q): OzonApi[W, Q] =
         new OzonApi[W, Q] {
-          def getCategory(id: Category.Id): W[Option[Category]]                       = fw(ufg.getCategory(id))
-          def getCategories(rootId: Category.Id)(p: Category => Boolean): Q[Category] = gq(ufg.getCategories(rootId)(p))
+          def getCategory(id: Category.Id): W[Option[Category]]                               = fw(ufg.getCategory(id))
+          def getCategoryMenu(id: Category.Id): W[CategoryMenu]                               = fw(ufg.getCategoryMenu(id))
+          def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): W[SearchResultsV2] = fw(ufg.getCategorySearchResultsV2(id, page))
+          def getCategories(rootId: Category.Id)(p: Category => Boolean): Q[Category]         = gq(ufg.getCategories(rootId)(p))
         }
     }
 }

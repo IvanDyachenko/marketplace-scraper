@@ -7,7 +7,7 @@ import vulcan.Codec
 import vulcan.generic.AvroNamespace
 import supertagged.postfix._
 
-import marketplace.models.ozon.Url.{LayoutContainer, LayoutPageIndex, Page}
+import marketplace.models.ozon.Url
 
 @derive(loggable)
 @AvroNamespace("ozon.models")
@@ -25,13 +25,14 @@ object Request {
   }
 
   @derive(loggable)
-  final case class GetCategorySearchResultsV2(
-    categoryName: Category.Name,
-    page: Page,
-    layoutContainer: LayoutContainer = LayoutContainer.Default,
-    layoutPageIndex: LayoutPageIndex
+  final case class GetCategorySearchResultsV2 private (
+    categoryId: Option[Category.Id],
+    categoryName: Option[Category.Name],
+    page: Url.Page,
+    layoutContainer: Url.LayoutContainer,
+    layoutPageIndex: Url.LayoutPageIndex
   ) extends Request {
-    val url = Url(s"/category/${categoryName.show}/", Some(page), Some(layoutContainer), Some(layoutPageIndex))
+    val url = Url(s"/category/${categoryId.show}/", Some(page), Some(layoutContainer), Some(layoutPageIndex))
   }
 
   object GetCategoryMenu {
@@ -42,13 +43,17 @@ object Request {
   }
 
   object GetCategorySearchResultsV2 {
-    def apply(categoryName: Category.Name, page: Page): GetCategorySearchResultsV2 =
-      GetCategorySearchResultsV2(categoryName, page, LayoutContainer.Default, page.self @@ LayoutPageIndex)
+    def apply(categoryId: Category.Id, page: Url.Page): GetCategorySearchResultsV2 =
+      GetCategorySearchResultsV2(Some(categoryId), None, page, Url.LayoutContainer.Default, page.self @@ Url.LayoutPageIndex)
+
+    def apply(categoryName: Category.Name, page: Url.Page): GetCategorySearchResultsV2 =
+      GetCategorySearchResultsV2(None, Some(categoryName), page, Url.LayoutContainer.Default, page.self @@ Url.LayoutPageIndex)
 
     implicit val vulcanCodec: Codec[GetCategorySearchResultsV2] =
       Codec.record[GetCategorySearchResultsV2](name = "GetCategorySearchResultsV2", namespace = "ozon.models") { field =>
         field("host", _.host) *> field("path", _.path) *> field("url", _.url) *>
           (
+            field("categoryId", _.categoryId),
             field("categoryName", _.categoryName),
             field("page", _.page),
             field("layoutContainer", _.layoutContainer),

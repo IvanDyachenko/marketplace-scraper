@@ -28,13 +28,13 @@ sealed trait SourceConfig {
 }
 
 object SourceConfig {
-  final case class OzonCategory(name: ozon.Category.Name, every: FiniteDuration) extends SourceConfig
+  final case class OzonCategory(id: ozon.Category.Id, every: FiniteDuration) extends SourceConfig
 
   implicit val fieldCoproductHint: FieldCoproductHint[SourceConfig] = new FieldCoproductHint[SourceConfig]("type") {
     override def fieldValue(name: String) = ConfigFieldMapping(PascalCase, KebabCase)(name)
   }
 
-  implicit val ozonCategoryNameConfigReader: ConfigReader[ozon.Category.Name] = ConfigReader.fromString[ozon.Category.Name](
-    ConvertHelpers.catchReadError(_ @@ ozon.Category.Name)
+  implicit val ozonCategoryIdConfigReader: ConfigReader[ozon.Category.Id] = ConfigReader.fromString[ozon.Category.Id](
+    ConvertHelpers.catchReadError(_.toLong @@ ozon.Category.Id)
   )
 }

@@ -26,7 +26,7 @@ object Request {
 
   @derive(loggable)
   final case class GetCategorySearchResultsV2 private (
-    categoryId: Option[Category.Id],
+    categoryId: Category.Id,
     categoryName: Option[Category.Name],
     page: Url.Page,
     layoutContainer: Url.LayoutContainer,
@@ -44,7 +44,10 @@ object Request {
 
   object GetCategorySearchResultsV2 {
     def apply(categoryId: Category.Id, page: Url.Page): GetCategorySearchResultsV2 =
-      GetCategorySearchResultsV2(Some(categoryId), None, page, Url.LayoutContainer.Default, page.self @@ Url.LayoutPageIndex)
+      GetCategorySearchResultsV2(categoryId, None, page, Url.LayoutContainer.Default, page.self @@ Url.LayoutPageIndex)
+
+    def apply(categoryId: Category.Id, categoryName: Category.Name, page: Url.Page): GetCategorySearchResultsV2 =
+      GetCategorySearchResultsV2(categoryId, Some(categoryName), page, Url.LayoutContainer.Default, page.self @@ Url.LayoutPageIndex)
 
     implicit val vulcanCodec: Codec[GetCategorySearchResultsV2] =
       Codec.record[GetCategorySearchResultsV2](name = "GetCategorySearchResultsV2", namespace = "ozon.models") { field =>

@@ -4,7 +4,6 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import io.circe.parser.decode
-import supertagged.postfix._
 
 class ItemSpec extends AnyFlatSpec with Matchers {
 
@@ -140,12 +139,6 @@ class ItemSpec extends AnyFlatSpec with Matchers {
         |  ]
         |}
       """.stripMargin
-
-    val category = Category(12348L @@ Category.Id, "Корм для кошек" @@ Category.Name, "Корма и лакомства" @@ Catalog.Name)
-    val catalog  = Catalog(category, 250, 278, 10539)
-
-    implicit val itemDecoder        = Item.circeDecoder(catalog)
-    implicit val itemInStockDecoder = Item.InStock.circeDecoder(catalog)
 
     decode[Item](itemRawJson).isRight shouldBe true
     decode[Item.InStock](itemRawJson).isRight shouldBe true
@@ -294,12 +287,6 @@ class ItemSpec extends AnyFlatSpec with Matchers {
         |}
       """.stripMargin
 
-    val category = Category(12348L @@ Category.Id, "Корм для кошек" @@ Category.Name, "Корма и лакомства" @@ Catalog.Name)
-    val catalog  = Catalog(category, 250, 278, 10539)
-
-    implicit val itemDecoder        = Item.circeDecoder(catalog)
-    implicit val itemInStockDecoder = Item.InStock.circeDecoder(catalog)
-
     decode[Item](itemRawJson).isRight shouldBe true
     decode[Item.InStock](itemRawJson).isRight shouldBe true
   }
@@ -432,12 +419,6 @@ class ItemSpec extends AnyFlatSpec with Matchers {
         |}
       """.stripMargin
 
-    val category = Category(12348L @@ Category.Id, "Корм для кошек" @@ Category.Name, "Корма и лакомства" @@ Catalog.Name)
-    val catalog  = Catalog(category, 250, 278, 10539)
-
-    implicit val itemDecoder           = Item.circeDecoder(catalog)
-    implicit val itemOutOfStockDecoder = Item.OutOfStock.circeDecoder(catalog)
-
     decode[Item](itemRawJson).isRight shouldBe true
     decode[Item.OutOfStock](itemRawJson).isRight shouldBe true
   }
@@ -536,11 +517,6 @@ class ItemSpec extends AnyFlatSpec with Matchers {
         |  "innerCols": 0
         |}
       """.stripMargin
-
-    val category = Category(12348L @@ Category.Id, "Корм для кошек" @@ Category.Name, "Корма и лакомства" @@ Catalog.Name)
-    val catalog  = Catalog(category, 250, 278, 10539)
-
-    implicit val itemDecoder = Item.circeDecoder(catalog)
 
     decode[Item](itemRawJson).isRight shouldBe true
     //decode[Item.???](itemRawJson).isRight shouldBe true

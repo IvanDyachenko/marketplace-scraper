@@ -4,10 +4,10 @@ import cats.implicits._
 import cats.free.FreeApplicative
 import derevo.derive
 import tofu.logging.derivation.loggable
-import tofu.logging.LoggableEnum
 import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry, VulcanEnum}
-import enumeratum.values.{ByteCirceEnum, ByteEnum, ByteEnumEntry, ByteVulcanEnum}
 import enumeratum.EnumEntry.Lowercase
+import enumeratum.values.{ByteCirceEnum, ByteEnum, ByteEnumEntry, ByteVulcanEnum}
+import tofu.logging.LoggableEnum
 import vulcan.Codec
 import io.circe.{Decoder, DecodingFailure, HCursor}
 import supertagged.TaggedType
@@ -23,7 +23,6 @@ sealed trait Item {
   def brand: Brand
   def price: Price
   def rating: Rating
-  def catalog: Catalog
   def categoryPath: Category.Path
   def delivery: Delivery
   def availability: Item.Availability
@@ -69,7 +68,6 @@ object Item {
     brand: Brand,
     price: Price,
     rating: Rating,
-    catalog: Catalog,
     categoryPath: Category.Path,
     delivery: Delivery,
     availableInDays: Short,
@@ -95,7 +93,6 @@ object Item {
     brand: Brand,
     price: Price,
     rating: Rating,
-    catalog: Catalog,
     categoryPath: Category.Path,
     delivery: Delivery,
     availableInDays: Short,
@@ -111,7 +108,7 @@ object Item {
   }
 
   object InStock {
-    implicit def circeDecoder(catalog: Catalog): Decoder[InStock] = Decoder.instance[InStock] { (c: HCursor) =>
+    implicit val circeDecoder: Decoder[InStock] = Decoder.instance[InStock] { (c: HCursor) =>
       lazy val i = c.downField("cellTrackingInfo")
 
       for {
@@ -133,7 +130,6 @@ object Item {
                       i.as[Brand],
                       i.as[Price],
                       i.as[Rating],
-                      catalog.asRight[DecodingFailure],
                       i.get[Category.Path]("category"),
                       i.as[Delivery],
                       i.get[Short]("availableInDays"),
@@ -152,7 +148,7 @@ object Item {
   }
 
   object OutOfStock {
-    implicit def circeDecoder(catalog: Catalog): Decoder[OutOfStock] = Decoder.instance[OutOfStock] { (c: HCursor) =>
+    implicit val circeDecoder: Decoder[OutOfStock] = Decoder.instance[OutOfStock] { (c: HCursor) =>
       lazy val i = c.downField("cellTrackingInfo")
 
       for {
@@ -169,7 +165,6 @@ object Item {
                   i.as[Brand],
                   i.as[Price],
                   i.as[Rating],
-                  catalog.asRight[DecodingFailure],
                   i.get[Category.Path]("category"),
                   i.as[Delivery],
                   i.get[Short]("availableInDays"),
@@ -185,12 +180,12 @@ object Item {
     }
   }
 
-  implicit def circeDecoder(catalog: Catalog): Decoder[Item] = Decoder.instance[Item] { (c: HCursor) =>
+  implicit val circeDecoder: Decoder[Item] = Decoder.instance[Item] { (c: HCursor) =>
     for {
       availability <- c.downField("cellTrackingInfo").get[Availability]("availability")
       decoder       = availability match {
-                        case Availability.InStock    => InStock.circeDecoder(catalog)
-                        case Availability.OutOfStock => OutOfStock.circeDecoder(catalog)
+                        case Availability.InStock    => InStock.circeDecoder
+                        case Availability.OutOfStock => OutOfStock.circeDecoder
                       }
       item         <- decoder.widen[Item](c)
     } yield item
@@ -206,7 +201,6 @@ object Item {
       Brand.vulcanCodecFieldFA(field)(f(_).brand),
       Price.vulcanCodecFieldFA(field)(f(_).price),
       Rating.vulcanCodecFieldFA(field)(f(_).rating),
-      Catalog.vulcanCodecFieldFA(field)(f(_).catalog),
       field("categoryPath", f(_).categoryPath),
       Delivery.vulcanCodecFieldFA(field)(f(_).delivery),
       field("availability", f(_).availability),
@@ -230,7 +224,6 @@ object Item {
             brand,
             price,
             rating,
-            catalog,
             categoryPath,
             delivery,
             availability,
@@ -255,7 +248,6 @@ object Item {
             brand,
             price,
             rating,
-            catalog,
             categoryPath,
             delivery,
             availableInDays,
@@ -278,7 +270,6 @@ object Item {
             brand,
             price,
             rating,
-            catalog,
             categoryPath,
             delivery,
             availableInDays,

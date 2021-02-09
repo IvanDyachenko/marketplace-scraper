@@ -46,9 +46,6 @@ object Request {
     def apply(categoryId: Category.Id, page: Url.Page): GetCategorySearchResultsV2 =
       GetCategorySearchResultsV2(Some(categoryId), None, page, Url.LayoutContainer.Default, page.self @@ Url.LayoutPageIndex)
 
-    def apply(categoryName: Category.Name, page: Url.Page): GetCategorySearchResultsV2 =
-      GetCategorySearchResultsV2(None, Some(categoryName), page, Url.LayoutContainer.Default, page.self @@ Url.LayoutPageIndex)
-
     implicit val vulcanCodec: Codec[GetCategorySearchResultsV2] =
       Codec.record[GetCategorySearchResultsV2](name = "GetCategorySearchResultsV2", namespace = "ozon.models") { field =>
         field("host", _.host) *> field("path", _.path) *> field("url", _.url) *>

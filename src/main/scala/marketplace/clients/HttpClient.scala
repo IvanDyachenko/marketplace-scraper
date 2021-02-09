@@ -60,21 +60,19 @@ object HttpClient extends ContextEmbed[HttpClient] {
             case unexpected           =>
               val message     = s"Received ${unexpected.status.code} status during execution of the request to ${request.uri.show}"
               val clientError = HttpClientError.UnexpectedStatus(message)
-              errorCause"${message}" (clientError) *> clientError.raise[F, Res]
+              error"${message}" *> clientError.raise[F, Res]
           }
         }
         .run(request)
         .recoverWith {
           case error: InvalidMessageBodyFailure =>
-            val message     =
-              s"Received invalid response body during execution of the request to ${request.uri.show}"
-            val clientError = HttpClientError.InvalidMessageBody(message)
-            errorCause"${message}" (error) *> clientError.raise[F, Res]
+            val message =
+              s"Received invalid response body during execution of the request to ${request.uri.show}: ${error.details.takeWhile(_ != '{')}"
+            error"${message}" *> HttpClientError.InvalidMessageBody(message).raise[F, Res]
           case error: DecodingFailure           =>
-            val message     =
+            val message =
               s"A response received as a result of the request to ${request.uri.show} was rejected because of a decoding failure: ${error.show}"
-            val clientError = HttpClientError.DecodingError(message)
-            errorCause"${message}" (error) *> clientError.raise[F, Res]
+            error"${message}" *> HttpClientError.DecodingError(message).raise[F, Res]
         }
   }
 

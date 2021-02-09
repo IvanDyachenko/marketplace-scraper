@@ -6,6 +6,7 @@ import cats.effect.{Concurrent, Resource, Timer}
 import tofu.syntax.embed._
 import tofu.syntax.monadic._
 import tofu.syntax.context._
+import tofu.syntax.handle._
 import derevo.derive
 import tofu.higherKind.derived.representableK
 import tofu.WithRun
@@ -18,6 +19,7 @@ import supertagged.postfix._
 import marketplace.config.{CrawlerConfig, SourceConfig}
 import marketplace.context.AppContext
 import marketplace.api.OzonApi
+import marketplace.clients.HttpClient
 import marketplace.services.Crawl
 import marketplace.models.{ozon, Command, Event}
 import marketplace.models.crawler.{CrawlerCommand, CrawlerEvent}
@@ -89,7 +91,7 @@ object Crawler {
         .pure[I]
     }
 
-  def makeCrawlerCommandsSource[F[_]: Timer: Concurrent: GenUUID](sourceConfig: SourceConfig)(
+  def makeCrawlerCommandsSource[F[_]: Timer: Concurrent: GenUUID: HttpClient.Handling](sourceConfig: SourceConfig)(
     ozonApi: OzonApi[F, Stream[F, *]]
   ): Stream[F, CrawlerCommand] =
     sourceConfig match {
@@ -97,16 +99,20 @@ object Crawler {
         Stream.awakeEvery[F](every) >>= { _ =>
           for {
             leafCategory    <- ozonApi.getCategories(rootCategoryId)(_.isLeaf)
-            searchResultsV2 <- Stream.eval(ozonApi.getCategorySearchResultsV2(leafCategory.id, 1 @@ ozon.Url.Page))
-            crawlerCommands <- searchResultsV2 match {
-                                 case ozon.SearchResultsV2.Failure(_)                                      => Stream.empty
-                                 case ozon.SearchResultsV2.Success(ozon.Category(id, name, _, _), page, _) =>
-                                   Stream
-                                     .emits(1 to page.total)
-                                     .covary[F]
-                                     .parEvalMapUnordered(1000) { number =>
-                                       CrawlerCommand.handleOzonRequest[F](ozon.Request.GetCategorySearchResultsV2(id, name, number @@ ozon.Url.Page))
-                                     }
+            searchResultsV2 <- Stream.eval(ozonApi.getCategorySearchResultsV2(leafCategory.id, 1 @@ ozon.Url.Page).restore)
+            crawlerCommands <- searchResultsV2.fold[Stream[F, CrawlerCommand]](Stream.empty) {
+                                 _ match {
+                                   case ozon.SearchResultsV2.Failure(_)                                      => Stream.empty
+                                   case ozon.SearchResultsV2.Success(ozon.Category(id, name, _, _), page, _) =>
+                                     Stream
+                                       .emits(1 to page.total)
+                                       .covary[F]
+                                       .parEvalMapUnordered(1000) { number =>
+                                         CrawlerCommand.handleOzonRequest[F](
+                                           ozon.Request.GetCategorySearchResultsV2(id, name, number @@ ozon.Url.Page)
+                                         )
+                                       }
+                                 }
                                }
           } yield crawlerCommands
         }

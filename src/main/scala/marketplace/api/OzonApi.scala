@@ -23,12 +23,12 @@ trait OzonApi[F[_], S[_]] {
 
 object OzonApi {
 
-  final class Impl[F[_]: Functor: Concurrent: HttpClient: HttpClient.Handling] extends OzonApi[F, Stream[F, *]] {
+  final class Impl[F[_]: Functor: Concurrent: HttpClient: HttpClient.Raising] extends OzonApi[F, Stream[F, *]] {
 
     def getCategory(id: Category.Id): F[Option[Category]] = getCategoryMenu(id).map(_.category(id))
 
     def getCategoryMenu(id: Category.Id): F[CategoryMenu] =
-      HttpClient[F].send[CategoryMenu](Request.GetCategoryMenu(id)).retryOnly[HttpClientError](3)
+      HttpClient[F].send[CategoryMenu](Request.GetCategoryMenu(id)).retryOnly[HttpClientError](2)
 
     def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): F[SearchResultsV2] =
       HttpClient[F].send[SearchResultsV2](Request.GetCategorySearchResultsV2(id, page)).retryOnly[HttpClientError](2)
@@ -55,7 +55,7 @@ object OzonApi {
   }
 
   def make[
-    F[_]: Functor: Concurrent: HttpClient: HttpClient.Handling,
+    F[_]: Functor: Concurrent: HttpClient: HttpClient.Raising,
     S[_]: Functor: LiftStream[*[_], F]
   ]: OzonApi[F, S] =
     bifunctorK.bimapK(new Impl[F])(Lift.liftIdentity[F].liftF)(LiftStream[S, F].liftF)

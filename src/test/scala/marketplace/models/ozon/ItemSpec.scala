@@ -291,6 +291,202 @@ class ItemSpec extends AnyFlatSpec with Matchers {
     decode[Item.InStock](itemRawJson).isRight shouldBe true
   }
 
+  it should "decode Item.InStock (3) from a valid JSON" in {
+    val itemRawJson =
+      """
+        |{
+        |  "type": "tile_builder",
+        |  "images": [
+        |    "https://cdn1.ozone.ru/s3/multimedia-v/6024764539.jpg",
+        |    "https://cdn1.ozone.ru/s3/multimedia-n/6024764495.jpg",
+        |    "https://cdn1.ozone.ru/s3/multimedia-v/6024764503.jpg",
+        |    "https://cdn1.ozone.ru/s3/multimedia-3/6024764511.jpg",
+        |    "https://cdn1.ozone.ru/s3/multimedia-b/6024764519.jpg",
+        |    "https://cdn1.ozone.ru/s3/multimedia-r/6024764535.jpg"
+        |  ],
+        |  "isAdult": false,
+        |  "isAlcohol": false,
+        |  "link": "/product/chernila-dlya-zapravki-elecom-epson-epson-ic69rdh-sootvetstvuyushchie-chernye-chetyre-raza-the-200352826/",
+        |  "deepLink": "ozon://products/200352826/",
+        |  "cellTrackingInfo": {
+        |    "index": 6,
+        |    "type": "sku",
+        |    "id": 200352826,
+        |    "title": "Чернила Elecom B01N7VG32U",
+        |    "availability": 1,
+        |    "price": 2472,
+        |    "finalPrice": 2332,
+        |    "deliverySchema": "Crossborder",
+        |    "marketplaceSellerId": 9170,
+        |    "category": "Электроника/Офисная техника/Картриджи и расходные материалы/Твердые чернила/Elecom",
+        |    "brand": "Elecom",
+        |    "brandId": 26303114,
+        |    "availableInDays": 0,
+        |    "freeRest": 3,
+        |    "stockCount": 3,
+        |    "discount": 5,
+        |    "marketingActionIds": [
+        |      11010979456230,
+        |      11050497706160
+        |    ],
+        |    "isPersonalized": false,
+        |    "deliveryTimeDiffDays": -1,
+        |    "isSupermarket": false,
+        |    "isPromotedProduct": false,
+        |    "rating": 0,
+        |    "countItems": 0,
+        |    "isRfbs": true,
+        |    "availableDeliverySchema": [
+        |      232,
+        |      223
+        |    ]
+        |  },
+        |  "template": "search",
+        |  "templateState": [
+        |    {
+        |      "type": "mobileContainer",
+        |      "leftContainer": [
+        |        {
+        |          "type": "tileImage",
+        |          "id": "tileImage",
+        |          "components": null,
+        |          "images": [
+        |            "https://cdn1.ozone.ru/s3/multimedia-v/6024764539.jpg",
+        |            "https://cdn1.ozone.ru/s3/multimedia-n/6024764495.jpg",
+        |            "https://cdn1.ozone.ru/s3/multimedia-v/6024764503.jpg",
+        |            "https://cdn1.ozone.ru/s3/multimedia-3/6024764511.jpg",
+        |            "https://cdn1.ozone.ru/s3/multimedia-b/6024764519.jpg",
+        |            "https://cdn1.ozone.ru/s3/multimedia-r/6024764535.jpg"
+        |          ],
+        |          "imageRatio": "1:1.4",
+        |          "badges": [
+        |            {
+        |              "type": "text",
+        |              "coordinates": {
+        |                "x": 1,
+        |                "y": 1
+        |              },
+        |              "text": "Ozon Global",
+        |              "backgroundColor": "ozAccentAlert",
+        |              "textColor": "ozWhite1"
+        |            }
+        |          ]
+        |        }
+        |      ],
+        |      "contentContainer": [
+        |        {
+        |          "type": "bigLabel",
+        |          "id": "discount",
+        |          "components": null,
+        |          "items": [
+        |            {
+        |              "title": "−5%",
+        |              "isSelected": false,
+        |              "color": null,
+        |              "textColor": "ozBGSecondary",
+        |              "backgroundColor": "ozAccentAlert",
+        |              "isBold": true
+        |            }
+        |          ]
+        |        },
+        |        {
+        |          "type": "price",
+        |          "id": "price",
+        |          "components": null,
+        |          "price": "2 472 ₽",
+        |          "finalPrice": "2 332 ₽",
+        |          "isPremium": false
+        |        },
+        |        {
+        |          "type": "title",
+        |          "id": "name",
+        |          "components": null,
+        |          "items": null,
+        |          "text": "Чернила Elecom B01N7VG32U",
+        |          "textColor": "ozTextPrimary",
+        |          "markupType": "",
+        |          "maxLines": 0
+        |        },
+        |        {
+        |          "type": "textSmall",
+        |          "id": "topAttributes",
+        |          "components": null,
+        |          "items": null,
+        |          "text": "Тип: <font color='ozTextPrimary'>Твердые чернила</font><br>Бренд: <font color='ozTextPrimary'>Elecom</font>",
+        |          "textColor": "ozTextSecondary",
+        |          "markupType": "html",
+        |          "maxLines": 100
+        |        },
+        |        {
+        |          "type": "action",
+        |          "id": "favorite",
+        |          "components": null,
+        |          "title": "",
+        |          "activeTitle": "",
+        |          "align": "topRight",
+        |          "isActive": false,
+        |          "isSubscribed": false
+        |        }
+        |      ],
+        |      "footerContainer": [
+        |        {
+        |          "type": "action",
+        |          "id": "universalAction",
+        |          "button": {
+        |            "isActive": false,
+        |            "default": {
+        |              "type": "addToCartButtonWithQuantity",
+        |              "addToCartButtonWithQuantity": {
+        |                "text": "В корзину",
+        |                "style": "STYLE_TYPE_PRIMARY",
+        |                "maxItems": 3,
+        |                "currentItems": 0,
+        |                "action": {
+        |                  "id": "200352826",
+        |                  "quantity": 1
+        |                }
+        |              }
+        |            }
+        |          },
+        |          "secondaryButton": {
+        |            "isActive": false,
+        |            "default": {
+        |              "icon": "ic_m_kebab",
+        |              "action": {
+        |                "behavior": "BEHAVIOR_TYPE_ACTION_SHEET",
+        |                "link": "catalogActionSheet?id=200352826"
+        |              },
+        |              "theme": "STYLE_TYPE_SECONDARY",
+        |              "tintColor": "ozAccentPrimary"
+        |            }
+        |          }
+        |        },
+        |        {
+        |          "type": "textSmall",
+        |          "id": "deliveryInfo",
+        |          "components": null,
+        |          "items": null,
+        |          "text": "<font color='ozTextPrimary'>want jp</font>, доставка из-за рубежа",
+        |          "textColor": "ozGray60",
+        |          "markupType": "html",
+        |          "maxLines": 3
+        |        }
+        |      ],
+        |      "leftCols": 0,
+        |      "rightCols": 0
+        |    }
+        |  ],
+        |  "isInFavorites": false,
+        |  "isInCompare": false,
+        |  "outerCols": 12,
+        |  "innerCols": 12
+        |}
+      """.stripMargin
+
+    decode[Item](itemRawJson).isRight shouldBe true
+    decode[Item.InStock](itemRawJson).isRight shouldBe true
+  }
+
   it should "decode Item.OutOfStock (1) from a valid JSON" in {
     val itemRawJson =
       """

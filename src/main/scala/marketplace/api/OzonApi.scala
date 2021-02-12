@@ -4,6 +4,7 @@ import cats.{~>, Functor}
 import cats.free.Cofree
 import cats.effect.Concurrent
 import cats.syntax.traverse._
+import tofu.syntax.handle._
 import tofu.syntax.monadic._
 import fs2.Stream
 import tofu.lift.Lift
@@ -12,6 +13,7 @@ import tofu.fs2.LiftStream
 import marketplace.marshalling._
 import marketplace.clients.HttpClient
 import marketplace.models.ozon.{Category, CategoryMenu, Request, SearchResultsV2, Url}
+import marketplace.clients.HttpClientError
 
 trait OzonApi[F[_], S[_]] {
   def getCategory(id: Category.Id): F[Option[Category]]
@@ -27,10 +29,10 @@ object OzonApi {
     def getCategory(id: Category.Id): F[Option[Category]] = getCategoryMenu(id).map(_.category(id))
 
     def getCategoryMenu(id: Category.Id): F[CategoryMenu] =
-      HttpClient[F].send[CategoryMenu](Request.GetCategoryMenu(id))
+      HttpClient[F].send[CategoryMenu](Request.GetCategoryMenu(id)).retryOnly[HttpClientError.UnexpectedStatus](3)
 
     def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): F[SearchResultsV2] =
-      HttpClient[F].send[SearchResultsV2](Request.GetCategorySearchResultsV2(id, page))
+      HttpClient[F].send[SearchResultsV2](Request.GetCategorySearchResultsV2(id, page)).retryOnly[HttpClientError.UnexpectedStatus](2)
 
     def getCategories(rootId: Category.Id)(p: Category => Boolean): Stream[F, Category] = {
       def go(tree: Category.Tree[Stream[F, *]]): Stream[F, Category] =

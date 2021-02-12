@@ -98,22 +98,24 @@ object Crawler {
       case SourceConfig.OzonCategory(rootCategoryId, every) =>
         Stream.awakeEvery[F](every) >>= { _ =>
           for {
-            leafCategory    <- ozonApi.getCategories(rootCategoryId)(_.isLeaf)
-            searchResultsV2 <- Stream.eval(ozonApi.getCategorySearchResultsV2(leafCategory.id, 1 @@ ozon.Url.Page).restore)
-            crawlerCommands <- searchResultsV2.fold[Stream[F, CrawlerCommand]](Stream.empty) {
-                                 _ match {
-                                   case ozon.SearchResultsV2.Failure(_)                                      => Stream.empty
-                                   case ozon.SearchResultsV2.Success(ozon.Category(id, name, _, _), page, _) =>
-                                     Stream
-                                       .emits(1 to page.total)
-                                       .covary[F]
-                                       .parEvalMapUnordered(1000) { number =>
-                                         CrawlerCommand.handleOzonRequest[F](
-                                           ozon.Request.GetCategorySearchResultsV2(id, name, number @@ ozon.Url.Page)
-                                         )
-                                       }
-                                 }
-                               }
+            leafCategoryO    <- ozonApi.getCategories(rootCategoryId)(_.isLeaf).restore
+            searchResultsV2O <- leafCategoryO.fold[Stream[F, Option[ozon.SearchResultsV2]]](Stream.empty) { leafCategory =>
+                                  Stream.eval(ozonApi.getCategorySearchResultsV2(leafCategory.id, 1 @@ ozon.Url.Page).restore)
+                                }
+            crawlerCommands  <- searchResultsV2O.fold[Stream[F, CrawlerCommand]](Stream.empty) {
+                                  _ match {
+                                    case ozon.SearchResultsV2.Failure(_)                                      => Stream.empty
+                                    case ozon.SearchResultsV2.Success(ozon.Category(id, name, _, _), page, _) =>
+                                      Stream
+                                        .emits(1 to page.total)
+                                        .covary[F]
+                                        .parEvalMapUnordered(1000) { number =>
+                                          CrawlerCommand.handleOzonRequest[F](
+                                            ozon.Request.GetCategorySearchResultsV2(id, name, number @@ ozon.Url.Page)
+                                          )
+                                        }
+                                  }
+                                }
           } yield crawlerCommands
         }
     }

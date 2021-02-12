@@ -1,6 +1,7 @@
 package marketplace.clients
 
 import scala.util.control.NoStackTrace
+import java.util.concurrent.TimeoutException
 
 import cats.syntax.all._
 import cats.{FlatMap, Monad}
@@ -34,13 +35,16 @@ sealed trait HttpClientError extends NoStackTrace
 
 object HttpClientError {
   @derive(loggable)
-  case class DecodingError(message: String) extends HttpClientError
+  final case class DecodingError(message: String) extends HttpClientError
 
   @derive(loggable)
-  case class UnexpectedStatus(message: String) extends HttpClientError
+  final case class TimeoutException(message: String) extends HttpClientError
 
   @derive(loggable)
-  case class InvalidMessageBody(message: String) extends HttpClientError
+  final case class UnexpectedStatus(message: String) extends HttpClientError
+
+  @derive(loggable)
+  final case class InvalidMessageBody(message: String) extends HttpClientError
 }
 
 object HttpClient extends ContextEmbed[HttpClient] {
@@ -65,6 +69,9 @@ object HttpClient extends ContextEmbed[HttpClient] {
         }
         .run(request)
         .recoverWith {
+          case error: TimeoutException          =>
+            val message = error.getMessage
+            error"${message}" *> HttpClientError.TimeoutException(message).raise[F, Res]
           case error: InvalidMessageBodyFailure =>
             val message =
               s"Received invalid response body during execution of the request to ${request.uri.show}: ${error.details.takeWhile(_ != '{')}"
@@ -116,6 +123,7 @@ object HttpClient extends ContextEmbed[HttpClient] {
 
   private def buildHttp4sClient[F[_]: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] =
     Resource.liftF(Execute[F].executionContext) >>= (BlazeClientBuilder[F](_)
+      .withRequestTimeout(httpConfig.requestTimeout)
       .withMaxTotalConnections(httpConfig.maxConnections)
       .withMaxConnectionsPerRequestKey(_ => httpConfig.maxConnectionsPerHost)
       .resource)

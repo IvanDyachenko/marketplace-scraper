@@ -4,14 +4,13 @@ import cats.{~>, Functor}
 import cats.free.Cofree
 import cats.effect.Concurrent
 import cats.syntax.traverse._
-import tofu.syntax.handle._
 import tofu.syntax.monadic._
 import fs2.Stream
 import tofu.lift.Lift
 import tofu.fs2.LiftStream
 
 import marketplace.marshalling._
-import marketplace.clients.{HttpClient, HttpClientError}
+import marketplace.clients.HttpClient
 import marketplace.models.ozon.{Category, CategoryMenu, Request, SearchResultsV2, Url}
 
 trait OzonApi[F[_], S[_]] {
@@ -28,10 +27,10 @@ object OzonApi {
     def getCategory(id: Category.Id): F[Option[Category]] = getCategoryMenu(id).map(_.category(id))
 
     def getCategoryMenu(id: Category.Id): F[CategoryMenu] =
-      HttpClient[F].send[CategoryMenu](Request.GetCategoryMenu(id)).retryOnly[HttpClientError](2)
+      HttpClient[F].send[CategoryMenu](Request.GetCategoryMenu(id))
 
     def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): F[SearchResultsV2] =
-      HttpClient[F].send[SearchResultsV2](Request.GetCategorySearchResultsV2(id, page)).retryOnly[HttpClientError](2)
+      HttpClient[F].send[SearchResultsV2](Request.GetCategorySearchResultsV2(id, page))
 
     def getCategories(rootId: Category.Id)(p: Category => Boolean): Stream[F, Category] = {
       def go(tree: Category.Tree[Stream[F, *]]): Stream[F, Category] =

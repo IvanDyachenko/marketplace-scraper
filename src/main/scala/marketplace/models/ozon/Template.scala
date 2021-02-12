@@ -130,5 +130,5 @@ object Template {
   implicit val circeDecoder: Decoder[Template] =
     Decoder
       .decodeList(Decoder[State].either(Decoder[Json]))
-      .map(ls => Template.apply(ls.flatMap(_.left.toOption)))
+      .map(ls => Template(ls.flatMap(_.left.toOption)))
 }

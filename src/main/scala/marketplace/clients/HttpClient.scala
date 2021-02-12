@@ -1,9 +1,9 @@
 package marketplace.clients
 
-import scala.util.control.NoStackTrace
 import java.util.concurrent.TimeoutException
+import scala.util.control.NoStackTrace
 
-import cats.syntax.all._
+import cats.implicits._
 import cats.{FlatMap, Monad}
 import cats.effect.{ConcurrentEffect, Resource, Sync}
 import tofu.syntax.raise._
@@ -16,7 +16,7 @@ import tofu.higherKind.Embed
 import tofu.data.derived.ContextEmbed
 import tofu.logging.{Logging, Logs}
 import io.circe.{Decoder, DecodingFailure}
-import org.http4s.{Request => Http4sRequest, InvalidMessageBodyFailure, Status}
+import org.http4s.{Request => Http4sRequest, Status}
 import org.http4s.circe.jsonOf
 import org.http4s.client.Client
 import org.http4s.client.blaze.BlazeClientBuilder
@@ -42,9 +42,6 @@ object HttpClientError {
 
   @derive(loggable)
   final case class UnexpectedStatus(message: String) extends HttpClientError
-
-  @derive(loggable)
-  final case class InvalidMessageBody(message: String) extends HttpClientError
 }
 
 object HttpClient extends ContextEmbed[HttpClient] {
@@ -69,14 +66,10 @@ object HttpClient extends ContextEmbed[HttpClient] {
         }
         .run(request)
         .recoverWith {
-          case error: TimeoutException          =>
+          case error: TimeoutException =>
             val message = error.getMessage
             error"${message}" *> HttpClientError.TimeoutException(message).raise[F, Res]
-          case error: InvalidMessageBodyFailure =>
-            val message =
-              s"Received invalid response body during execution of the request to ${request.uri.show}: ${error.details.takeWhile(_ != '{')}"
-            error"${message}" *> HttpClientError.InvalidMessageBody(message).raise[F, Res]
-          case error: DecodingFailure           =>
+          case error: DecodingFailure  =>
             val message =
               s"A response received as a result of the request to ${request.uri.show} was rejected because of a decoding failure: ${error.show}"
             error"${message}" *> HttpClientError.DecodingError(message).raise[F, Res]

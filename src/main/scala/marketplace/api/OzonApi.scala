@@ -11,9 +11,8 @@ import tofu.lift.Lift
 import tofu.fs2.LiftStream
 
 import marketplace.marshalling._
-import marketplace.clients.HttpClient
+import marketplace.clients.{HttpClient, HttpClientError}
 import marketplace.models.ozon.{Category, CategoryMenu, Request, SearchResultsV2, Url}
-import marketplace.clients.HttpClientError
 
 trait OzonApi[F[_], S[_]] {
   def getCategory(id: Category.Id): F[Option[Category]]

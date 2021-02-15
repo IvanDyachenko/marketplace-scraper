@@ -23,6 +23,9 @@ object Component {
   final case class UWidgetSKU(stateId: Component.StateId) extends Component
 
   @derive(loggable)
+  final case class CategoryMenu(stateId: Component.StateId) extends Component
+
+  @derive(loggable)
   final case class SearchResultsV2(stateId: Component.StateId) extends Component
 
   implicit val circeDecoderConfig: Configuration = Configuration(Predef.identity, _.decapitalize, false, Some("component"))

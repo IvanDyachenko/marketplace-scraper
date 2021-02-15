@@ -1,7 +1,7 @@
 package marketplace.models.parser
 
 import cats.implicits._
-import cats.FlatMap
+import cats.Monad
 import cats.effect.Clock
 import derevo.derive
 import tofu.logging.derivation.loggable
@@ -9,8 +9,7 @@ import tofu.generate.GenUUID
 import vulcan.Codec
 import supertagged.postfix._
 
-import marketplace.models.{Event, Timestamp}
-import marketplace.models.ozon.{Item => OzonItem}
+import marketplace.models.{ozon, Event, Timestamp}
 
 @derive(loggable)
 sealed trait ParserEvent extends Event {
@@ -20,26 +19,44 @@ sealed trait ParserEvent extends Event {
 object ParserEvent {
 
   @derive(loggable)
-  final case class OzonItemParsed(id: Event.Id, key: Event.Key, created: Timestamp, timestamp: Timestamp, result: OzonItem) extends ParserEvent
+  final case class OzonSearchResultsV2ItemParsed private (
+    id: Event.Id,
+    key: Event.Key,
+    created: Timestamp,
+    timestamp: Timestamp,
+    category: ozon.Category,
+    page: ozon.Page,
+    item: ozon.Item
+  ) extends ParserEvent
 
-  def ozonItemParsed[F[_]: FlatMap: Clock: GenUUID](timestamp: Timestamp, item: OzonItem): F[ParserEvent] =
-    for {
-      uuid    <- GenUUID[F].randomUUID
-      instant <- Clock[F].instantNow
-    } yield OzonItemParsed(uuid @@ Event.Id, item.category.name @@@ Event.Key, instant @@ Timestamp, timestamp, item)
+  def ozonSearchResultsV2ItemParsed[F[_]: Monad: Clock: GenUUID](
+    timestamp: Timestamp,
+    searchResultsV2: ozon.SearchResultsV2.Success
+  ): F[List[ParserEvent]] = {
+    val ozon.SearchResultsV2.Success(category, page, items) = searchResultsV2
 
-  object OzonItemParsed {
-    implicit val vulcanCodec: Codec[OzonItemParsed] =
-      Codec.record[OzonItemParsed](name = "OzonItemParsed", namespace = "parser.events") { field =>
+    items.traverse { item =>
+      for {
+        uuid    <- GenUUID[F].randomUUID
+        instant <- Clock[F].instantNow
+      } yield OzonSearchResultsV2ItemParsed(uuid @@ Event.Id, category.name @@@ Event.Key, instant @@ Timestamp, timestamp, category, page, item)
+    }
+  }
+
+  object OzonSearchResultsV2ItemParsed {
+    implicit val vulcanCodec: Codec[OzonSearchResultsV2ItemParsed] =
+      Codec.record[OzonSearchResultsV2ItemParsed](name = "OzonSearchResultsV2ItemParsed", namespace = "parser.events") { field =>
         (
           field("_id", _.id),
           field("_key", _.key),
           field("_created", _.created),
           field("timestamp", _.timestamp),
-          OzonItem.vulcanCodecFieldFA(field)(_.result)
+          ozon.Category.vulcanCodecFieldFA(field)(_.category),
+          ozon.Page.vulcanCodecFieldFA(field)(_.page),
+          ozon.Item.vulcanCodecFieldFA(field)(_.item)
         ).mapN(apply)
       }
   }
 
-  implicit val vulcanCodec: Codec[ParserEvent] = Codec.union[ParserEvent](alt => alt[OzonItemParsed])
+  implicit val vulcanCodec: Codec[ParserEvent] = Codec.union[ParserEvent](alt => alt[OzonSearchResultsV2ItemParsed])
 }

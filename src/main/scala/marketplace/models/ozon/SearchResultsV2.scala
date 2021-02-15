@@ -12,41 +12,36 @@ sealed trait SearchResultsV2
 object SearchResultsV2 {
 
   @derive(loggable)
-  final case class Success(@masked(MaskMode.ForLength(0, 50)) items: List[Item]) extends SearchResultsV2
+  final case class Success(category: Category, page: Page, @masked(MaskMode.ForLength(0, 50)) items: List[Item]) extends SearchResultsV2
 
   @derive(loggable, decoder)
   final case class Failure(error: String) extends SearchResultsV2
 
   object Success {
-    implicit def circeDecoder(category: Category): Decoder[Success] =
-      Decoder.forProduct1("items")(apply)(Decoder.decodeList[Item](Item.circeDecoder(category)))
+    implicit def circeDecoder(category: Category, page: Page): Decoder[Success] =
+      Decoder.forProduct1("items")(items => Success(category, page, items))
   }
 
   implicit val circeDecoder: Decoder[SearchResultsV2] = new Decoder[SearchResultsV2] {
-    final def apply(c: HCursor): Decoder.Result[SearchResultsV2] = {
-      lazy val i = c.downField("catalog")
-
+    final def apply(c: HCursor): Decoder.Result[SearchResultsV2] =
       for {
         layout          <- c.get[Layout]("layout")
-        category        <- i.downField("shared").get[Category]("catalog")
+        i                = c.downField("catalog").downField("shared").downField("catalog")
+        category        <- i.get[Category]("category")
+        page            <- i.as[Page]
         searchResultsV2 <- layout.searchResultsV2.fold[Decoder.Result[SearchResultsV2]](
                              Left(
                                DecodingFailure(
-                                 "\"layout\" object doesn't contain component with \"component\" which is equal to \"searchResultsV2\"",
+                                 "\"layout\" object doesn't contain component with \"component\" which is corresponds to \"searchResultsV2\"",
                                  c.history
                                )
                              )
                            ) { component =>
                              val circeDecoder =
-                               List[Decoder[SearchResultsV2]](
-                                 Decoder[Failure].widen,
-                                 Success.circeDecoder(category).widen
-                               ).reduceLeft(_ or _)
+                               List[Decoder[SearchResultsV2]](Decoder[Failure].widen, Success.circeDecoder(category, page).widen).reduceLeft(_ or _)
 
-                             i.downField("searchResultsV2").downField(component.stateId).as[SearchResultsV2](circeDecoder)
+                             c.downField("catalog").downField("searchResultsV2").downField(component.stateId).as[SearchResultsV2](circeDecoder)
                            }
       } yield searchResultsV2
-    }
   }
-
 }

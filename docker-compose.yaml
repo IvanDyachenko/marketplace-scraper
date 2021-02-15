@@ -60,37 +60,6 @@ services:
     depends_on:
       - broker
 
-  ksqldb-server:
-    image: 'docker.io/confluentinc/cp-ksqldb-server:6.0.0'
-    hostname: ksqldb-server
-    container_name: ksqldb-server
-    ports:
-      - "8088:8088"
-    environment:
-      KSQL_CONFIG_DIR: "/etc/ksql"
-      KSQL_BOOTSTRAP_SERVERS: "broker:29092"
-      KSQL_HOST_NAME: ksqldb-server
-      KSQL_LISTENERS: "http://0.0.0.0:8088"
-      KSQL_CACHE_MAX_BYTES_BUFFERING: 0
-      KSQL_KSQL_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
-      KSQL_KSQL_LOGGING_PROCESSING_TOPIC_REPLICATION_FACTOR: 1
-      KSQL_KSQL_LOGGING_PROCESSING_TOPIC_AUTO_CREATE: 'true'
-      KSQL_KSQL_LOGGING_PROCESSING_STREAM_AUTO_CREATE: 'true'
-      KSQL_PRODUCER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringProducerInterceptor"
-      KSQL_CONSUMER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor"
-    depends_on:
-      - broker
-
-  ksqldb-cli:
-    image: 'docker.io/confluentinc/cp-ksqldb-cli:6.0.0'
-    container_name: ksqldb-cli
-    entrypoint:
-      - /bin/sh
-    tty: true
-    depends_on:
-      - broker
-      - ksqldb-server
-
   control-center:
     image: 'docker.io/confluentinc/cp-enterprise-control-center:6.0.0'
     hostname: control-center
@@ -101,8 +70,6 @@ services:
       CONTROL_CENTER_BOOTSTRAP_SERVERS: 'broker:29092'
       CONTROL_CENTER_ZOOKEEPER_CONNECT: 'zookeeper:2181'
       CONTROL_CENTER_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
-      CONTROL_CENTER_KSQL_KSQLDB1_URL: "http://ksqldb-server:8088"
-      CONTROL_CENTER_KSQL_KSQLDB1_ADVERTISED_URL: "http://localhost:8088"      
       CONTROL_CENTER_REPLICATION_FACTOR: 1
       CONTROL_CENTER_INTERNAL_TOPICS_PARTITIONS: 1
       CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
@@ -111,7 +78,6 @@ services:
     depends_on:
       - broker
       - schema-registry
-      - ksqldb-server
 
   clickhouse-server:
     image: 'docker.io/yandex/clickhouse-server:latest'

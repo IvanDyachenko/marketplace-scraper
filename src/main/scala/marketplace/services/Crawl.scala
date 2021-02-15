@@ -13,8 +13,7 @@ import tofu.logging.{Logging, Logs}
 import io.circe.Json
 
 import marketplace.marshalling._
-import marketplace.clients.HttpClient
-import marketplace.clients.HttpClient.HttpClientError
+import marketplace.clients.{HttpClient, HttpClientError}
 import marketplace.models.crawler.{CrawlerEvent => Event, CrawlerCommand => Command}
 
 @derive(representableK)
@@ -35,7 +34,7 @@ object Crawl {
       }
   }
 
-  private final class Impl[F[_]: Monad: Clock: GenUUID: HttpClient: HttpClientError.Handling] extends Crawl[F] {
+  private final class Impl[F[_]: Monad: Clock: GenUUID: HttpClient: HttpClient.Handling] extends Crawl[F] {
     def handle(command: Command): F[Result] = command match {
       case Command.HandleOzonRequest(_, _, _, request) =>
         HttpClient[F].send[Json](request).attempt >>= (_.traverse(Event.ozonRequestHandled[F](request, _)))
@@ -44,7 +43,7 @@ object Crawl {
 
   def make[
     I[_]: Monad,
-    F[_]: Monad: Clock: GenUUID: HttpClient: HttpClientError.Handling
+    F[_]: Monad: Clock: GenUUID: HttpClient: HttpClient.Handling
   ](implicit logs: Logs[I, F]): Resource[I, Crawl[F]] =
     Resource.liftF {
       logs

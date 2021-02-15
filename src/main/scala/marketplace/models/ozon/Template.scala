@@ -19,9 +19,18 @@ final case class Template(state: List[Template.State])
 object Template {
 
   @derive(loggable)
-  sealed trait State { def id: State.Id }
+  sealed trait State { def `type`: State.Type }
 
   object State {
+
+    sealed trait Type extends EnumEntry with LowerCamelcase with Product with Serializable
+    object Type       extends Enum[Type] with CatsEnum[Type] with CirceEnum[Type] with LoggableEnum[Type] {
+      val values = findValues
+
+      case object Action          extends Type
+      case object Unknown         extends Type
+      case object MobileContainer extends Type
+    }
 
     sealed trait Id extends EnumEntry with LowerCamelcase with Product with Serializable
     object Id       extends Enum[Id] with CatsEnum[Id] with CirceEnum[Id] with LoggableEnum[Id] {
@@ -34,54 +43,92 @@ object Template {
       case object AddToCartWithCount extends Id
     }
 
-    @derive(loggable, decoder)
-    final case class UniversalAction(button: UniversalAction.Button) extends State {
-      val id: State.Id = State.Id.UniversalAction
+    @derive(loggable)
+    sealed trait Action extends State {
+      def id: State.Id
+      val `type`: State.Type = State.Type.Action
     }
 
     @derive(loggable, decoder)
-    final case class AddToCartWithCount(minItems: Int, maxItems: Int) extends State {
-      val id: State.Id = State.Id.AddToCartWithCount
+    final object Unknown extends State {
+      val `type`: State.Type = State.Type.Unknown
     }
 
-    object UniversalAction {
+    @derive(loggable)
+    final case class MobileContainer(left: Template, content: Template, footer: Template) extends State {
+      val `type`: State.Type = State.Type.Action
+    }
 
-      @derive(loggable)
-      sealed trait Button
+    object Action {
 
-      object Button {
+      @derive(loggable, decoder)
+      final case class UniversalAction(button: UniversalAction.Button) extends Action {
+        val id: State.Id = State.Id.UniversalAction
+      }
+
+      @derive(loggable, decoder)
+      final case class AddToCartWithCount(minItems: Int, maxItems: Int) extends Action {
+        val id: State.Id = State.Id.AddToCartWithCount
+      }
+
+      object UniversalAction {
 
         @derive(loggable)
-        final case class AddToCartWithQuantity(quantity: Int, maxItems: Int) extends Button
+        sealed trait Button
 
-        object AddToCartWithQuantity {
-          implicit val circeDecoder: Decoder[AddToCartWithQuantity] = Decoder.instance[AddToCartWithQuantity] { (c: HCursor) =>
-            lazy val i = c.downField("default").downField("addToCartButtonWithQuantity")
+        object Button {
 
-            for {
-              quantity <- i.downField("action").get[Int]("quantity")
-              maxItems <- i.get[Int]("maxItems")
-            } yield AddToCartWithQuantity(quantity, maxItems)
+          @derive(loggable)
+          final case class AddToCartWithQuantity(quantity: Int, maxItems: Int) extends Button
+
+          object AddToCartWithQuantity {
+            implicit val circeDecoder: Decoder[AddToCartWithQuantity] = Decoder.instance[AddToCartWithQuantity] { (c: HCursor) =>
+              lazy val i = c.downField("default").downField("addToCartButtonWithQuantity")
+              for {
+                quantity <- i.downField("action").get[Int]("quantity")
+                maxItems <- i.get[Int]("maxItems")
+              } yield AddToCartWithQuantity(quantity, maxItems)
+            }
           }
-        }
 
-        implicit val circeDecoder: Decoder[Button] = List[Decoder[Button]](Decoder[AddToCartWithQuantity].widen).reduceLeft(_ or _)
+          implicit val circeDecoder: Decoder[Button] = List[Decoder[Button]](Decoder[AddToCartWithQuantity].widen).reduceLeft(_ or _)
+        }
       }
+
+      implicit val circeDecoderConfig: Configuration = Configuration(Predef.identity, _.decapitalize, false, Some("id"))
+      implicit val circeDecoder: Decoder[Action]     = deriveConfiguredDecoder[Action].widen
     }
 
-    implicit val circeDecoderConfig: Configuration = Configuration(Predef.identity, _.decapitalize, false, Some("id"))
-    implicit val circeDecoder: Decoder[State]      = deriveConfiguredDecoder[State]
+    object MobileContainer {
+      implicit val circeDecoder: Decoder[MobileContainer] = Decoder.forProduct3("leftContainer", "contentContainer", "footerContainer")(apply)
+    }
+
+    implicit val circeDecoder: Decoder[State] = Decoder.instance[State] { (c: HCursor) =>
+      for {
+        t      <- c.get[State.Type]("type").fold(_ => State.Type.Unknown.asRight, Right(_))
+        decoder = t match {
+                    case State.Type.Action          => Action.circeDecoder
+                    case State.Type.MobileContainer => MobileContainer.circeDecoder
+                    case State.Type.Unknown         => Decoder[Json].map(_ => State.Unknown)
+                  }
+        state  <- decoder(c).fold(_ => State.Unknown.asRight, Right(_))
+      } yield state
+    }
   }
 
   implicit final class TemplateOps(private val template: Template) extends AnyVal {
     def addToCart: Option[(Int, Int)] =
       template.state.collectFirst {
-        case State.AddToCartWithCount(minItems, maxItems)                                                  => minItems -> maxItems
-        case State.UniversalAction(State.UniversalAction.Button.AddToCartWithQuantity(quantity, maxItems)) => quantity -> maxItems
+        case State.Action.AddToCartWithCount(minItems, maxItems)                                                                         => minItems -> maxItems
+        case State.Action.UniversalAction(State.Action.UniversalAction.Button.AddToCartWithQuantity(quantity, maxItems))                 => quantity -> maxItems
+        case State.MobileContainer(left, content, footer) if left.addToCart.orElse(content.addToCart).orElse(footer.addToCart).isDefined =>
+          left.addToCart.orElse(content.addToCart).orElse(footer.addToCart).get
+
       }
   }
 
-  implicit val circeDecoder: Decoder[Template] = Decoder
-    .decodeList(Decoder[State].either(Decoder[Json]))
-    .map(ls => Template.apply(ls.flatMap(_.left.toOption)))
+  implicit val circeDecoder: Decoder[Template] =
+    Decoder
+      .decodeList(Decoder[State].either(Decoder[Json]))
+      .map(ls => Template(ls.flatMap(_.left.toOption)))
 }

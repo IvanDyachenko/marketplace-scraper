@@ -1,5 +1,7 @@
 package marketplace.clients
 
+import scala.concurrent.duration._
+
 import cats.effect.{Concurrent, ConcurrentEffect, ContextShift, Resource, Timer}
 import fs2.kafka.{consumerResource, AutoOffsetReset, ConsumerSettings, KafkaConsumer, KafkaProducer, ProducerSettings, RecordDeserializer, RecordSerializer}
 import vulcan.Codec
@@ -20,6 +22,9 @@ object KafkaClient {
 
     val producerSettings = ProducerSettings[F, K, V](keySerializer, valueSerializer)
       .withBootstrapServers(kafkaConfig.bootstrapServers)
+      .withLinger(500 milliseconds)
+      .withBatchSize(1536000)
+      .withProperty("compression.type", "zstd")
 
     KafkaProducer.resource[F, K, V](producerSettings)
   }

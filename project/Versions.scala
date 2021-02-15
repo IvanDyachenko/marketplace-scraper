@@ -12,7 +12,7 @@ object Versions {
   lazy val http4s          = "0.21.19"
   lazy val asyncHttpClient = "2.12.2"
   lazy val doobie          = "0.10.0"
-  lazy val clickhouseJDBC  = "0.2.5"
+  lazy val clickhouseJDBC  = "0.2.6"
   lazy val pureconfig      = "0.14.0"
   lazy val logback         = "1.2.3"
 

@@ -60,10 +60,6 @@ object OzonApi {
   ]: OzonApi[F, S] =
     bifunctorK.bimapK(new Impl[F])(Lift.liftIdentity[F].liftF)(LiftStream[S, F].liftF)
 
-  trait BifunctorK[U[f[_], g[_]]] {
-    def bimapK[F[_]: Functor, G[_]: Functor, W[_], Q[_]](ufg: U[F, G])(fw: F ~> W)(gq: G ~> Q): U[W, Q]
-  }
-
   implicit val bifunctorK: BifunctorK[OzonApi] =
     new BifunctorK[OzonApi] {
       def bimapK[F[_]: Functor, G[_]: Functor, W[_], Q[_]](ufg: OzonApi[F, G])(fw: F ~> W)(gq: G ~> Q): OzonApi[W, Q] =

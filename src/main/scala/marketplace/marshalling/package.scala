@@ -6,6 +6,7 @@ import org.http4s.headers.{`Accept-Encoding`, `User-Agent`, Accept, Host}
 import org.http4s.circe.jsonEncoderOf
 
 import marketplace.models.ozon.{Request => OzonRequest}
+import marketplace.models.wildberries.{Request => WildBerriesRequest}
 
 import marketplace.models.yandex.market.headers._
 import marketplace.models.yandex.market.{Request => YandexMarketRequest}
@@ -27,6 +28,26 @@ package object marshalling {
       Uri(Some(Uri.Scheme.https), Some(Uri.Authority(host = host)))
         .addPath(request.path)
         .+*?(request.url)
+
+    Http4sRequest(
+      method = Method.GET,
+      uri = uri,
+      headers = headers
+    )
+  }
+
+  implicit def wildBerriesRequest2http4sRequest[F[_]](request: WildBerriesRequest): Http4sRequest[F] = {
+    val host: Uri.Host = Uri.RegName(request.host)
+
+    val headers: Headers =
+      Headers.of(
+        Host(host.value),
+        Accept(MediaType.application.json)
+      )
+
+    val uri: Uri =
+      Uri(Some(Uri.Scheme.https), Some(Uri.Authority(host = host)))
+        .addPath(request.path)
 
     Http4sRequest(
       method = Method.GET,

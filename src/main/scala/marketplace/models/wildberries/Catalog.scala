@@ -19,12 +19,10 @@ final case class Catalog(
   filters: String,
   children: Map[Catalog.Id, Catalog] = Map.empty
 ) {
-  val isLeaf: Boolean = children.isEmpty
-
+  val isLeaf: Boolean       = children.isEmpty
   def leaves: List[Catalog] = filter(_.isLeaf)
 
   def find(catalogId: Catalog.Id): Option[Catalog] = tree.collectFirst { case catalog if catalogId == catalog.id => catalog }
-
   def filter(p: Catalog => Boolean): List[Catalog] = tree.filter_(p)
 
   private lazy val tree: Catalog.Tree[List] = Cofree.unfold[List, Catalog](this)(_.children.values.toList)

@@ -40,7 +40,7 @@ object Category {
 
   def apply(id: Id, name: Name, catalogName: Catalog.Name): Category = apply(id, name, catalogName = Some(catalogName))
 
-  implicit final val childrensLoggable: Loggable[Map[Id, Category]] = Loggable.empty
+  implicit final val childrenLoggable: Loggable[Map[Id, Category]] = Loggable.empty
 
   implicit final val circeDecoder: Decoder[Category] = Decoder.instance[Category] { (c: HCursor) =>
     (

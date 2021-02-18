@@ -14,7 +14,6 @@ import tofu.higherKind.derived.representableK
 import tofu.logging.derivation.loggable
 import tofu.logging.{Logging, Logs}
 import tofu.{Handle, Raise}
-import tofu.generate.GenUUID
 import io.circe.{Decoder, Json}
 
 import marketplace.models.ozon
@@ -56,10 +55,9 @@ object Parse {
       }
   }
 
-  private final class Impl[F[_]: Monad: Clock: GenUUID] extends Parse[F] {
+  private final class Impl[F[_]: Monad: Clock] extends Parse[F] {
     def handle(command: Command): F[Result] = command match {
-      case Command.ParseOzonResponse(_, _, created, response) =>
-        // format: off
+      case Command.ParseOzonResponse(created, response) => // format: off
         parse[ozon.SearchResultsV2](response) >>= (_.traverse { // format: on
           _ match {
             case searchResultsV2: ozon.SearchResultsV2.Success => Event.ozonSearchResultsV2ItemParsed(created, searchResultsV2)
@@ -74,7 +72,7 @@ object Parse {
 
   def make[
     I[_]: Monad,
-    F[_]: Monad: Clock: GenUUID
+    F[_]: Monad: Clock
   ](implicit logs: Logs[I, F]): Resource[I, Parse[F]] =
     Resource.liftF {
       logs

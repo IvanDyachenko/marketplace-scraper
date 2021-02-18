@@ -1,12 +1,13 @@
 package marketplace
 
-import java.util.UUID
 import java.time.Instant
+import java.nio.charset.StandardCharsets.UTF_8
 
 import cats.Show
 import tofu.logging.Loggable
-import vulcan.Codec
-import io.circe.{Decoder, Encoder}
+import vulcan.{AvroError, Codec}
+import io.circe.{Decoder, Encoder, Json}
+import io.circe.parser.decode
 import supertagged.TaggedType
 
 package object models {
@@ -15,29 +16,21 @@ package object models {
   type Timestamp = Timestamp.Type
 
   trait Command {
-    def id: Command.Id
     def key: Command.Key
     def created: Timestamp
   }
 
   object Command {
-    object Id extends TaggedType[UUID] with LiftedCats with LiftedLoggable with LiftedVulcanCodec
-    type Id = Id.Type
-
     object Key extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedVulcanCodec
     type Key = Key.Type
   }
 
   trait Event {
-    def id: Event.Id
     def key: Event.Key
     def created: Timestamp
   }
 
   object Event {
-    object Id extends TaggedType[UUID] with LiftedCats with LiftedLoggable with LiftedVulcanCodec
-    type Id = Id.Type
-
     object Key extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedVulcanCodec
     type Key = Key.Type
   }
@@ -70,4 +63,9 @@ package object models {
 
     implicit def vulcanCodec(implicit raw: Codec[Raw]): Codec[Type] = raw.asInstanceOf[Codec[Type]]
   }
+
+  implicit val jsonLoggable: Loggable[Json] = Loggable.empty
+  implicit val jsonVulcanCodec: Codec[Json] = Codec.bytes.imapError { bytes =>
+    decode[Json](new String(bytes, UTF_8)).left.map(err => AvroError(err.getMessage))
+  }(_.noSpaces.getBytes(UTF_8))
 }

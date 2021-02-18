@@ -6,6 +6,7 @@ import org.http4s.headers.{`Accept-Encoding`, `User-Agent`, Accept, Host}
 import org.http4s.circe.jsonEncoderOf
 
 import marketplace.models.ozon.{Request => OzonRequest}
+
 import marketplace.models.wildberries.{Request => WildBerriesRequest}
 
 import marketplace.models.yandex.market.headers._
@@ -21,6 +22,7 @@ package object marshalling {
       Headers.of(
         Host(host.value),
         Accept(MediaType.application.json),
+        `Accept-Encoding`(ContentCoding.deflate, ContentCoding.gzip, ContentCoding.br),
         `User-Agent`(ProductId("OzonStore", Some("400")))
       )
 
@@ -42,12 +44,19 @@ package object marshalling {
     val headers: Headers =
       Headers.of(
         Host(host.value),
-        Accept(MediaType.application.json)
+        Accept(MediaType.application.json),
+        `Accept-Encoding`(ContentCoding.deflate, ContentCoding.gzip, ContentCoding.br),
+        `User-Agent`(
+          ProductId("Wildberries", Some("3.3.1000")),
+          List(ProductComment("RU.WILDBERRIES.MOBILEAPP; build:1433770; iOS 14.4.0"), ProductId("Alamofire", Some("5.2.2")))
+        )
       )
 
     val uri: Uri =
       Uri(Some(Uri.Scheme.https), Some(Uri.Authority(host = host)))
         .addPath(request.path)
+        .+*?(request.lang)
+        .+*?(request.locale)
 
     Http4sRequest(
       method = Method.GET,

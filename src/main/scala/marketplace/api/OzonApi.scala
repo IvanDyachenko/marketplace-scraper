@@ -31,7 +31,7 @@ object OzonApi {
       HttpClient[F].send[CategoryMenu](Request.GetCategoryMenu(id)).retryOnly[HttpClientError.UnexpectedStatus](3)
 
     def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): F[SearchResultsV2] =
-      HttpClient[F].send[SearchResultsV2](Request.GetCategorySearchResultsV2(id, page)).retryOnly[HttpClientError.UnexpectedStatus](2)
+      HttpClient[F].send[SearchResultsV2](Request.GetCategorySearchResultsV2(id, page = page)).retryOnly[HttpClientError.UnexpectedStatus](2)
 
     def getCategories(rootId: Category.Id)(p: Category => Boolean): Stream[F, Category] = {
       def go(tree: Category.Tree[Stream[F, *]]): Stream[F, Category] =

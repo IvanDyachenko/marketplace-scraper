@@ -25,7 +25,7 @@ object ParserEvent {
     page: ozon.Page,
     item: ozon.Item
   ) extends ParserEvent {
-    val key: Event.Key = category.name @@@ Event.Key
+    override val key: Option[Event.Key] = Some(category.name @@@ Event.Key)
   }
 
   def ozonSearchResultsV2ItemParsed[F[_]: Monad: Clock](

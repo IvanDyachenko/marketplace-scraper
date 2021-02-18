@@ -17,9 +17,7 @@ sealed trait CrawlerEvent extends Event
 object CrawlerEvent {
 
   @derive(loggable)
-  final case class OzonRequestHandled private (created: Timestamp, raw: Json) extends CrawlerEvent {
-    val key: Event.Key = raw.hashCode.toString @@ Event.Key
-  }
+  final case class OzonRequestHandled private (created: Timestamp, raw: Json) extends CrawlerEvent
 
   def ozonRequestHandled[F[_]: FlatMap: Clock](raw: Json): F[CrawlerEvent] =
     for {

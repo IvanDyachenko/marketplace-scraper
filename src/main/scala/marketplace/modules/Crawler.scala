@@ -39,9 +39,9 @@ object Crawler {
   ](config: CrawlerConfig)(
     crawl: Crawl[F],
     sourcesOfCrawlerCommands: List[Stream[I, CrawlerCommand]],
-    producerOfCrawlerEvents: KafkaProducer[I, Event.Key, CrawlerEvent],
-    producerOfCrawlerCommands: KafkaProducer[I, Command.Key, CrawlerCommand],
-    consumerOfCrawlerCommands: KafkaConsumer[I, Command.Key, CrawlerCommand]
+    producerOfCrawlerEvents: KafkaProducer[I, Option[Event.Key], CrawlerEvent],
+    producerOfCrawlerCommands: KafkaProducer[I, Option[Command.Key], CrawlerCommand],
+    consumerOfCrawlerCommands: KafkaConsumer[I, Option[Command.Key], CrawlerCommand]
   ) extends Crawler[Stream[I, *]] {
     def run: Stream[I, Unit] =
       consumerOfCrawlerCommands.partitionedStream.map { partition =>
@@ -74,9 +74,9 @@ object Crawler {
   ](config: CrawlerConfig)(
     crawl: Crawl[F],
     sourcesOfCrawlerCommands: List[Stream[I, CrawlerCommand]],
-    producerOfCrawlerEvents: KafkaProducer[I, Event.Key, CrawlerEvent],
-    producerOfCrawlerCommands: KafkaProducer[I, Command.Key, CrawlerCommand],
-    consumerOfCrawlerCommands: KafkaConsumer[I, Command.Key, CrawlerCommand]
+    producerOfCrawlerEvents: KafkaProducer[I, Option[Event.Key], CrawlerEvent],
+    producerOfCrawlerCommands: KafkaProducer[I, Option[Command.Key], CrawlerCommand],
+    consumerOfCrawlerCommands: KafkaConsumer[I, Option[Command.Key], CrawlerCommand]
   ): Resource[I, Crawler[S]] =
     Resource.liftF {
       Stream

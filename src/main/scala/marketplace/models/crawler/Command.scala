@@ -18,7 +18,7 @@ object CrawlerCommand {
 
   @derive(loggable)
   final case class HandleOzonRequest private (created: Timestamp, request: OzonRequest) extends CrawlerCommand {
-    val key: Command.Key = request.url.path @@ Command.Key
+    override val key: Option[Command.Key] = Some(request.url.path @@ Command.Key)
   }
 
   def handleOzonRequest[F[_]: FlatMap: Clock](request: OzonRequest): F[CrawlerCommand] =

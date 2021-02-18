@@ -5,7 +5,6 @@ import derevo.derive
 import tofu.logging.derivation.loggable
 import io.circe.Json
 import vulcan.Codec
-import supertagged.postfix._
 
 import marketplace.models._
 
@@ -15,9 +14,7 @@ sealed trait ParserCommand extends Command
 object ParserCommand {
 
   @derive(loggable)
-  final case class ParseOzonResponse private (created: Timestamp, response: Json) extends ParserCommand {
-    val key: Command.Key = response.hashCode.toString @@ Command.Key
-  }
+  final case class ParseOzonResponse private (created: Timestamp, response: Json) extends ParserCommand
 
   object ParseOzonResponse {
     implicit val vulcanCodec: Codec[ParseOzonResponse] =

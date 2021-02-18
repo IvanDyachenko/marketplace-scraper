@@ -16,7 +16,7 @@ package object models {
   type Timestamp = Timestamp.Type
 
   trait Command {
-    def key: Command.Key
+    def key: Option[Command.Key] = None
     def created: Timestamp
   }
 
@@ -26,7 +26,7 @@ package object models {
   }
 
   trait Event {
-    def key: Event.Key
+    def key: Option[Event.Key] = None
     def created: Timestamp
   }
 

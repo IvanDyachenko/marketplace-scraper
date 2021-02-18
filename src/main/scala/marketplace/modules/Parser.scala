@@ -32,8 +32,8 @@ object Parser {
     F[_]: Applicative: WithRun[*[_], I, AppContext]
   ](config: ParserConfig)(
     parse: Parse[F],
-    producerOfEvents: KafkaProducer[I, Event.Key, ParserEvent],
-    consumerOfCommands: KafkaConsumer[I, Command.Key, ParserCommand.ParseOzonResponse]
+    producerOfEvents: KafkaProducer[I, Option[Event.Key], ParserEvent],
+    consumerOfCommands: KafkaConsumer[I, Option[Command.Key], ParserCommand.ParseOzonResponse]
   ) extends Parser[Stream[I, *]] {
     def run: Stream[I, Unit] =
       consumerOfCommands.partitionedStream.map { partition =>
@@ -57,8 +57,8 @@ object Parser {
     S[_]: LiftStream[*[_], I]
   ](config: ParserConfig)(
     parse: Parse[F],
-    producerOfEvents: KafkaProducer[I, Event.Key, ParserEvent],
-    consumerOfCommands: KafkaConsumer[I, Command.Key, ParserCommand.ParseOzonResponse]
+    producerOfEvents: KafkaProducer[I, Option[Event.Key], ParserEvent],
+    consumerOfCommands: KafkaConsumer[I, Option[Command.Key], ParserCommand.ParseOzonResponse]
   ): Resource[I, Parser[S]] =
     Resource.liftF {
       Stream

@@ -3,10 +3,12 @@ package marketplace.config
 import scala.concurrent.duration.FiniteDuration
 
 import cats.effect.{Blocker, ContextShift, Sync}
+import derevo.derive
+import derevo.pureconfig.pureconfigReader
 import pureconfig.ConfigSource
-import pureconfig.generic.auto._
 import pureconfig.module.catseffect.syntax._
 
+@derive(pureconfigReader)
 final case class HttpConfig(proxyHost: String, proxyPort: Int, requestTimeout: FiniteDuration, maxConnections: Int, maxConnectionsPerHost: Int)
 
 object HttpConfig {

@@ -50,7 +50,7 @@ object Crawler {
             runContext(crawl.handle(committable.record.value))(AppContext()).map(_.toOption.map(_ -> committable.offset))
           }
           .collect { case Some((event, offset)) =>
-            ProducerRecords.one(ProducerRecord(config.eventsTopic, event.key, event), offset)
+            ProducerRecords.one(ProducerRecord(config.kafkaProducerConfig.topic, event.key, event), offset)
           }
           .evalMap(producerOfCrawlerEvents.produce)
           .parEvalMap(config.maxConcurrent)(identity)
@@ -62,7 +62,7 @@ object Crawler {
       Stream
         .emits(sourcesOfCrawlerCommands)
         .parJoinUnbounded
-        .evalMap(command => producerOfCrawlerCommands.produce(ProducerRecords.one(ProducerRecord(config.commandsTopic, command.key, command))))
+        .evalMap(command => producerOfCrawlerCommands.produce(ProducerRecords.one(ProducerRecord(???, command.key, command))))
         .parEvalMap(1000)(identity)
         .map(_.passthrough)
   }

@@ -42,7 +42,7 @@ object Parser {
             runContext(parse.handle(committable.record.value))(AppContext()).map(_.toOption.map(_ -> committable.offset))
           }
           .collect { case Some((events, offset)) =>
-            ProducerRecords(events.map(event => ProducerRecord(config.ozonResultsTopic, event.key, event)), offset)
+            ProducerRecords(events.map(event => ProducerRecord(config.kafkaProducerConfig.topic, event.key, event)), offset)
           }
           .evalMap(producerOfEvents.produce)
           .parEvalMap(config.maxConcurrent)(identity)

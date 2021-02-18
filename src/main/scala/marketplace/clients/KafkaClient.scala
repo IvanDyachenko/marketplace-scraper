@@ -8,13 +8,14 @@ import fs2.kafka.{consumerResource, AutoOffsetReset, ConsumerSettings, Deseriali
 import vulcan.Codec
 import fs2.kafka.vulcan.{avroDeserializer, avroSerializer, AvroSettings, SchemaRegistryClientSettings}
 
-import marketplace.config.{KafkaConfig, SchemaRegistryConfig}
+import marketplace.config.{KafkaConfig, KafkaConsumerConfig, KafkaProducerConfig, SchemaRegistryConfig}
 
 object KafkaClient {
 
   def makeProducer[F[_]: ContextShift: Concurrent, K: Codec, V: Codec](
     kafkaConfig: KafkaConfig,
-    schemaRegistryConfig: SchemaRegistryConfig
+    schemaRegistryConfig: SchemaRegistryConfig,
+    kafkaProducerConfig: KafkaProducerConfig
   ): Resource[F, KafkaProducer[F, Option[K], V]] = {
     val avroSettings = AvroSettings(SchemaRegistryClientSettings[F](schemaRegistryConfig.baseUrl))
 
@@ -33,8 +34,9 @@ object KafkaClient {
 
   def makeConsumer[F[_]: ContextShift: ConcurrentEffect: Timer, K: Codec, V: Codec](
     kafkaConfig: KafkaConfig,
-    schemaRegistryConfig: SchemaRegistryConfig
-  )(groupId: String, topic: String): Resource[F, KafkaConsumer[F, Option[K], V]] = {
+    schemaRegistryConfig: SchemaRegistryConfig,
+    kafkaConsumerConfig: KafkaConsumerConfig
+  ): Resource[F, KafkaConsumer[F, Option[K], V]] = {
     val avroSettings = AvroSettings(SchemaRegistryClientSettings[F](schemaRegistryConfig.baseUrl))
 
     val keyDeserializer: RecordDeserializer[F, Option[K]] =
@@ -43,9 +45,9 @@ object KafkaClient {
 
     val consumerSettings = ConsumerSettings[F, Option[K], V](keyDeserializer, valueDeserializer)
       .withBootstrapServers(kafkaConfig.bootstrapServers)
-      .withGroupId(groupId)
+      .withGroupId(kafkaConsumerConfig.groupId)
       .withAutoOffsetReset(AutoOffsetReset.Earliest)
 
-    consumerResource[F, Option[K], V](consumerSettings).evalTap(_.subscribeTo(topic))
+    consumerResource[F, Option[K], V](consumerSettings).evalTap(_.subscribeTo(kafkaConsumerConfig.topic))
   }
 }

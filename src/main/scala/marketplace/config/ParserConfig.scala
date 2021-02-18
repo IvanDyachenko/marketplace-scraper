@@ -10,9 +10,8 @@ import pureconfig.module.catseffect.syntax._
 
 @derive(pureconfigReader)
 final case class ParserConfig(
-  groupId: String,
-  ozonResultsTopic: String,
-  ozonErrorsTopic: String,
+  kafkaConsumerConfig: KafkaConsumerConfig,
+  kafkaProducerConfig: KafkaProducerConfig,
   maxConcurrent: Int,
   batchOffsets: Int,
   batchTimeWindow: FiniteDuration

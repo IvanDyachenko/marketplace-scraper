@@ -42,12 +42,16 @@ object Main extends TaskApp {
       implicit0(blocker: Blocker) <- Blocker[AppI]
       cfg                         <- Resource.liftF(Config.make[AppI])
       parse                       <- Parse.make[AppI, AppF]
-      producerOfEvents            <- KafkaClient.makeProducer[AppI, Event.Key, ParserEvent](cfg.kafkaConfig, cfg.schemaRegistryConfig)
-      consumerOfCommands          <-
-        KafkaClient.makeConsumer[AppI, Command.Key, ParserCommand.ParseOzonResponse](cfg.kafkaConfig, cfg.schemaRegistryConfig)(
-          groupId = cfg.parserConfig.groupId,
-          topic = cfg.crawlerConfig.eventsTopic
-        )
+      producerOfEvents            <- KafkaClient.makeProducer[AppI, Event.Key, ParserEvent](
+                                       cfg.kafkaConfig,
+                                       cfg.schemaRegistryConfig,
+                                       cfg.parserConfig.kafkaProducerConfig
+                                     )
+      consumerOfCommands          <- KafkaClient.makeConsumer[AppI, Command.Key, ParserCommand.ParseOzonResponse](
+                                       cfg.kafkaConfig,
+                                       cfg.schemaRegistryConfig,
+                                       cfg.parserConfig.kafkaConsumerConfig
+                                     )
       parser                      <- Parser.make[AppI, AppF, AppS](cfg.parserConfig)(parse, producerOfEvents, consumerOfCommands)
     } yield parser
 
@@ -60,11 +64,20 @@ object Main extends TaskApp {
       crawl                                    <- Crawl.make[AppI, AppF]
       ozonApi                                  <- Resource.liftF(OzonApi.make[AppI, AppS].pure[AppI])
       sourcesOfCommands                         = cfg.sourcesConfig.sources.map(Crawler.makeCrawlerCommandsSource[AppI](_)(ozonApi))
-      producerOfEvents                         <- KafkaClient.makeProducer[AppI, Event.Key, CrawlerEvent](cfg.kafkaConfig, cfg.schemaRegistryConfig)
-      producerOfCommands                       <- KafkaClient.makeProducer[AppI, Command.Key, CrawlerCommand](cfg.kafkaConfig, cfg.schemaRegistryConfig)
-      consumerOfCommands                       <- KafkaClient.makeConsumer[AppI, Command.Key, CrawlerCommand](cfg.kafkaConfig, cfg.schemaRegistryConfig)(
-                                                    groupId = cfg.crawlerConfig.groupId,
-                                                    topic = cfg.crawlerConfig.commandsTopic
+      producerOfEvents                         <- KafkaClient.makeProducer[AppI, Event.Key, CrawlerEvent](
+                                                    cfg.kafkaConfig,
+                                                    cfg.schemaRegistryConfig,
+                                                    cfg.crawlerConfig.kafkaProducerConfig
+                                                  )
+      producerOfCommands                       <- KafkaClient.makeProducer[AppI, Command.Key, CrawlerCommand](
+                                                    cfg.kafkaConfig,
+                                                    cfg.schemaRegistryConfig,
+                                                    ???
+                                                  )
+      consumerOfCommands                       <- KafkaClient.makeConsumer[AppI, Command.Key, CrawlerCommand](
+                                                    cfg.kafkaConfig,
+                                                    cfg.schemaRegistryConfig,
+                                                    cfg.crawlerConfig.kafkaConsumerConfig
                                                   )
       crawler                                  <- Crawler.make[AppI, AppF, AppS](cfg.crawlerConfig)(crawl, sourcesOfCommands, producerOfEvents, producerOfCommands, consumerOfCommands)
     } yield crawler

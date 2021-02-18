@@ -10,9 +10,8 @@ import pureconfig.module.catseffect.syntax._
 
 @derive(pureconfigReader)
 final case class CrawlerConfig(
-  groupId: String,
-  eventsTopic: String,
-  commandsTopic: String,
+  kafkaConsumerConfig: KafkaConsumerConfig,
+  kafkaProducerConfig: KafkaProducerConfig,
   maxConcurrent: Int,
   batchOffsets: Int,
   batchTimeWindow: FiniteDuration

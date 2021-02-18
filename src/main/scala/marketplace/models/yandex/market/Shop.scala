@@ -18,6 +18,6 @@ object Shop {
 
   /** Уникальный идентификатор магазина.
     */
-  object ShopId extends TaggedType[Long] with LiftedCats with LiftedLoggable with LiftedCirce {}
+  object ShopId extends TaggedType[Long] with LiftedCats with LiftedLoggable with LiftedCirce
   type ShopId = ShopId.Type
 }

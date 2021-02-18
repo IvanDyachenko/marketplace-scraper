@@ -11,7 +11,7 @@ import supertagged.TaggedType
 
 package object models {
 
-  object Timestamp extends TaggedType[Instant] with LiftedCats with LiftedLoggable with LiftedVulcanCodec {}
+  object Timestamp extends TaggedType[Instant] with LiftedCats with LiftedLoggable with LiftedVulcanCodec
   type Timestamp = Timestamp.Type
 
   trait Command {
@@ -21,10 +21,10 @@ package object models {
   }
 
   object Command {
-    object Id extends TaggedType[UUID] with LiftedCats with LiftedLoggable with LiftedVulcanCodec {}
+    object Id extends TaggedType[UUID] with LiftedCats with LiftedLoggable with LiftedVulcanCodec
     type Id = Id.Type
 
-    object Key extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedVulcanCodec {}
+    object Key extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedVulcanCodec
     type Key = Key.Type
   }
 
@@ -35,10 +35,10 @@ package object models {
   }
 
   object Event {
-    object Id extends TaggedType[UUID] with LiftedCats with LiftedLoggable with LiftedVulcanCodec {}
+    object Id extends TaggedType[UUID] with LiftedCats with LiftedLoggable with LiftedVulcanCodec
     type Id = Id.Type
 
-    object Key extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedVulcanCodec {}
+    object Key extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedVulcanCodec
     type Key = Key.Type
   }
 

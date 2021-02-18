@@ -14,10 +14,10 @@ import marketplace.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcan
 final case class Price(price: Price.Value, finalPrice: Price.Value, discount: Price.Percent)
 
 object Price {
-  object Value extends TaggedType[Double] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec {}
+  object Value extends TaggedType[Double] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec
   type Value = Value.Type
 
-  object Percent extends TaggedType[Byte] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec {}
+  object Percent extends TaggedType[Byte] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec
   type Percent = Percent.Type
 
   private[models] def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => Price): FreeApplicative[Codec.Field[A, *], Price] =

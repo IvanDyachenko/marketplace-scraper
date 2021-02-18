@@ -56,7 +56,8 @@ object Template {
 
     @derive(loggable)
     final case class MobileContainer(left: Template, content: Template, footer: Template) extends State {
-      val `type`: State.Type = State.Type.Action
+      val `type`: State.Type            = State.Type.Action
+      def addToCart: Option[(Int, Int)] = left.addToCart.orElse(content.addToCart).orElse(footer.addToCart)
     }
 
     object Action {
@@ -119,11 +120,12 @@ object Template {
   implicit final class TemplateOps(private val template: Template) extends AnyVal {
     def addToCart: Option[(Int, Int)] =
       template.state.collectFirst {
-        case State.Action.AddToCartWithCount(minItems, maxItems)                                                                         => minItems -> maxItems
-        case State.Action.UniversalAction(State.Action.UniversalAction.Button.AddToCartWithQuantity(quantity, maxItems))                 => quantity -> maxItems
-        case State.MobileContainer(left, content, footer) if left.addToCart.orElse(content.addToCart).orElse(footer.addToCart).isDefined =>
-          left.addToCart.orElse(content.addToCart).orElse(footer.addToCart).get
-
+        case State.Action.AddToCartWithCount(minItems, maxItems)                                                         =>
+          minItems -> maxItems
+        case State.Action.UniversalAction(State.Action.UniversalAction.Button.AddToCartWithQuantity(quantity, maxItems)) =>
+          quantity -> maxItems
+        case mobileContainer: State.MobileContainer if mobileContainer.addToCart.isDefined                               =>
+          mobileContainer.addToCart.get
       }
   }
 

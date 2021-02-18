@@ -19,6 +19,6 @@ object Currency {
 
   /** Код валюты.
     */
-  object CurrencyId extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce {}
+  object CurrencyId extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce
   type CurrencyId = CurrencyId.Type
 }

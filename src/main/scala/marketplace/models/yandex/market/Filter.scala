@@ -23,14 +23,14 @@ object Filter {
 
   /** Идентификатор фильтра.
     */
-  object FilterId extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce {}
+  object FilterId extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce
   type FilterId = FilterId.Type
 
   /** Тип фильтра.
     */
   sealed abstract class Type extends EnumEntry with Uppercase with Product with Serializable
-
-  object Type extends Enum[Type] with CatsEnum[Type] with CirceEnum[Type] with LoggableEnum[Type] {
+  object Type                extends Enum[Type] with CatsEnum[Type] with CirceEnum[Type] with LoggableEnum[Type] {
+    val values = findValues
 
     case object Boolean extends Type // Логический тип.
     case object Number  extends Type // Числовой тип, задает диапазон допустимых значений.
@@ -39,7 +39,5 @@ object Filter {
     case object Size    extends Type // Фильтр по размеру, аналогичен [[Enum]]
     case object Radio   extends Type // Аналогичен [[Enum]], но допускает выбор только одного значения.
     case object Text    extends Type // Тип фильтра для фильтрации по поисковой фразе.
-
-    val values = findValues
   }
 }

@@ -16,7 +16,7 @@ sealed trait Component {
 }
 
 object Component {
-  object StateId extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec {}
+  object StateId extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec
   type StateId = StateId.Type
 
   @derive(loggable)

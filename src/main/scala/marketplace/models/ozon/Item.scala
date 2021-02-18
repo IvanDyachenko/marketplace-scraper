@@ -39,20 +39,18 @@ sealed trait Item {
 
 object Item {
 
-  object Id extends TaggedType[Long] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec {}
+  object Id extends TaggedType[Long] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec
   type Id = Id.Type
 
   sealed trait Type extends EnumEntry with Lowercase with Product with Serializable
-
-  object Type extends Enum[Type] with CatsEnum[Type] with CirceEnum[Type] with LoggableEnum[Type] with VulcanEnum[Type] {
+  object Type       extends Enum[Type] with CatsEnum[Type] with CirceEnum[Type] with LoggableEnum[Type] with VulcanEnum[Type] {
     val values = findValues
 
     case object SKU extends Type
   }
 
   sealed abstract class Availability(val value: Byte) extends ByteEnumEntry
-
-  object Availability extends ByteEnum[Availability] with ByteCirceEnum[Availability] with ByteVulcanEnum[Availability] {
+  object Availability                                 extends ByteEnum[Availability] with ByteCirceEnum[Availability] with ByteVulcanEnum[Availability] {
     val values = findValues
 
     case object InStock    extends Availability(1)

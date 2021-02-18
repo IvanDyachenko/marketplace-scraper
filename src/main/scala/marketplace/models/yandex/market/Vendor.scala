@@ -19,6 +19,6 @@ object Vendor {
 
   /** Уникальный идентификатор производителя.
     */
-  object VendorId extends TaggedType[Long] with LiftedCats with LiftedLoggable with LiftedCirce {}
+  object VendorId extends TaggedType[Long] with LiftedCats with LiftedLoggable with LiftedCirce
   type VendorId = VendorId.Type
 }

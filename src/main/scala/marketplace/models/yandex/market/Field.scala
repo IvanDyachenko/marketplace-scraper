@@ -9,6 +9,7 @@ import tofu.logging.LoggableEnum
 sealed trait Field extends EnumEntry with UpperSnakecase with Product with Serializable
 
 object Field extends Enum[Field] with CatsEnum[Field] with LoggableEnum[Field] {
+  val values = findValues
 
   case object ModelVendor         extends Field // Информация о производителе.
   case object ModelCategory       extends Field // Информация о категории, к которой относится модель.
@@ -52,6 +53,4 @@ object Field extends Enum[Field] with CatsEnum[Field] with LoggableEnum[Field] {
     *   SHOP_ORGANIZATION
     */
   case object ShopAll extends Field
-
-  val values = findValues
 }

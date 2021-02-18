@@ -15,17 +15,12 @@ import marketplace.models.{LiftedCats, LiftedCirce, LiftedLoggable}
   * @param childCount Количество дочерних категорий.
   */
 @derive(loggable, decoder)
-final case class Category(
-  id: Category.CategoryId,
-  name: Option[String] = None,
-  fullName: Option[String] = None,
-  childCount: Option[Int] = None
-)
+final case class Category(id: Category.CategoryId, name: Option[String] = None, fullName: Option[String] = None, childCount: Option[Int] = None)
 
 object Category {
 
   /** Идентификатор категории.
     */
-  object CategoryId extends TaggedType[Int] with LiftedCats with LiftedLoggable with LiftedCirce {}
+  object CategoryId extends TaggedType[Int] with LiftedCats with LiftedLoggable with LiftedCirce
   type CategoryId = CategoryId.Type
 }

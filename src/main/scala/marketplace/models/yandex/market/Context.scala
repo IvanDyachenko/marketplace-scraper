@@ -18,19 +18,13 @@ import marketplace.models.{LiftedCats, LiftedCirce, LiftedLoggable}
   * @param page     Информация о параметрах страницы запроса.
   */
 @derive(loggable, decoder)
-case class Context(
-  id: Context.ContextId,
-  time: OffsetDateTime,
-  region: Region,
-  currency: Currency,
-  page: Page
-)
+case class Context(id: Context.ContextId, time: OffsetDateTime, region: Region, currency: Currency, page: Page)
 
 object Context {
 
   /** Уникальный идентификатор запроса.
     */
-  object ContextId extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce {}
+  object ContextId extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce
   type ContextId = ContextId.Type
 
 //implicit val offsetDateTimeVulcanCodec: Codec[OffsetDateTime] =

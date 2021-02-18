@@ -53,7 +53,7 @@ object Offer {
 
   /** MD5 хеш-код предложения.
     */
-  object MD5 extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce {}
+  object MD5 extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce
   type MD5 = MD5.Type
 }
 

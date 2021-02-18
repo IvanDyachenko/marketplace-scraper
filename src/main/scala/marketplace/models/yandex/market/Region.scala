@@ -84,6 +84,6 @@ object Country {
 
   /** Код страны.
     */
-  object CountryId extends TaggedType[Int] with LiftedCats with LiftedLoggable with LiftedCirce {}
+  object CountryId extends TaggedType[Int] with LiftedCats with LiftedLoggable with LiftedCirce
   type CountryId = CountryId.Type
 }

@@ -38,16 +38,16 @@ object Parser {
     def run: Stream[I, Unit] =
       consumerOfCommands.partitionedStream.map { partition =>
         partition
-          .parEvalMap(config.maxConcurrent) { committable =>
+          .parEvalMap(config.kafkaProducer.maxBufferSize) { committable =>
             runContext(parse.handle(committable.record.value))(AppContext()).map(_.toOption.map(_ -> committable.offset))
           }
           .collect { case Some((events, offset)) =>
-            ProducerRecords(events.map(event => ProducerRecord(config.kafkaProducerConfig.topic, event.key, event)), offset)
+            ProducerRecords(events.map(event => ProducerRecord(config.kafkaProducer.topic, event.key, event)), offset)
           }
           .evalMap(producerOfEvents.produce)
-          .parEvalMap(config.maxConcurrent)(identity)
+          .parEvalMap(config.kafkaProducer.maxBufferSize)(identity)
           .map(_.passthrough)
-          .through(commitBatchWithin(config.batchOffsets, config.batchTimeWindow))
+          .through(commitBatchWithin(config.kafkaConsumer.batchOffsets, config.kafkaConsumer.batchTimeWindow))
       }.parJoinUnbounded
   }
 

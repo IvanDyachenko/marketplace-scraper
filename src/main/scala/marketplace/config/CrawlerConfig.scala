@@ -1,7 +1,5 @@
 package marketplace.config
 
-import scala.concurrent.duration.FiniteDuration
-
 import cats.effect.{Blocker, ContextShift, Sync}
 import derevo.derive
 import derevo.pureconfig.pureconfigReader
@@ -10,11 +8,8 @@ import pureconfig.module.catseffect.syntax._
 
 @derive(pureconfigReader)
 final case class CrawlerConfig(
-  kafkaConsumerConfig: KafkaConsumerConfig,
-  kafkaProducerConfig: KafkaProducerConfig,
-  maxConcurrent: Int,
-  batchOffsets: Int,
-  batchTimeWindow: FiniteDuration
+  kafkaConsumer: KafkaConsumerConfig,
+  kafkaProducer: KafkaProducerConfig
 )
 
 object CrawlerConfig {

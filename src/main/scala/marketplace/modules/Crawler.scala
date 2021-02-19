@@ -45,16 +45,16 @@ object Crawler {
     def run: Stream[I, Unit] =
       consumerOfCommands.partitionedStream.map { partition =>
         partition
-          .parEvalMap(config.maxConcurrent) { committable =>
+          .parEvalMap(config.kafkaProducer.maxBufferSize) { committable =>
             runContext(crawl.handle(committable.record.value))(AppContext()).map(_.toOption.map(_ -> committable.offset))
           }
           .collect { case Some((event, offset)) =>
-            ProducerRecords.one(ProducerRecord(config.kafkaProducerConfig.topic, event.key, event), offset)
+            ProducerRecords.one(ProducerRecord(config.kafkaProducer.topic, event.key, event), offset)
           }
           .evalMap(producerOfEvents.produce)
-          .parEvalMap(config.maxConcurrent)(identity)
+          .parEvalMap(config.kafkaProducer.maxBufferSize)(identity)
           .map(_.passthrough)
-          .through(commitBatchWithin(config.batchOffsets, config.batchTimeWindow))
+          .through(commitBatchWithin(config.kafkaConsumer.batchOffsets, config.kafkaConsumer.batchTimeWindow))
       }.parJoinUnbounded
 
     def schedule: Stream[I, Unit] =

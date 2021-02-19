@@ -9,7 +9,12 @@ import pureconfig.ConfigSource
 import pureconfig.module.catseffect.syntax._
 
 @derive(pureconfigReader)
-final case class KafkaConsumerConfig(groupId: String, topic: String, batchOffsets: Int, batchTimeWindow: FiniteDuration)
+final case class KafkaConsumerConfig(
+  groupId: String,
+  topic: String,
+  commitEveryNOffsets: Int,
+  commitTimeWindow: FiniteDuration
+)
 
 object KafkaConsumerConfig {
   lazy val load: KafkaConsumerConfig = ConfigSource.default.at("kafka-consumer").loadOrThrow[KafkaConsumerConfig]

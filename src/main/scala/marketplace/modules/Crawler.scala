@@ -54,7 +54,7 @@ object Crawler {
           .evalMap(producerOfEvents.produce)
           .parEvalMap(crawlerConfig.kafkaProducer.maxBufferSize)(identity)
           .map(_.passthrough)
-          .through(commitBatchWithin(crawlerConfig.kafkaConsumer.batchOffsets, crawlerConfig.kafkaConsumer.batchTimeWindow))
+          .through(commitBatchWithin(crawlerConfig.kafkaConsumer.commitEveryNOffsets, crawlerConfig.kafkaConsumer.commitTimeWindow))
       }.parJoinUnbounded
 
     def schedule: Stream[I, Unit] =

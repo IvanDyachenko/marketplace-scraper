@@ -487,7 +487,7 @@ class ItemSpec extends AnyFlatSpec with Matchers {
     decode[Item.InStock](itemRawJson).isRight shouldBe true
   }
 
-  it should "decode Item.OutOfStock (1) from a valid JSON" in {
+  it should "decode Item.OutOfStock from a valid JSON" in {
     val itemRawJson =
       """
         |{
@@ -619,7 +619,7 @@ class ItemSpec extends AnyFlatSpec with Matchers {
     decode[Item.OutOfStock](itemRawJson).isRight shouldBe true
   }
 
-  ignore should "decode Item.??? from a valid JSON" in {
+  it should "decode Item.CannotBeShipped from a valid JSON" in {
     val itemRawJson =
       """
         |{

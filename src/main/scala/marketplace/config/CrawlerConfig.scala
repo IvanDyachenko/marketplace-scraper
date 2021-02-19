@@ -9,7 +9,8 @@ import pureconfig.module.catseffect.syntax._
 @derive(pureconfigReader)
 final case class CrawlerConfig(
   kafkaConsumer: KafkaConsumerConfig,
-  kafkaProducer: KafkaProducerConfig
+  kafkaProducer: KafkaProducerConfig,
+  maxConnectionsPerPartition: Int,
 )
 
 object CrawlerConfig {

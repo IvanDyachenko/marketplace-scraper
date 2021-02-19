@@ -40,7 +40,7 @@ object Url {
 
     @AvroNamespace("ozon.models.url")
     sealed trait Name extends EnumEntry with Snakecase with Product with Serializable
-    object Name extends Enum[Name] with CatsEnum[Name] with LoggableEnum[Name] with VulcanEnum[Name] {
+    object Name       extends Enum[Name] with CatsEnum[Name] with LoggableEnum[Name] with VulcanEnum[Name] {
       val values = findValues
 
       case object Default extends Name

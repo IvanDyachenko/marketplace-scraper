@@ -45,7 +45,7 @@ object Crawler {
     def run: Stream[I, Unit] =
       consumerOfCommands.partitionedStream.map { partition =>
         partition
-          .parEvalMap(crawlerConfig.kafkaProducer.maxBufferSize) { committable =>
+          .parEvalMap(crawlerConfig.maxConnectionsPerPartition) { committable =>
             runContext(crawl.handle(committable.record.value))(AppContext()).map(_.toOption.map(_ -> committable.offset))
           }
           .collect { case Some((event, offset)) =>

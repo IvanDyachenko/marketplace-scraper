@@ -45,12 +45,12 @@ object Main extends TaskApp {
       producerOfEvents            <- KafkaClient.makeProducer[AppI, Event.Key, ParserEvent](
                                        cfg.kafkaConfig,
                                        cfg.schemaRegistryConfig,
-                                       cfg.parserConfig.kafkaProducerConfig
+                                       cfg.parserConfig.kafkaProducer
                                      )
       consumerOfCommands          <- KafkaClient.makeConsumer[AppI, Command.Key, ParserCommand.ParseOzonResponse](
                                        cfg.kafkaConfig,
                                        cfg.schemaRegistryConfig,
-                                       cfg.parserConfig.kafkaConsumerConfig
+                                       cfg.parserConfig.kafkaConsumer
                                      )
       parser                      <- Parser.make[AppI, AppF, AppS](cfg.parserConfig)(parse, producerOfEvents, consumerOfCommands)
     } yield parser
@@ -67,7 +67,7 @@ object Main extends TaskApp {
       producerOfEvents                         <- KafkaClient.makeProducer[AppI, Event.Key, CrawlerEvent](
                                                     cfg.kafkaConfig,
                                                     cfg.schemaRegistryConfig,
-                                                    cfg.crawlerConfig.kafkaProducerConfig
+                                                    cfg.crawlerConfig.kafkaProducer
                                                   )
       producerOfCommands                       <- KafkaClient.makeProducer[AppI, Command.Key, CrawlerCommand](
                                                     cfg.kafkaConfig,
@@ -77,7 +77,7 @@ object Main extends TaskApp {
       consumerOfCommands                       <- KafkaClient.makeConsumer[AppI, Command.Key, CrawlerCommand](
                                                     cfg.kafkaConfig,
                                                     cfg.schemaRegistryConfig,
-                                                    cfg.crawlerConfig.kafkaConsumerConfig
+                                                    cfg.crawlerConfig.kafkaConsumer
                                                   )
       crawler                                  <- Crawler.make[AppI, AppF, AppS](cfg.crawlerConfig)(crawl, sourcesOfCommands, producerOfEvents, producerOfCommands, consumerOfCommands)
     } yield crawler

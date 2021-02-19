@@ -9,7 +9,7 @@ import pureconfig.ConfigSource
 import pureconfig.module.catseffect.syntax._
 
 @derive(pureconfigReader)
-final case class KafkaProducerConfig(topic: String, maxBufferSize: Int, linger: FiniteDuration, batchSize: Int)
+final case class KafkaProducerConfig(topic: String, compressionType: String = "none", maxBufferSize: Int, linger: FiniteDuration, batchSize: Int)
 
 object KafkaProducerConfig {
   lazy val load: KafkaProducerConfig = ConfigSource.default.at("kafka-producer").loadOrThrow[KafkaProducerConfig]

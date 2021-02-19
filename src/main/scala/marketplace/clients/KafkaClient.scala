@@ -25,7 +25,7 @@ object KafkaClient {
       .withBootstrapServers(kafkaConfig.bootstrapServers)
       .withLinger(kafkaProducerConfig.linger)
       .withBatchSize(kafkaProducerConfig.batchSize)
-      .withProperty("compression.type", "zstd")
+      .withProperty("compression.type", kafkaProducerConfig.compressionType)
 
     KafkaProducer.resource[F, Option[K], V](producerSettings)
   }

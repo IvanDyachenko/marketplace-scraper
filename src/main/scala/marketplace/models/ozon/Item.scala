@@ -53,10 +53,11 @@ object Item {
   object Availability                                 extends ByteEnum[Availability] with ByteCirceEnum[Availability] with ByteVulcanEnum[Availability] {
     val values = findValues
 
-    case object InStock         extends Availability(1)
-    case object OutOfStock      extends Availability(2)
-    case object Preorder        extends Availability(3)
-    case object CannotBeShipped extends Availability(6)
+    case object OutOfStock        extends Availability(0)
+    case object InStock           extends Availability(1)
+    case object OutOfStockSimilar extends Availability(2)
+    case object Preorder          extends Availability(3)
+    case object CannotBeShipped   extends Availability(6)
   }
 
   @derive(loggable)
@@ -200,9 +201,10 @@ object Item {
       for {
         _    <- i.get[Availability]("availability")
                   .ensure {
-                    val message = s"'cellTrackingInfo' doesn't contain 'availability' which is equal to '${Availability.OutOfStock.value}'"
+                    val message =
+                      s"'cellTrackingInfo' doesn't contain 'availability' which is equal to '${Availability.OutOfStock.value}' or '${Availability.OutOfStockSimilar.value}'"
                     DecodingFailure(message, c.history)
-                  }(_ == Availability.OutOfStock)
+                  }(a => a == Availability.OutOfStock || a == Availability.OutOfStockSimilar)
         item <- (
                   i.get[Item.Id]("id"),
                   i.get[Int]("index"),
@@ -296,10 +298,11 @@ object Item {
     for {
       availability <- c.downField("cellTrackingInfo").get[Availability]("availability")
       decoder       = availability match {
-                        case Availability.InStock         => InStock.circeDecoder
-                        case Availability.OutOfStock      => OutOfStock.circeDecoder
-                        case Availability.Preorder        => Preorder.circeDecoder
-                        case Availability.CannotBeShipped => CannotBeShipped.circeDecoder
+                        case Availability.OutOfStock        => OutOfStock.circeDecoder
+                        case Availability.InStock           => InStock.circeDecoder
+                        case Availability.OutOfStockSimilar => OutOfStock.circeDecoder
+                        case Availability.Preorder          => Preorder.circeDecoder
+                        case Availability.CannotBeShipped   => CannotBeShipped.circeDecoder
                       }
       item         <- decoder.widen[Item](c)
     } yield item
@@ -333,13 +336,13 @@ object Item {
       // format: off
       case (itemId, itemIndex, itemType, itemTitle, brand, price, rating, categoryPath, delivery, availability, availableInDays, marketplaceSellerId, addToCartMinItems, addToCartMaxItems, isAdult, isAlcohol, _, isSupermarket, isPersonalized, isPromotedProduct, freeRest) =>
         availability match {
-          case Availability.InStock         =>
+          case Availability.InStock                                     =>
             InStock(itemId, itemIndex, itemType, itemTitle, brand, price, rating, categoryPath, delivery, availableInDays, marketplaceSellerId, addToCartMinItems.get, addToCartMaxItems.get, isAdult, isAlcohol, isSupermarket, isPersonalized, isPromotedProduct, freeRest)
-          case Availability.OutOfStock      =>
+          case Availability.OutOfStock | Availability.OutOfStockSimilar =>
             OutOfStock(itemId, itemIndex, itemType, itemTitle, brand, price, rating, categoryPath, delivery, availableInDays, marketplaceSellerId, isAdult, isAlcohol, isSupermarket, isPersonalized, isPromotedProduct, freeRest)
-          case Availability.Preorder      =>
+          case Availability.Preorder                                    =>
             Preorder(itemId, itemIndex, itemType, itemTitle, brand, price, rating, categoryPath, delivery, availableInDays, marketplaceSellerId, isAdult, isAlcohol, isSupermarket, isPersonalized, isPromotedProduct, freeRest)
-          case Availability.CannotBeShipped =>
+          case Availability.CannotBeShipped                             =>
             CannotBeShipped(itemId, itemIndex, itemType, itemTitle, brand, price, rating, categoryPath, delivery, availableInDays, marketplaceSellerId, isAdult, isAlcohol, isSupermarket, isPersonalized, isPromotedProduct, freeRest)
         }
       // format: on

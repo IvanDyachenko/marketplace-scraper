@@ -15,7 +15,7 @@ import fs2.Stream
 import fs2.kafka.{commitBatchWithin, KafkaConsumer, KafkaProducer, ProducerRecord, ProducerRecords}
 import supertagged.postfix._
 
-import marketplace.config.{CrawlerConfig, SourceConfig}
+import marketplace.config.{CrawlerConfig, SchedulerConfig, SourceConfig}
 import marketplace.context.AppContext
 import marketplace.api.OzonApi
 import marketplace.clients.HttpClient
@@ -35,7 +35,7 @@ object Crawler {
   private final class Impl[
     I[_]: Monad: Timer: Concurrent,
     F[_]: WithRun[*[_], I, AppContext]
-  ](config: CrawlerConfig)(
+  ](crawlerConfig: CrawlerConfig, schedulerConfig: SchedulerConfig)(
     crawl: Crawl[F],
     sourcesOfCommands: List[Stream[I, CrawlerCommand]],
     producerOfEvents: KafkaProducer[I, Option[Event.Key], CrawlerEvent],
@@ -45,24 +45,26 @@ object Crawler {
     def run: Stream[I, Unit] =
       consumerOfCommands.partitionedStream.map { partition =>
         partition
-          .parEvalMap(config.kafkaProducer.maxBufferSize) { committable =>
+          .parEvalMap(crawlerConfig.kafkaProducer.maxBufferSize) { committable =>
             runContext(crawl.handle(committable.record.value))(AppContext()).map(_.toOption.map(_ -> committable.offset))
           }
           .collect { case Some((event, offset)) =>
-            ProducerRecords.one(ProducerRecord(config.kafkaProducer.topic, event.key, event), offset)
+            ProducerRecords.one(ProducerRecord(crawlerConfig.kafkaProducer.topic, event.key, event), offset)
           }
           .evalMap(producerOfEvents.produce)
-          .parEvalMap(config.kafkaProducer.maxBufferSize)(identity)
+          .parEvalMap(crawlerConfig.kafkaProducer.maxBufferSize)(identity)
           .map(_.passthrough)
-          .through(commitBatchWithin(config.kafkaConsumer.batchOffsets, config.kafkaConsumer.batchTimeWindow))
+          .through(commitBatchWithin(crawlerConfig.kafkaConsumer.batchOffsets, crawlerConfig.kafkaConsumer.batchTimeWindow))
       }.parJoinUnbounded
 
     def schedule: Stream[I, Unit] =
       Stream
         .emits(sourcesOfCommands)
         .parJoinUnbounded
-        .evalMap(command => producerOfCommands.produce(ProducerRecords.one(ProducerRecord(???, command.key, command))))
-        .parEvalMap(1000)(identity)
+        .evalMap { command =>
+          producerOfCommands.produce(ProducerRecords.one(ProducerRecord(schedulerConfig.kafkaProducer.topic, command.key, command)))
+        }
+        .parEvalMap(schedulerConfig.kafkaProducer.maxBufferSize)(identity)
         .map(_.passthrough)
   }
 
@@ -70,7 +72,7 @@ object Crawler {
     I[_]: Monad: Concurrent: Timer,
     F[_]: WithRun[*[_], I, AppContext],
     S[_]: LiftStream[*[_], I]
-  ](config: CrawlerConfig)(
+  ](crawlerConfig: CrawlerConfig, schedulerConfig: SchedulerConfig)(
     crawl: Crawl[F],
     sourcesOfCommands: List[Stream[I, CrawlerCommand]],
     producerOfEvents: KafkaProducer[I, Option[Event.Key], CrawlerEvent],
@@ -81,7 +83,7 @@ object Crawler {
       Stream
         .eval {
           val impl: Crawler[Stream[I, *]] =
-            new Impl[I, F](config)(crawl, sourcesOfCommands, producerOfEvents, producerOfCommands, consumerOfCommands)
+            new Impl[I, F](crawlerConfig, schedulerConfig)(crawl, sourcesOfCommands, producerOfEvents, producerOfCommands, consumerOfCommands)
 
           impl.pure[I]
         }

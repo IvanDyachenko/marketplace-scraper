@@ -110,7 +110,7 @@ object Crawler {
                                       Stream
                                         .emits(1 to page.total)
                                         .covary[F]
-                                        .parEvalMapUnordered(1000) { number =>
+                                        .parEvalMapUnordered(100) { number =>
                                           CrawlerCommand.handleOzonRequest[F](
                                             ozon.Request.GetCategorySearchResultsV2(id, name, number @@ ozon.Url.Page)
                                           )

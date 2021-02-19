@@ -52,7 +52,11 @@ object Main extends TaskApp {
                                        cfg.schemaRegistryConfig,
                                        cfg.parserConfig.kafkaConsumer
                                      )
-      parser                      <- Parser.make[AppI, AppF, AppS](cfg.parserConfig)(parse, producerOfEvents, consumerOfCommands)
+      parser                      <- Parser.make[AppI, AppF, AppS](cfg.parserConfig)(
+                                       parse,
+                                       producerOfEvents,
+                                       consumerOfCommands
+                                     )
     } yield parser
 
   def initCrawler: Resource[Task, Crawler[AppS]] =
@@ -72,13 +76,19 @@ object Main extends TaskApp {
       producerOfCommands                       <- KafkaClient.makeProducer[AppI, Command.Key, CrawlerCommand](
                                                     cfg.kafkaConfig,
                                                     cfg.schemaRegistryConfig,
-                                                    ???
+                                                    cfg.schedulerConfig.kafkaProducer
                                                   )
       consumerOfCommands                       <- KafkaClient.makeConsumer[AppI, Command.Key, CrawlerCommand](
                                                     cfg.kafkaConfig,
                                                     cfg.schemaRegistryConfig,
                                                     cfg.crawlerConfig.kafkaConsumer
                                                   )
-      crawler                                  <- Crawler.make[AppI, AppF, AppS](cfg.crawlerConfig)(crawl, sourcesOfCommands, producerOfEvents, producerOfCommands, consumerOfCommands)
+      crawler                                  <- Crawler.make[AppI, AppF, AppS](cfg.crawlerConfig, cfg.schedulerConfig)(
+                                                    crawl,
+                                                    sourcesOfCommands,
+                                                    producerOfEvents,
+                                                    producerOfCommands,
+                                                    consumerOfCommands
+                                                  )
     } yield crawler
 }

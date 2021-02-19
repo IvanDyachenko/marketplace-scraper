@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS ozon_category_search_results_v2_items_stream
     freeRest             Int32
 )
 ENGINE = Kafka SETTINGS kafka_broker_list = 'broker:29092',
-                        kafka_topic_list = 'parser-results-ozon_category_search_results_v2_items-version_1',
+                        kafka_topic_list = 'marketplace_parser-results-ozon_category_search_results_v2_items-version_1',
                         kafka_group_name = 'clickhouse-ozon_category_search_results_v2_items',
                         kafka_format = 'AvroConfluent',
                         kafka_commit_every_batch = 1,

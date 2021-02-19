@@ -55,6 +55,7 @@ object Item {
 
     case object InStock         extends Availability(1)
     case object OutOfStock      extends Availability(2)
+    case object Preorder        extends Availability(3)
     case object CannotBeShipped extends Availability(6)
   }
 
@@ -104,6 +105,29 @@ object Item {
     freeRest: Int
   ) extends Item {
     val availability: Availability = Availability.OutOfStock
+  }
+
+  @derive(loggable)
+  final case class Preorder(
+    id: Id,
+    index: Int,
+    `type`: Type,
+    title: String,
+    brand: Brand,
+    price: Price,
+    rating: Rating,
+    categoryPath: Category.Path,
+    delivery: Delivery,
+    availableInDays: Short,
+    marketplaceSellerId: MarketplaceSeller.Id,
+    isAdult: Boolean,
+    isAlcohol: Boolean,
+    isSupermarket: Boolean,
+    isPersonalized: Boolean,
+    isPromotedProduct: Boolean,
+    freeRest: Int
+  ) extends Item {
+    val availability: Availability = Availability.Preorder
   }
 
   @derive(loggable)
@@ -202,6 +226,39 @@ object Item {
     }
   }
 
+  object Preorder {
+    implicit val circeDecoder: Decoder[Preorder] = Decoder.instance[Preorder] { (c: HCursor) =>
+      lazy val i = c.downField("cellTrackingInfo")
+
+      for {
+        _    <- i.get[Availability]("availability")
+                  .ensure {
+                    val message = s"'cellTrackingInfo' doesn't contain 'availability' which is equal to '${Availability.Preorder.value}'"
+                    DecodingFailure(message, c.history)
+                  }(_ == Availability.Preorder)
+        item <- (
+                  i.get[Item.Id]("id"),
+                  i.get[Int]("index"),
+                  i.get[Item.Type]("type"),
+                  i.get[String]("title"),
+                  i.as[Brand],
+                  i.as[Price],
+                  i.as[Rating],
+                  i.get[Category.Path]("category"),
+                  i.as[Delivery],
+                  i.get[Short]("availableInDays"),
+                  i.get[MarketplaceSeller.Id]("marketplaceSellerId"),
+                  c.get[Boolean]("isAdult"),
+                  c.get[Boolean]("isAlcohol"),
+                  i.get[Boolean]("isSupermarket"),
+                  i.get[Boolean]("isPersonalized"),
+                  i.get[Boolean]("isPromotedProduct"),
+                  i.get[Int]("freeRest")
+                ).mapN(apply)
+      } yield item
+    }
+  }
+
   object CannotBeShipped {
     implicit val circeDecoder: Decoder[CannotBeShipped] = Decoder.instance[CannotBeShipped] { (c: HCursor) =>
       lazy val i = c.downField("cellTrackingInfo")
@@ -241,6 +298,7 @@ object Item {
       decoder       = availability match {
                         case Availability.InStock         => InStock.circeDecoder
                         case Availability.OutOfStock      => OutOfStock.circeDecoder
+                        case Availability.Preorder        => Preorder.circeDecoder
                         case Availability.CannotBeShipped => CannotBeShipped.circeDecoder
                       }
       item         <- decoder.widen[Item](c)
@@ -279,6 +337,8 @@ object Item {
             InStock(itemId, itemIndex, itemType, itemTitle, brand, price, rating, categoryPath, delivery, availableInDays, marketplaceSellerId, addToCartMinItems.get, addToCartMaxItems.get, isAdult, isAlcohol, isSupermarket, isPersonalized, isPromotedProduct, freeRest)
           case Availability.OutOfStock      =>
             OutOfStock(itemId, itemIndex, itemType, itemTitle, brand, price, rating, categoryPath, delivery, availableInDays, marketplaceSellerId, isAdult, isAlcohol, isSupermarket, isPersonalized, isPromotedProduct, freeRest)
+          case Availability.Preorder      =>
+            Preorder(itemId, itemIndex, itemType, itemTitle, brand, price, rating, categoryPath, delivery, availableInDays, marketplaceSellerId, isAdult, isAlcohol, isSupermarket, isPersonalized, isPromotedProduct, freeRest)
           case Availability.CannotBeShipped =>
             CannotBeShipped(itemId, itemIndex, itemType, itemTitle, brand, price, rating, categoryPath, delivery, availableInDays, marketplaceSellerId, isAdult, isAlcohol, isSupermarket, isPersonalized, isPromotedProduct, freeRest)
         }

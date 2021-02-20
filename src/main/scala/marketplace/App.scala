@@ -67,7 +67,7 @@ object Main extends TaskApp {
       implicit0(httpClientF: HttpClient[AppF]) <- HttpClient.make[AppI, AppF](cfg.httpConfig)
       crawl                                    <- Crawl.make[AppI, AppF]
       ozonApi                                  <- Resource.liftF(OzonApi.make[AppI, AppS].pure[AppI])
-      sourcesOfCommands                         = cfg.sourcesConfig.sources.map(Crawler.makeCrawlerCommandsSource[AppI](_)(ozonApi))
+      sourcesOfCommands                         = cfg.sourcesConfig.sources.map(Crawler.makeCommandsSource[AppI](_)(ozonApi))
       producerOfEvents                         <- KafkaClient.makeProducer[AppI, Event.Key, CrawlerEvent](
                                                     cfg.kafkaConfig,
                                                     cfg.schemaRegistryConfig,

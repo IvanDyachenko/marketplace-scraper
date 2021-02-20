@@ -12,13 +12,13 @@ import tofu.WithRun
 import tofu.fs2.LiftStream
 import fs2.Stream
 import fs2.kafka.{commitBatchWithin, KafkaConsumer, KafkaProducer, ProducerRecord, ProducerRecords}
+import supertagged.postfix._
 
 import marketplace.config.{CrawlerConfig, SchedulerConfig, SourceConfig}
 import marketplace.context.AppContext
 import marketplace.api.OzonApi
-import marketplace.clients.HttpClient
 import marketplace.services.Crawl
-import marketplace.models.{Command, Event}
+import marketplace.models.{ozon, Command, Event}
 import marketplace.models.crawler.{CrawlerCommand, CrawlerEvent}
 
 @derive(representableK)
@@ -90,11 +90,26 @@ object Crawler {
         .pure[I]
     }
 
-  def makeCrawlerCommandsSource[F[_]: Timer: Concurrent: HttpClient.Handling](sourceConfig: SourceConfig)(
+  def makeCommandsSource[F[_]: Timer: Concurrent](sourceConfig: SourceConfig)(
     ozonApi: OzonApi[F, Stream[F, *]]
   ): Stream[F, CrawlerCommand] =
     sourceConfig match {
       case SourceConfig.OzonCategory(rootCategoryId, every) =>
-        Stream.awakeEvery[F](every) >>= { _ => ??? }
+        Stream.awakeEvery[F](every) >>= { _ =>
+          ozonApi.getCategories(rootCategoryId)(_.isLeaf) >>= { leafCategory =>
+            Stream.eval(ozonApi.getCategorySearchResultsV2(leafCategory.id, 1 @@ ozon.Url.Page)) >>= { searchResultsV2Option =>
+              searchResultsV2Option
+                .fold[Stream[F, Int]](Stream.range(1, 50)) {
+                  _ match {
+                    case ozon.SearchResultsV2.Failure(_)          => Stream.empty
+                    case ozon.SearchResultsV2.Success(_, page, _) => Stream.range(1, page.total)
+                  }
+                }
+                .parEvalMapUnordered(100) { p =>
+                  CrawlerCommand.handleOzonRequest[F](ozon.Request.GetCategorySearchResultsV2(leafCategory.id, leafCategory.name, p @@ ozon.Url.Page))
+                }
+            }
+          }
+        }
     }
 }

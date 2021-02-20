@@ -69,13 +69,17 @@ object HttpClient extends ContextEmbed[HttpClient] {
           }
         }
         .run(request)
-        .retryOnly[TimeoutException](1)
-        .retryOnly[HttpClientError.UnexpectedStatus](2)
+        .retryOnly[TimeoutException](2)
+        .retryOnly[HttpClientError.UnexpectedStatus](3)
         .recoverWith[TimeoutException] { case error: TimeoutException =>
           HttpClientError.TimeoutException(error.getMessage).raise[F, Res]
         }
-        .recoverWith[DecodingFailure] { case error: DecodingFailure => // format: off
-          HttpClientError.DecodingError(s"A response received as a result of the request to ${request.uri.show} was rejected because of a decoding failure: ${error.show}").raise[F, Res] // format: on
+        .recoverWith[DecodingFailure] { case error: DecodingFailure =>
+          HttpClientError
+            .DecodingError(
+              s"A response received as a result of the request to ${request.uri.show} was rejected because of a decoding failure: ${error.show}"
+            )
+            .raise[F, Res]
         }
         .recoverWith[HttpClientError](error => error"${error.message}" *> error.raise[F, Res])
 

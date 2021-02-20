@@ -6,21 +6,19 @@ import cats.effect.{Concurrent, Resource, Timer}
 import tofu.syntax.embed._
 import tofu.syntax.monadic._
 import tofu.syntax.context._
-import tofu.syntax.handle._
 import derevo.derive
 import tofu.higherKind.derived.representableK
 import tofu.WithRun
 import tofu.fs2.LiftStream
 import fs2.Stream
 import fs2.kafka.{commitBatchWithin, KafkaConsumer, KafkaProducer, ProducerRecord, ProducerRecords}
-import supertagged.postfix._
 
 import marketplace.config.{CrawlerConfig, SchedulerConfig, SourceConfig}
 import marketplace.context.AppContext
 import marketplace.api.OzonApi
 import marketplace.clients.HttpClient
 import marketplace.services.Crawl
-import marketplace.models.{ozon, Command, Event}
+import marketplace.models.{Command, Event}
 import marketplace.models.crawler.{CrawlerCommand, CrawlerEvent}
 
 @derive(representableK)
@@ -97,27 +95,6 @@ object Crawler {
   ): Stream[F, CrawlerCommand] =
     sourceConfig match {
       case SourceConfig.OzonCategory(rootCategoryId, every) =>
-        Stream.awakeEvery[F](every) >>= { _ =>
-          for {
-            leafCategoryO    <- ozonApi.getCategories(rootCategoryId)(_.isLeaf).restore
-            searchResultsV2O <- leafCategoryO.fold[Stream[F, Option[ozon.SearchResultsV2]]](Stream.empty) { leafCategory =>
-                                  Stream.eval(ozonApi.getCategorySearchResultsV2(leafCategory.id, 1 @@ ozon.Url.Page).restore)
-                                }
-            crawlerCommands  <- searchResultsV2O.fold[Stream[F, CrawlerCommand]](Stream.empty) {
-                                  _ match {
-                                    case ozon.SearchResultsV2.Failure(_)                                      => Stream.empty
-                                    case ozon.SearchResultsV2.Success(ozon.Category(id, name, _, _), page, _) =>
-                                      Stream
-                                        .emits(1 to page.total)
-                                        .covary[F]
-                                        .parEvalMapUnordered(100) { number =>
-                                          CrawlerCommand.handleOzonRequest[F](
-                                            ozon.Request.GetCategorySearchResultsV2(id, name, number @@ ozon.Url.Page)
-                                          )
-                                        }
-                                  }
-                                }
-          } yield crawlerCommands
-        }
+        Stream.awakeEvery[F](every) >>= { _ => ??? }
     }
 }

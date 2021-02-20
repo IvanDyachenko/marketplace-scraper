@@ -3,13 +3,15 @@ package marketplace.clients
 import java.util.concurrent.TimeoutException
 import scala.util.control.NoStackTrace
 
-import cats.implicits._
-import cats.{FlatMap, Monad}
-import cats.effect.{ConcurrentEffect, Resource, Sync}
+import cats.syntax.show._
 import tofu.syntax.raise._
+import tofu.syntax.handle._
+import tofu.syntax.monadic._
 import tofu.syntax.logging._
 import derevo.derive
 import tofu.logging.derivation.loggable
+import cats.{FlatMap, Monad}
+import cats.effect.{ConcurrentEffect, Resource, Sync}
 import tofu.{Execute, Handle, Raise}
 import tofu.lift.Unlift
 import tofu.higherKind.Embed
@@ -65,15 +67,16 @@ object HttpClient extends ContextEmbed[HttpClient] {
           }
         }
         .run(request)
-        .recoverWith {
-          case error: TimeoutException =>
-            val message = error.getMessage
-            error"${message}" *> HttpClientError.TimeoutException(message).raise[F, Res]
-          case error: DecodingFailure  =>
-            val message =
-              s"A response received as a result of the request to ${request.uri.show} was rejected because of a decoding failure: ${error.show}"
-            error"${message}" *> HttpClientError.DecodingError(message).raise[F, Res]
+        .recoverWith[TimeoutException] { case error: TimeoutException =>
+          val message = error.getMessage
+          error"${message}" *> HttpClientError.TimeoutException(message).raise[F, Res]
         }
+        .recoverWith[DecodingFailure] { case error: DecodingFailure =>
+          val message =
+            s"A response received as a result of the request to ${request.uri.show} was rejected because of a decoding failure: ${error.show}"
+          error"${message}" *> HttpClientError.DecodingError(message).raise[F, Res]
+        }
+        .retryOnly[HttpClientError](3)
   }
 
   implicit val embed: Embed[HttpClient] = new Embed[HttpClient] {

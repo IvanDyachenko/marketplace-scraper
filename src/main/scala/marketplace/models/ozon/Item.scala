@@ -73,5 +73,80 @@ object Item {
     } yield item
   }
 
-  private[models] def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => Item): FreeApplicative[Codec.Field[A, *], Item] = ???
+  private[models] def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => Item): FreeApplicative[Codec.Field[A, *], Item] =
+    field("availability", f(_).availability).map2 {
+      (
+        field("itemId", f(_).id),
+        field("itemIndex", f(_).index),
+        field("itemType", f(_).`type`),
+        field("itemTitle", f(_).title),
+        Brand.vulcanCodecFieldFA(field)(f(_).brand),
+        Price.vulcanCodecFieldFA(field)(f(_).price),
+        Rating.vulcanCodecFieldFA(field)(f(_).rating),
+        field("categoryPath", f(_).categoryPath),
+        Delivery.vulcanCodecFieldFA(field)(f(_).delivery),
+        field("availableInDays", f(_).availableInDays),
+        field("marketplaceSellerId", f(_).marketplaceSellerId),
+        field("addToCartMinItems", f(_) match { case item: items.InStock => Some(item.addToCartMinItems); case _ => None }),
+        field("addToCartMaxItems", f(_) match { case item: items.InStock => Some(item.addToCartMaxItems); case _ => None }),
+        field("isAdult", f(_).isAdult),
+        field("isAlcohol", f(_).isAlcohol),
+        field("isAvailable", f(_).isAvailable),
+        field("isSupermarket", f(_).isSupermarket),
+        field("isPersonalized", f(_).isPersonalized),
+        field("isPromotedProduct", f(_).isPromotedProduct),
+        field("freeRest", f(_).freeRest)
+      ).tupled
+    } {
+      // format: off
+      case (
+            availability,
+            (
+              itemId, itemIndex, itemType, itemTitle,
+              brand, price, rating, categoryPath, delivery, inDays, sellerId,
+              addToCartMinItems, addToCartMaxItems,
+              isAdult, isAlcohol, _, isSupermarket, isPersonalized, isPromoted,
+              freeRest
+            )
+          ) =>
+        availability match {
+          case Availability.OutOfStock        =>
+            items.OutOfStock(
+              itemId, itemIndex, itemType, itemTitle,
+              brand, price, rating, categoryPath, delivery, inDays, sellerId,
+              isAdult, isAlcohol, isSupermarket, isPersonalized, isPromoted,
+              freeRest
+            )
+          case Availability.InStock           =>
+            items.InStock(
+              itemId, itemIndex, itemType, itemTitle,
+              brand, price, rating, categoryPath, delivery, inDays, sellerId,
+              addToCartMinItems.get, addToCartMaxItems.get,
+              isAdult, isAlcohol, isSupermarket, isPersonalized, isPromoted,
+              freeRest
+            )
+          case Availability.OutOfStockAnalogs =>
+            items.OutOfStockAnalogs(
+              itemId, itemIndex, itemType, itemTitle,
+              brand, price, rating, categoryPath, delivery, inDays, sellerId,
+              isAdult, isAlcohol, isSupermarket, isPersonalized, isPromoted,
+              freeRest
+            )
+          case Availability.PreOrder          =>
+            items.PreOrder(
+              itemId, itemIndex, itemType, itemTitle,
+              brand, price, rating, categoryPath, delivery, inDays, sellerId,
+              isAdult, isAlcohol, isSupermarket, isPersonalized, isPromoted,
+              freeRest
+            )
+          case Availability.CannotBeShipped   =>
+            items.CannotBeShipped(
+              itemId, itemIndex, itemType, itemTitle,
+              brand, price, rating, categoryPath, delivery, inDays, sellerId,
+              isAdult, isAlcohol, isSupermarket, isPersonalized, isPromoted,
+              freeRest
+            )
+        }
+      // format: on
+    }
 }

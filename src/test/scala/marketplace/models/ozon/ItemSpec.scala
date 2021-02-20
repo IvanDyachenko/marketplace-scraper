@@ -616,7 +616,7 @@ class ItemSpec extends AnyFlatSpec with Matchers {
       """.stripMargin
 
     decode[Item](itemRawJson).isRight shouldBe true
-    decode[items.OutOfStockAnalogs](itemRawJson).isRight shouldBe true
+    decode[items.OutOfStock](itemRawJson).isRight shouldBe true
   }
 
   it should "decode Item.CannotBeShipped from a valid JSON" in {

@@ -1,19 +1,15 @@
 package marketplace.config
 
-import scala.concurrent.duration.FiniteDuration
-
 import cats.effect.{Blocker, ContextShift, Sync}
+import derevo.derive
+import derevo.pureconfig.pureconfigReader
 import pureconfig.ConfigSource
-import pureconfig.generic.auto._
 import pureconfig.module.catseffect.syntax._
 
+@derive(pureconfigReader)
 final case class ParserConfig(
-  groupId: String,
-  ozonResultsTopic: String,
-  ozonErrorsTopic: String,
-  maxConcurrent: Int,
-  batchOffsets: Int,
-  batchTimeWindow: FiniteDuration
+  kafkaConsumer: KafkaConsumerConfig,
+  kafkaProducer: KafkaProducerConfig
 )
 
 object ParserConfig {

@@ -9,7 +9,6 @@ import marketplace.models.{LiftedCats, LiftedCirce, LiftedLoggable}
 //import java.util.{UUID => juUUID}
 
 object User {
-
   object UUID extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce {
     implicit val queryParam = new QueryParam[Type] with QueryParamEncoder[Type] {
       val key                                      = QueryParameterKey("uuid")
@@ -17,5 +16,4 @@ object User {
     }
   }
   type UUID = UUID.Type
-
 }

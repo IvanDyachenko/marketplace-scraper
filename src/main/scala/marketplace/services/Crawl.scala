@@ -8,7 +8,6 @@ import cats.Monad
 import cats.effect.{Clock, Resource}
 import tofu.higherKind.Mid
 import tofu.higherKind.derived.representableK
-import tofu.generate.GenUUID
 import tofu.logging.{Logging, Logs}
 import io.circe.Json
 
@@ -34,16 +33,15 @@ object Crawl {
       }
   }
 
-  private final class Impl[F[_]: Monad: Clock: GenUUID: HttpClient: HttpClient.Handling] extends Crawl[F] {
+  private final class Impl[F[_]: Monad: Clock: HttpClient: HttpClient.Handling] extends Crawl[F] {
     def handle(command: Command): F[Result] = command match {
-      case Command.HandleOzonRequest(_, _, _, request) =>
-        HttpClient[F].send[Json](request).attempt >>= (_.traverse(Event.ozonRequestHandled[F](request, _)))
+      case Command.HandleOzonRequest(_, request) => HttpClient[F].send[Json](request).attempt >>= (_.traverse(Event.ozonRequestHandled[F]))
     }
   }
 
   def make[
     I[_]: Monad,
-    F[_]: Monad: Clock: GenUUID: HttpClient: HttpClient.Handling
+    F[_]: Monad: Clock: HttpClient: HttpClient.Handling
   ](implicit logs: Logs[I, F]): Resource[I, Crawl[F]] =
     Resource.liftF {
       logs

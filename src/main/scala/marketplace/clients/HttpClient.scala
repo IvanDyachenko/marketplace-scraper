@@ -117,7 +117,7 @@ object HttpClient extends ContextEmbed[HttpClient] {
   private def buildHttp4sClient[F[_]: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] =
     Resource.liftF(Execute[F].executionContext) >>= (BlazeClientBuilder[F](_)
       .withRequestTimeout(httpConfig.requestTimeout)
-      .withMaxTotalConnections(httpConfig.maxConnections)
-      .withMaxConnectionsPerRequestKey(_ => httpConfig.maxConnectionsPerHost)
+      .withMaxTotalConnections(httpConfig.maxTotalConnections)
+      .withMaxConnectionsPerRequestKey(Function.const(httpConfig.maxConnectionsPerHost))
       .resource)
 }

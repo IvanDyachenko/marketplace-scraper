@@ -32,22 +32,22 @@ object Parser {
     F[_]: Applicative: WithRun[*[_], I, AppContext]
   ](config: ParserConfig)(
     parse: Parse[F],
-    producerOfEvents: KafkaProducer[I, Event.Key, ParserEvent],
-    consumerOfCommands: KafkaConsumer[I, Command.Key, ParserCommand.ParseOzonResponse]
+    producerOfEvents: KafkaProducer[I, Option[Event.Key], ParserEvent],
+    consumerOfCommands: KafkaConsumer[I, Option[Command.Key], ParserCommand.ParseOzonResponse]
   ) extends Parser[Stream[I, *]] {
     def run: Stream[I, Unit] =
       consumerOfCommands.partitionedStream.map { partition =>
         partition
-          .parEvalMap(config.maxConcurrent) { committable =>
+          .parEvalMap(config.kafkaProducer.maxBufferSize) { committable =>
             runContext(parse.handle(committable.record.value))(AppContext()).map(_.toOption.map(_ -> committable.offset))
           }
           .collect { case Some((events, offset)) =>
-            ProducerRecords(events.map(event => ProducerRecord(config.ozonResultsTopic, event.key, event)), offset)
+            ProducerRecords(events.map(event => ProducerRecord(config.kafkaProducer.topic, event.key, event)), offset)
           }
           .evalMap(producerOfEvents.produce)
-          .parEvalMap(config.maxConcurrent)(identity)
+          .parEvalMap(config.kafkaProducer.maxBufferSize)(identity)
           .map(_.passthrough)
-          .through(commitBatchWithin(config.batchOffsets, config.batchTimeWindow))
+          .through(commitBatchWithin(config.kafkaConsumer.commitEveryNOffsets, config.kafkaConsumer.commitTimeWindow))
       }.parJoinUnbounded
   }
 
@@ -57,8 +57,8 @@ object Parser {
     S[_]: LiftStream[*[_], I]
   ](config: ParserConfig)(
     parse: Parse[F],
-    producerOfEvents: KafkaProducer[I, Event.Key, ParserEvent],
-    consumerOfCommands: KafkaConsumer[I, Command.Key, ParserCommand.ParseOzonResponse]
+    producerOfEvents: KafkaProducer[I, Option[Event.Key], ParserEvent],
+    consumerOfCommands: KafkaConsumer[I, Option[Command.Key], ParserCommand.ParseOzonResponse]
   ): Resource[I, Parser[S]] =
     Resource.liftF {
       Stream

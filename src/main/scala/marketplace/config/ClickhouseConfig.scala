@@ -1,10 +1,12 @@
 package marketplace.config
 
 import cats.effect.{Blocker, ContextShift, Sync}
+import derevo.derive
+import derevo.pureconfig.pureconfigReader
 import pureconfig.ConfigSource
-import pureconfig.generic.auto._
 import pureconfig.module.catseffect.syntax._
 
+@derive(pureconfigReader)
 final case class ClickhouseConfig(url: String, user: String, pass: String, threadPoolSize: Int)
 
 object ClickhouseConfig {

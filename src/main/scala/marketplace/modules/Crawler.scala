@@ -13,10 +13,9 @@ import tofu.WithRun
 import tofu.fs2.LiftStream
 import fs2.Stream
 import fs2.kafka.{commitBatchWithin, KafkaConsumer, KafkaProducer, ProducerRecord, ProducerRecords}
-import tofu.generate.GenUUID
 import supertagged.postfix._
 
-import marketplace.config.{CrawlerConfig, SourceConfig}
+import marketplace.config.{CrawlerConfig, SchedulerConfig, SourceConfig}
 import marketplace.context.AppContext
 import marketplace.api.OzonApi
 import marketplace.clients.HttpClient
@@ -36,34 +35,36 @@ object Crawler {
   private final class Impl[
     I[_]: Monad: Timer: Concurrent,
     F[_]: WithRun[*[_], I, AppContext]
-  ](config: CrawlerConfig)(
+  ](crawlerConfig: CrawlerConfig, schedulerConfig: SchedulerConfig)(
     crawl: Crawl[F],
-    sourcesOfCrawlerCommands: List[Stream[I, CrawlerCommand]],
-    producerOfCrawlerEvents: KafkaProducer[I, Event.Key, CrawlerEvent],
-    producerOfCrawlerCommands: KafkaProducer[I, Command.Key, CrawlerCommand],
-    consumerOfCrawlerCommands: KafkaConsumer[I, Command.Key, CrawlerCommand]
+    sourcesOfCommands: List[Stream[I, CrawlerCommand]],
+    producerOfEvents: KafkaProducer[I, Option[Event.Key], CrawlerEvent],
+    producerOfCommands: KafkaProducer[I, Option[Command.Key], CrawlerCommand],
+    consumerOfCommands: KafkaConsumer[I, Option[Command.Key], CrawlerCommand]
   ) extends Crawler[Stream[I, *]] {
     def run: Stream[I, Unit] =
-      consumerOfCrawlerCommands.partitionedStream.map { partition =>
+      consumerOfCommands.partitionedStream.map { partition =>
         partition
-          .parEvalMap(config.maxConcurrent) { committable =>
+          .parEvalMap(crawlerConfig.maxConnectionsPerPartition) { committable =>
             runContext(crawl.handle(committable.record.value))(AppContext()).map(_.toOption.map(_ -> committable.offset))
           }
           .collect { case Some((event, offset)) =>
-            ProducerRecords.one(ProducerRecord(config.eventsTopic, event.key, event), offset)
+            ProducerRecords.one(ProducerRecord(crawlerConfig.kafkaProducer.topic, event.key, event), offset)
           }
-          .evalMap(producerOfCrawlerEvents.produce)
-          .parEvalMap(config.maxConcurrent)(identity)
+          .evalMap(producerOfEvents.produce)
+          .parEvalMap(crawlerConfig.kafkaProducer.maxBufferSize)(identity)
           .map(_.passthrough)
-          .through(commitBatchWithin(config.batchOffsets, config.batchTimeWindow))
+          .through(commitBatchWithin(crawlerConfig.kafkaConsumer.commitEveryNOffsets, crawlerConfig.kafkaConsumer.commitTimeWindow))
       }.parJoinUnbounded
 
     def schedule: Stream[I, Unit] =
       Stream
-        .emits(sourcesOfCrawlerCommands)
+        .emits(sourcesOfCommands)
         .parJoinUnbounded
-        .evalMap(command => producerOfCrawlerCommands.produce(ProducerRecords.one(ProducerRecord(config.commandsTopic, command.key, command))))
-        .parEvalMap(1000)(identity)
+        .evalMap { command =>
+          producerOfCommands.produce(ProducerRecords.one(ProducerRecord(schedulerConfig.kafkaProducer.topic, command.key, command)))
+        }
+        .parEvalMap(schedulerConfig.kafkaProducer.maxBufferSize)(identity)
         .map(_.passthrough)
   }
 
@@ -71,18 +72,18 @@ object Crawler {
     I[_]: Monad: Concurrent: Timer,
     F[_]: WithRun[*[_], I, AppContext],
     S[_]: LiftStream[*[_], I]
-  ](config: CrawlerConfig)(
+  ](crawlerConfig: CrawlerConfig, schedulerConfig: SchedulerConfig)(
     crawl: Crawl[F],
-    sourcesOfCrawlerCommands: List[Stream[I, CrawlerCommand]],
-    producerOfCrawlerEvents: KafkaProducer[I, Event.Key, CrawlerEvent],
-    producerOfCrawlerCommands: KafkaProducer[I, Command.Key, CrawlerCommand],
-    consumerOfCrawlerCommands: KafkaConsumer[I, Command.Key, CrawlerCommand]
+    sourcesOfCommands: List[Stream[I, CrawlerCommand]],
+    producerOfEvents: KafkaProducer[I, Option[Event.Key], CrawlerEvent],
+    producerOfCommands: KafkaProducer[I, Option[Command.Key], CrawlerCommand],
+    consumerOfCommands: KafkaConsumer[I, Option[Command.Key], CrawlerCommand]
   ): Resource[I, Crawler[S]] =
     Resource.liftF {
       Stream
         .eval {
           val impl: Crawler[Stream[I, *]] =
-            new Impl[I, F](config)(crawl, sourcesOfCrawlerCommands, producerOfCrawlerEvents, producerOfCrawlerCommands, consumerOfCrawlerCommands)
+            new Impl[I, F](crawlerConfig, schedulerConfig)(crawl, sourcesOfCommands, producerOfEvents, producerOfCommands, consumerOfCommands)
 
           impl.pure[I]
         }
@@ -91,7 +92,7 @@ object Crawler {
         .pure[I]
     }
 
-  def makeCrawlerCommandsSource[F[_]: Timer: Concurrent: GenUUID: HttpClient.Handling](sourceConfig: SourceConfig)(
+  def makeCrawlerCommandsSource[F[_]: Timer: Concurrent: HttpClient.Handling](sourceConfig: SourceConfig)(
     ozonApi: OzonApi[F, Stream[F, *]]
   ): Stream[F, CrawlerCommand] =
     sourceConfig match {
@@ -109,7 +110,7 @@ object Crawler {
                                       Stream
                                         .emits(1 to page.total)
                                         .covary[F]
-                                        .parEvalMapUnordered(1000) { number =>
+                                        .parEvalMapUnordered(100) { number =>
                                           CrawlerCommand.handleOzonRequest[F](
                                             ozon.Request.GetCategorySearchResultsV2(id, name, number @@ ozon.Url.Page)
                                           )

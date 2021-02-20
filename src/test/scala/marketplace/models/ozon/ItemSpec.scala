@@ -487,7 +487,7 @@ class ItemSpec extends AnyFlatSpec with Matchers {
     decode[Item.InStock](itemRawJson).isRight shouldBe true
   }
 
-  it should "decode Item.OutOfStock (1) from a valid JSON" in {
+  it should "decode Item.OutOfStock from a valid JSON" in {
     val itemRawJson =
       """
         |{
@@ -619,7 +619,7 @@ class ItemSpec extends AnyFlatSpec with Matchers {
     decode[Item.OutOfStock](itemRawJson).isRight shouldBe true
   }
 
-  ignore should "decode Item.??? from a valid JSON" in {
+  it should "decode Item.CannotBeShipped from a valid JSON" in {
     val itemRawJson =
       """
         |{
@@ -715,6 +715,181 @@ class ItemSpec extends AnyFlatSpec with Matchers {
       """.stripMargin
 
     decode[Item](itemRawJson).isRight shouldBe true
-    //decode[Item.???](itemRawJson).isRight shouldBe true
+    decode[Item.CannotBeShipped](itemRawJson).isRight shouldBe true
+  }
+
+  it should "decode Item.Preorder from a valid JSON" in {
+    val itemRawJson =
+      """
+        |{
+        |  "type": "tile_builder",
+        |  "images": [
+        |  "https://cdn1.ozone.ru/s3/multimedia-p/6032293321.jpg",
+        |    "https://cdn1.ozone.ru/s3/multimedia-l/6032293425.jpg",
+        |    "https://cdn1.ozone.ru/s3/multimedia-e/6032293490.jpg",
+        |    "https://cdn1.ozone.ru/s3/multimedia-0/6032293512.jpg",
+        |    "https://cdn1.ozone.ru/s3/multimedia-k/6032293532.jpg",
+        |    "https://cdn1.ozone.ru/s3/multimedia-q/6032293682.jpg"
+        |  ],
+        |  "isAdult": false,
+        |  "isAlcohol": false,
+        |  "link": "/context/detail/id/208055748/",
+        |  "deepLink": "ozon://products/208055748/",
+        |  "cellTrackingInfo": {
+        |    "index": 17,
+        |    "type": "sku",
+        |    "id": 208055748,
+        |    "title": "Умная колонка Яндекс.Станция Макс, черный",
+        |    "availability": 3,
+        |    "price": 18990,
+        |    "finalPrice": 18990,
+        |    "deliverySchema": "Retail",
+        |    "marketplaceSellerId": 0,
+        |    "category": "Электроника/Наушники и аудиотехника/Акустика и колонки/Умные колонки/Яндекс",
+        |    "brand": "Яндекс",
+        |    "brandId": 13013270,
+        |    "availableInDays": 0,
+        |    "freeRest": 0,
+        |    "stockCount": 0,
+        |    "discount": 0,
+        |    "marketingActionIds": [
+        |      11050497706160
+        |    ],
+        |    "isPersonalized": false,
+        |    "deliveryTimeDiffDays": -1,
+        |    "isSupermarket": false,
+        |    "isPromotedProduct": false,
+        |    "rating": 4.711110591888428,
+        |    "countItems": 90
+        |  },
+        |  "template": "search",
+        |  "templateState": [
+        |    {
+        |      "type": "mobileContainer",
+        |      "leftContainer": [
+        |        {
+        |          "type": "tileImage",
+        |          "id": "tileImage",
+        |          "components": null,
+        |          "images": [
+        |            "https://cdn1.ozone.ru/s3/multimedia-p/6032293321.jpg",
+        |            "https://cdn1.ozone.ru/s3/multimedia-l/6032293425.jpg",
+        |            "https://cdn1.ozone.ru/s3/multimedia-e/6032293490.jpg",
+        |            "https://cdn1.ozone.ru/s3/multimedia-0/6032293512.jpg",
+        |            "https://cdn1.ozone.ru/s3/multimedia-k/6032293532.jpg",
+        |            "https://cdn1.ozone.ru/s3/multimedia-q/6032293682.jpg"
+        |          ],
+        |          "imageRatio": "1:1.4",
+        |          "badges": [
+        |            {
+        |              "type": "text",
+        |              "coordinates": {
+        |                "x": 3,
+        |                "y": 5
+        |              },
+        |              "text": "Предзаказ",
+        |              "backgroundColor": "#004ed6",
+        |              "textColor": "ozWhite1"
+        |            }
+        |          ]
+        |        },
+        |        {
+        |          "type": "rating",
+        |          "id": "rating",
+        |          "components": null,
+        |          "rating": 4.711110591888428,
+        |          "commentsCount": 90,
+        |          "title": "90 отзывов"
+        |        }
+        |      ],
+        |      "contentContainer": [
+        |        {
+        |          "type": "price",
+        |          "id": "price",
+        |          "components": null,
+        |          "price": "18 990 ₽",
+        |          "isPremium": false
+        |        },
+        |        {
+        |          "type": "label",
+        |          "id": "label",
+        |          "components": null,
+        |          "items": [
+        |            {
+        |              "title": "В продаже с 27.02.2021",
+        |              "isSelected": false,
+        |              "color": null,
+        |              "textColor": "ozAccentPrimary"
+        |            }
+        |          ]
+        |        },
+        |        {
+        |          "type": "title",
+        |          "id": "name",
+        |          "components": null,
+        |          "items": null,
+        |          "text": "Умная колонка Яндекс.Станция Макс, черный",
+        |          "textColor": "ozTextPrimary",
+        |          "markupType": "",
+        |          "maxLines": 0
+        |        },
+        |        {
+        |          "type": "textSmall",
+        |          "id": "topAttributes",
+        |          "components": null,
+        |          "items": null,
+        |          "text": "Максимальная мощность, Вт",
+        |          "textColor": "ozTextSecondary",
+        |          "markupType": "html",
+        |          "maxLines": 100
+        |        },
+        |        {
+        |          "type": "action",
+        |          "id": "favorite",
+        |          "components": null,
+        |          "title": "",
+        |          "activeTitle": "",
+        |          "align": "topRight",
+        |          "isActive": false,
+        |          "isSubscribed": false
+        |        }
+        |      ],
+        |      "footerContainer": [
+        |        {
+        |          "type": "action",
+        |          "id": "redirect",
+        |          "components": null,
+        |          "title": "Перейти",
+        |          "activeTitle": "",
+        |          "align": "bottomLeft",
+        |          "isActive": false,
+        |          "link": "/context/detail/id/208055748/",
+        |          "deepLink": "ozon://web?url=https://ozon.ru/context/detail/id/208055748/",
+        |          "isSubscribed": false
+        |        },
+        |        {
+        |          "type": "textSmall",
+        |          "id": "deliveryInfo",
+        |          "components": null,
+        |          "items": null,
+        |          "text": "<font color='ozTextPrimary'>OZON</font>, доставка и склад <font color='ozAccentPrimary'><b>OZON</b></font>",
+        |          "textColor": "ozGray60",
+        |          "markupType": "html",
+        |          "maxLines": 3
+        |        }
+        |      ],
+        |      "leftCols": 0,
+        |      "rightCols": 0
+        |    }
+        |  ],
+        |  "isInFavorites": false,
+        |  "isInCompare": false,
+        |  "outerCols": 12,
+        |  "innerCols": 12
+        |}
+      """.stripMargin
+
+    decode[Item](itemRawJson).isRight shouldBe true
+    decode[Item.Preorder](itemRawJson).isRight shouldBe true
   }
 }

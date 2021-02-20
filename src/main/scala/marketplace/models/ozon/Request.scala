@@ -27,38 +27,33 @@ object Request {
   @derive(loggable)
   final case class GetCategorySearchResultsV2 private (
     categoryId: Category.Id,
-    categoryName: Option[Category.Name],
-    page: Url.Page,
-    layoutContainer: Url.LayoutContainer,
-    layoutPageIndex: Url.LayoutPageIndex
+    categoryName: Option[Category.Name] = None,
+    page: Url.Page
   ) extends Request {
+    val layoutContainer: Url.LayoutContainer = Url.LayoutContainer.Default
+    val layoutPageIndex: Url.LayoutPageIndex = page.self @@ Url.LayoutPageIndex
+
     val url = Url(s"/category/${categoryId.show}/", Some(page), Some(layoutContainer), Some(layoutPageIndex))
   }
 
   object GetCategoryMenu {
     implicit val vulcanCodec: Codec[GetCategoryMenu] =
-      Codec.record[GetCategoryMenu](name = "GetCategoryMenu", namespace = "ozon.models")(field =>
-        field("host", _.host) *> field("path", _.path) *> field("url", _.url) *> field("categoryId", _.categoryId).map(apply)
-      )
+      Codec.record[GetCategoryMenu](
+        name = "GetCategoryMenu",
+        namespace = "ozon.models"
+      )(field => field("host", _.host) *> field("path", _.path) *> field("categoryId", _.categoryId).map(apply))
   }
 
   object GetCategorySearchResultsV2 {
-    def apply(categoryId: Category.Id, page: Url.Page): GetCategorySearchResultsV2 =
-      GetCategorySearchResultsV2(categoryId, None, page, Url.LayoutContainer.Default, page.self @@ Url.LayoutPageIndex)
-
-    def apply(categoryId: Category.Id, categoryName: Category.Name, page: Url.Page): GetCategorySearchResultsV2 =
-      GetCategorySearchResultsV2(categoryId, Some(categoryName), page, Url.LayoutContainer.Default, page.self @@ Url.LayoutPageIndex)
+    def apply(id: Category.Id, name: Category.Name, page: Url.Page): GetCategorySearchResultsV2 = GetCategorySearchResultsV2(id, Some(name), page)
 
     implicit val vulcanCodec: Codec[GetCategorySearchResultsV2] =
-      Codec.record[GetCategorySearchResultsV2](name = "GetCategorySearchResultsV2", namespace = "ozon.models") { field =>
-        field("host", _.host) *> field("path", _.path) *> field("url", _.url) *>
-          (
-            field("categoryId", _.categoryId),
-            field("categoryName", _.categoryName),
-            field("page", _.page),
-            field("layoutContainer", _.layoutContainer),
-            field("layoutPageIndex", _.layoutPageIndex)
-          ).mapN(apply)
+      Codec.record[GetCategorySearchResultsV2](
+        name = "GetCategorySearchResultsV2",
+        namespace = "ozon.models"
+      ) { field =>
+        field("host", _.host) *> field("path", _.path) *>
+          (field("categoryId", _.categoryId), field("categoryName", _.categoryName), field("page", _.page)).mapN(apply)
       }
   }
 

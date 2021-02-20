@@ -5,7 +5,6 @@ import cats.FlatMap
 import cats.effect.Clock
 import derevo.derive
 import tofu.logging.derivation.loggable
-import tofu.generate.GenUUID
 import vulcan.Codec
 import supertagged.postfix._
 
@@ -18,20 +17,21 @@ sealed trait CrawlerCommand extends Command
 object CrawlerCommand {
 
   @derive(loggable)
-  case class HandleOzonRequest(id: Command.Id, key: Command.Key, created: Timestamp, request: OzonRequest) extends CrawlerCommand
+  final case class HandleOzonRequest private (created: Timestamp, request: OzonRequest) extends CrawlerCommand {
+    override val key: Option[Command.Key] = Some(request.url.path @@ Command.Key)
+  }
 
-  def handleOzonRequest[F[_]: FlatMap: Clock: GenUUID](request: OzonRequest): F[CrawlerCommand] =
+  def handleOzonRequest[F[_]: FlatMap: Clock](request: OzonRequest): F[CrawlerCommand] =
     for {
-      uuid    <- GenUUID[F].randomUUID
       instant <- Clock[F].instantNow
-      key      = request.url.path
-    } yield HandleOzonRequest(uuid @@ Command.Id, key @@ Command.Key, instant @@ Timestamp, request)
+    } yield HandleOzonRequest(instant @@ Timestamp, request)
 
   object HandleOzonRequest {
     implicit val vulcanCodec: Codec[HandleOzonRequest] =
-      Codec.record[HandleOzonRequest](name = "HandleOzonRequest", namespace = "crawler.commands")(fb =>
-        (fb("id", _.id), fb("key", _.key), fb("created", _.created), fb("request", _.request)).mapN(apply)
-      )
+      Codec.record[HandleOzonRequest](
+        name = "HandleOzonRequest",
+        namespace = "crawler.commands"
+      )(field => (field("_created", _.created), field("request", _.request)).mapN(apply))
   }
 
   implicit val vulcanCodec: Codec[CrawlerCommand] = Codec.union[CrawlerCommand](alt => alt[HandleOzonRequest])

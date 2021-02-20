@@ -9,9 +9,10 @@ final case class Config(
   httpConfig: HttpConfig,
   kafkaConfig: KafkaConfig,
   schemaRegistryConfig: SchemaRegistryConfig,
-  crawlerConfig: CrawlerConfig,
+  sourcesConfig: SourcesConfig,
   parserConfig: ParserConfig,
-  sourcesConfig: SourcesConfig
+  crawlerConfig: CrawlerConfig,
+  schedulerConfig: SchedulerConfig
 )
 
 object Config {
@@ -20,9 +21,10 @@ object Config {
       HttpConfig.loadF[F],
       KafkaConfig.loadF[F],
       SchemaRegistryConfig.loadF[F],
-      CrawlerConfig.loadF[F],
+      SourcesConfig.loadF[F],
       ParserConfig.loadF[F],
-      SourcesConfig.loadF[F]
+      CrawlerConfig.loadF[F],
+      SchedulerConfig.loadF[F]
     )
       .mapN(Config.apply)
 }

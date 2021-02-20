@@ -1,6 +1,6 @@
 package marketplace.config
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 
 import cats.effect.{Blocker, ContextShift, Sync}
 import derevo.derive
@@ -12,8 +12,9 @@ import pureconfig.module.catseffect.syntax._
 final case class KafkaConsumerConfig(
   groupId: String,
   topic: String,
-  commitEveryNOffsets: Int,
-  commitTimeWindow: FiniteDuration
+  commitTimeout: FiniteDuration = 15 seconds,
+  commitTimeWindow: FiniteDuration,
+  commitEveryNOffsets: Int
 )
 
 object KafkaConsumerConfig {

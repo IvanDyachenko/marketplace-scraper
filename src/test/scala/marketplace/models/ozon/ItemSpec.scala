@@ -141,7 +141,7 @@ class ItemSpec extends AnyFlatSpec with Matchers {
       """.stripMargin
 
     decode[Item](itemRawJson).isRight shouldBe true
-    decode[Item.InStock](itemRawJson).isRight shouldBe true
+    decode[items.InStock](itemRawJson).isRight shouldBe true
   }
 
   it should "decode Item.InStock (2) from a valid JSON" in {
@@ -288,7 +288,7 @@ class ItemSpec extends AnyFlatSpec with Matchers {
       """.stripMargin
 
     decode[Item](itemRawJson).isRight shouldBe true
-    decode[Item.InStock](itemRawJson).isRight shouldBe true
+    decode[items.InStock](itemRawJson).isRight shouldBe true
   }
 
   it should "decode Item.InStock (3) from a valid JSON" in {
@@ -484,10 +484,10 @@ class ItemSpec extends AnyFlatSpec with Matchers {
       """.stripMargin
 
     decode[Item](itemRawJson).isRight shouldBe true
-    decode[Item.InStock](itemRawJson).isRight shouldBe true
+    decode[items.InStock](itemRawJson).isRight shouldBe true
   }
 
-  it should "decode Item.OutOfStock from a valid JSON" in {
+  it should "decode Item.OutOfStockAnalogs from a valid JSON" in {
     val itemRawJson =
       """
         |{
@@ -616,7 +616,7 @@ class ItemSpec extends AnyFlatSpec with Matchers {
       """.stripMargin
 
     decode[Item](itemRawJson).isRight shouldBe true
-    decode[Item.OutOfStock](itemRawJson).isRight shouldBe true
+    decode[items.OutOfStockAnalogs](itemRawJson).isRight shouldBe true
   }
 
   it should "decode Item.CannotBeShipped from a valid JSON" in {
@@ -715,7 +715,7 @@ class ItemSpec extends AnyFlatSpec with Matchers {
       """.stripMargin
 
     decode[Item](itemRawJson).isRight shouldBe true
-    decode[Item.CannotBeShipped](itemRawJson).isRight shouldBe true
+    decode[items.CannotBeShipped](itemRawJson).isRight shouldBe true
   }
 
   it should "decode Item.Preorder from a valid JSON" in {
@@ -890,6 +890,6 @@ class ItemSpec extends AnyFlatSpec with Matchers {
       """.stripMargin
 
     decode[Item](itemRawJson).isRight shouldBe true
-    decode[Item.Preorder](itemRawJson).isRight shouldBe true
+    decode[items.PreOrder](itemRawJson).isRight shouldBe true
   }
 }

@@ -18,6 +18,7 @@ import marketplace.context.AppContext
 import marketplace.services.Parse
 import marketplace.models.{Command, Event}
 import marketplace.models.parser.{ParserCommand, ParserEvent}
+import fs2.kafka.CommittableOffset
 
 @derive(representableK)
 trait Parser[S[_]] {
@@ -39,9 +40,11 @@ object Parser {
       consumerOfCommands.partitionedStream.map { partition =>
         partition
           .parEvalMap(config.kafkaProducer.maxBufferSize) { committable =>
-            runContext(parse.handle(committable.record.value))(AppContext()).map(_.toOption.map(_ -> committable.offset))
+            runContext(parse.handle(committable.record.value))(AppContext()).map(
+              _.toOption.fold[(List[ParserEvent], CommittableOffset[I])](List.empty -> committable.offset)(_ -> committable.offset)
+            )
           }
-          .collect { case Some((events, offset)) =>
+          .collect { case (events, offset) =>
             ProducerRecords(events.map(event => ProducerRecord(config.kafkaProducer.topic, event.key, event)), offset)
           }
           .evalMap(producerOfEvents.produce)

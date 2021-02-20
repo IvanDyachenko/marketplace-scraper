@@ -33,7 +33,9 @@ trait HttpClient[F[_]] {
 }
 
 @derive(loggable)
-sealed trait HttpClientError extends NoStackTrace
+sealed trait HttpClientError extends NoStackTrace {
+  def message: String
+}
 
 object HttpClientError {
   @derive(loggable)
@@ -61,22 +63,22 @@ object HttpClient extends ContextEmbed[HttpClient] {
                 .decode(response, strict = false)
                 .rethrowT
             case unexpected           =>
-              val message     = s"Received ${unexpected.status.code} status during execution of the request to ${request.uri.show}"
-              val clientError = HttpClientError.UnexpectedStatus(message)
-              error"${message}" *> clientError.raise[F, Res]
+              HttpClientError
+                .UnexpectedStatus(s"Received ${unexpected.status.code} status during execution of the request to ${request.uri.show}")
+                .raise[F, Res]
           }
         }
         .run(request)
+        .retryOnly[TimeoutException](1)
+        .retryOnly[HttpClientError.UnexpectedStatus](2)
         .recoverWith[TimeoutException] { case error: TimeoutException =>
-          val message = error.getMessage
-          error"${message}" *> HttpClientError.TimeoutException(message).raise[F, Res]
+          HttpClientError.TimeoutException(error.getMessage).raise[F, Res]
         }
-        .recoverWith[DecodingFailure] { case error: DecodingFailure =>
-          val message =
-            s"A response received as a result of the request to ${request.uri.show} was rejected because of a decoding failure: ${error.show}"
-          error"${message}" *> HttpClientError.DecodingError(message).raise[F, Res]
+        .recoverWith[DecodingFailure] { case error: DecodingFailure => // format: off
+          HttpClientError.DecodingError(s"A response received as a result of the request to ${request.uri.show} was rejected because of a decoding failure: ${error.show}").raise[F, Res] // format: on
         }
-        .retryOnly[HttpClientError](3)
+        .recoverWith[HttpClientError](error => error"${error.message}" *> error.raise[F, Res])
+
   }
 
   implicit val embed: Embed[HttpClient] = new Embed[HttpClient] {

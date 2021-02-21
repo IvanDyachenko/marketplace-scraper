@@ -11,14 +11,13 @@ import tofu.higherKind.derived.representableK
 import tofu.WithRun
 import tofu.fs2.LiftStream
 import fs2.Stream
-import fs2.kafka.{commitBatchWithin, KafkaConsumer, KafkaProducer, ProducerRecord, ProducerRecords}
+import fs2.kafka.{commitBatchWithin, CommittableOffset, KafkaConsumer, KafkaProducer, ProducerRecord, ProducerRecords}
 
 import marketplace.config.ParserConfig
 import marketplace.context.AppContext
 import marketplace.services.Parse
 import marketplace.models.{Command, Event}
 import marketplace.models.parser.{ParserCommand, ParserEvent}
-import fs2.kafka.CommittableOffset
 
 @derive(representableK)
 trait Parser[S[_]] {

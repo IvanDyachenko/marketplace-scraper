@@ -91,6 +91,7 @@ lazy val projectDependencies =
     "org.http4s"            %% "http4s-dsl"               % Versions.http4s,
     "org.http4s"            %% "http4s-circe"             % Versions.http4s,
     "org.http4s"            %% "http4s-blaze-client"      % Versions.http4s,
+    "org.http4s"            %% "http4s-armeria-client"    % Versions.http4sArmeriaClient,
     "org.http4s"            %% "http4s-async-http-client" % Versions.http4s,
     "org.asynchttpclient"    % "async-http-client"        % Versions.asyncHttpClient,
     "org.tpolecat"          %% "doobie-core"              % Versions.doobie,

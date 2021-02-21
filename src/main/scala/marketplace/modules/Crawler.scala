@@ -20,6 +20,7 @@ import marketplace.api.OzonApi
 import marketplace.services.Crawl
 import marketplace.models.{ozon, Command, Event}
 import marketplace.models.crawler.{CrawlerCommand, CrawlerEvent}
+import fs2.kafka.CommittableOffset
 
 @derive(representableK)
 trait Crawler[S[_]] {
@@ -44,10 +45,13 @@ object Crawler {
       consumerOfCommands.partitionedStream.map { partition =>
         partition
           .parEvalMap(crawlerConfig.maxConnectionsPerPartition) { committable =>
-            runContext(crawl.handle(committable.record.value))(AppContext()).map(_.toOption.map(_ -> committable.offset))
+            runContext(crawl.handle(committable.record.value))(AppContext()).map(
+              _.toOption.fold[(Option[CrawlerEvent], CommittableOffset[I])](None -> committable.offset)(Some(_) -> committable.offset)
+            )
           }
-          .collect { case Some((event, offset)) =>
-            ProducerRecords.one(ProducerRecord(crawlerConfig.kafkaProducer.topic, event.key, event), offset)
+          .collect { case (eventOption, offset) =>
+            val events = eventOption.fold[List[CrawlerEvent]](List.empty)(List(_))
+            ProducerRecords(events.map(event => ProducerRecord(crawlerConfig.kafkaProducer.topic, event.key, event)), offset)
           }
           .evalMap(producerOfEvents.produce)
           .parEvalMap(crawlerConfig.kafkaProducer.maxBufferSize)(identity)

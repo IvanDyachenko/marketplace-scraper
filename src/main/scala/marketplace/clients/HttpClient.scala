@@ -21,7 +21,7 @@ import org.http4s.circe.jsonOf
 import org.http4s.client.Client
 import org.http4s.armeria.client.ArmeriaClientBuilder
 import com.linecorp.armeria.common.{HttpMethod, HttpStatus, TimeoutException}
-import com.linecorp.armeria.client.{ResponseTimeoutException, WebClient}
+import com.linecorp.armeria.client.{ResponseTimeoutException, UnprocessedRequestException, WebClient}
 import com.linecorp.armeria.client.retry.{Backoff, RetryRule, RetryingClient}
 import com.linecorp.armeria.client.logging.LoggingClient
 //import org.http4s.client.blaze.BlazeClientBuilder
@@ -73,6 +73,13 @@ object HttpClient extends ContextEmbed[HttpClient] {
         }
         .run(request)
         .recoverWith[TimeoutException] { case error: ResponseTimeoutException =>
+          HttpClientError
+            .ResponseTimeoutError(
+              s"${error}: a response has not been received from the request to ${request.uri.show} within timeout"
+            )
+            .raise[F, Res]
+        }
+        .recoverWith[UnprocessedRequestException] { case error: UnprocessedRequestException =>
           HttpClientError
             .ResponseTimeoutError(
               s"${error}: a response has not been received from the request to ${request.uri.show} within timeout"

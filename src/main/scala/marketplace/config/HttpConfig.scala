@@ -9,7 +9,14 @@ import pureconfig.ConfigSource
 import pureconfig.module.catseffect.syntax._
 
 @derive(pureconfigReader)
-final case class HttpConfig(proxyHost: String, proxyPort: Int, requestTimeout: FiniteDuration, maxTotalConnections: Int, maxConnectionsPerHost: Int)
+final case class HttpConfig(
+  proxyHost: String,
+  proxyPort: Int,
+  backoffMaxAttempts: Int,
+  responseTimeout: FiniteDuration,
+  maxTotalConnections: Int,
+  maxConnectionsPerHost: Int
+)
 
 object HttpConfig {
   lazy val load: HttpConfig = ConfigSource.default.at("http").loadOrThrow[HttpConfig]

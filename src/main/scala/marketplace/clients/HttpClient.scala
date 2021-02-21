@@ -20,9 +20,9 @@ import org.http4s.{Request => Http4sRequest, Status}
 import org.http4s.circe.jsonOf
 import org.http4s.client.Client
 import org.http4s.armeria.client.ArmeriaClientBuilder
-import com.linecorp.armeria.common.{TimeoutException}
+import com.linecorp.armeria.common.{HttpMethod, HttpStatus, TimeoutException}
 import com.linecorp.armeria.client.{ResponseTimeoutException, WebClient}
-import com.linecorp.armeria.client.retry.{RetryRule, RetryingClient}
+import com.linecorp.armeria.client.retry.{Backoff, RetryRule, RetryingClient}
 import com.linecorp.armeria.client.logging.LoggingClient
 //import org.http4s.client.blaze.BlazeClientBuilder
 //import org.http4s.client.asynchttpclient.AsyncHttpClient
@@ -30,7 +30,6 @@ import com.linecorp.armeria.client.logging.LoggingClient
 //import org.asynchttpclient.proxy.ProxyServer
 
 import marketplace.config.HttpConfig
-//import com.linecorp.armeria.common.HttpStatus
 
 trait HttpClient[F[_]] {
   def send[Res: Decoder](request: Http4sRequest[F]): F[Res]
@@ -109,12 +108,32 @@ object HttpClient extends ContextEmbed[HttpClient] {
   private def translateHttp4sClient[F[_]: Sync, G[_]: Sync](client: Client[F])(implicit U: Unlift[F, G]): Client[G] =
     Client(req => Resource.suspend(U.unlift.map(gf => client.run(req.mapK(gf)).mapK(U.liftF).map(_.mapK(U.liftF)))))
 
-  private def buildHttp4sClient[F[_]: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] =
+  private def buildHttp4sClient[F[_]: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] = {
+    val backoff: Backoff =
+      Backoff
+        .withoutDelay()
+        .withMaxAttempts(httpConfig.backoffMaxAttempts)
+
+    val retryRule: RetryRule =
+      RetryRule.of(
+        RetryRule
+          .builder()
+          .onStatus(HttpStatus.TOO_MANY_REQUESTS)
+          .thenNoRetry(),
+        RetryRule
+          .builder(HttpMethod.idempotentMethods)
+          .onUnprocessed()
+          .onServerErrorStatus()
+          .onException(classOf[ResponseTimeoutException])
+          .thenBackoff(backoff)
+      )
+
     ArmeriaClientBuilder(WebClient.builder())
-      .withDecorator(RetryingClient.newDecorator(RetryRule.failsafe()))
+      .withDecorator(RetryingClient.newDecorator(retryRule))
       .withDecorator(LoggingClient.newDecorator())
       .withResponseTimeout(httpConfig.responseTimeout)
       .resource
+  }
 
   // private def buildHttp4sClient[F[_]: Monad: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] = {
   //   val HttpConfig(proxyHost, proxyPort, maxConnections, maxConnectionsPerHost) = httpConfig

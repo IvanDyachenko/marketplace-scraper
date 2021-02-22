@@ -23,6 +23,7 @@ import org.http4s.armeria.client.ArmeriaClientBuilder
 import com.linecorp.armeria.client.{ClientFactory, ResponseTimeoutException, WebClient}
 import com.linecorp.armeria.client.retry.{RetryConfig, RetryRule, RetryingClient}
 import com.linecorp.armeria.common.util.EventLoopGroups
+import com.linecorp.armeria.common.stream.ClosedStreamException
 //import com.linecorp.armeria.client.proxy.ProxyConfig
 //import com.linecorp.armeria.client.logging.LoggingClient
 //import org.http4s.client.blaze.BlazeClientBuilder
@@ -73,6 +74,11 @@ object HttpClient extends ContextEmbed[HttpClient] {
         }
         .run(request)
         .recoverWith[ResponseTimeoutException] { case error: ResponseTimeoutException =>
+          HttpClientError
+            .ResponseTimeoutError(error.toString())
+            .raise[F, Res]
+        }
+        .recoverWith[ClosedStreamException] { case error: ClosedStreamException =>
           HttpClientError
             .ResponseTimeoutError(error.toString())
             .raise[F, Res]

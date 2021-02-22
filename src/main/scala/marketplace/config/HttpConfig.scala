@@ -12,10 +12,12 @@ import pureconfig.module.catseffect.syntax._
 final case class HttpConfig(
   proxyHost: String,
   proxyPort: Int,
-  backoffMaxAttempts: Int,
   responseTimeout: FiniteDuration,
+  responseTimeoutForEachAttempt: FiniteDuration,
+  maxTotalAttempts: Int,
   maxTotalConnections: Int,
-  maxConnectionsPerHost: Int
+  maxNumRequestsPerConnection: Int,
+  eventLoopGroupNumThreads: Int
 )
 
 object HttpConfig {

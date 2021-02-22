@@ -20,14 +20,13 @@ import org.http4s.{Request => Http4sRequest, Status}
 import org.http4s.circe.jsonOf
 import org.http4s.client.Client
 import org.http4s.armeria.client.ArmeriaClientBuilder
-import com.linecorp.armeria.common.{HttpMethod, HttpStatus, TimeoutException}
-import com.linecorp.armeria.client.{ResponseTimeoutException, UnprocessedRequestException, WebClient}
+import com.linecorp.armeria.client.{ResponseTimeoutException, WebClient}
 import com.linecorp.armeria.client.retry.{Backoff, RetryRule, RetryingClient}
 import com.linecorp.armeria.client.logging.LoggingClient
+import com.linecorp.armeria.common.{HttpMethod, HttpStatus}
 //import org.http4s.client.blaze.BlazeClientBuilder
-//import org.http4s.client.asynchttpclient.AsyncHttpClient
 //import org.asynchttpclient.Dsl
-//import org.asynchttpclient.proxy.ProxyServer
+//import org.http4s.client.asynchttpclient.AsyncHttpClient
 
 import marketplace.config.HttpConfig
 
@@ -72,18 +71,9 @@ object HttpClient extends ContextEmbed[HttpClient] {
           }
         }
         .run(request)
-        .recoverWith[TimeoutException] { case error: ResponseTimeoutException =>
+        .recoverWith[RuntimeException] { case error: RuntimeException =>
           HttpClientError
-            .ResponseTimeoutError(
-              s"${error}: a response has not been received from the request to ${request.uri.show} within timeout"
-            )
-            .raise[F, Res]
-        }
-        .recoverWith[UnprocessedRequestException] { case error: UnprocessedRequestException =>
-          HttpClientError
-            .ResponseTimeoutError(
-              s"${error}: a response has not been received from the request to ${request.uri.show} within timeout"
-            )
+            .ResponseTimeoutError(error.toString())
             .raise[F, Res]
         }
         .recoverWith[DecodingFailure] { case error: DecodingFailure =>
@@ -115,7 +105,7 @@ object HttpClient extends ContextEmbed[HttpClient] {
   private def translateHttp4sClient[F[_]: Sync, G[_]: Sync](client: Client[F])(implicit U: Unlift[F, G]): Client[G] =
     Client(req => Resource.suspend(U.unlift.map(gf => client.run(req.mapK(gf)).mapK(U.liftF).map(_.mapK(U.liftF)))))
 
-  private def buildHttp4sClient[F[_]: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] = {
+  private def buildHttp4sClient[F[_]: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] = {
     val backoff: Backoff =
       Backoff
         .withoutDelay()
@@ -129,34 +119,31 @@ object HttpClient extends ContextEmbed[HttpClient] {
           .thenNoRetry(),
         RetryRule
           .builder(HttpMethod.idempotentMethods)
-          .onUnprocessed()
           .onServerErrorStatus()
+          .onException(classOf[RuntimeException])
           .onException(classOf[ResponseTimeoutException])
           .thenBackoff(backoff)
       )
 
     ArmeriaClientBuilder(WebClient.builder())
+      .withResponseTimeout(httpConfig.responseTimeout)
       .withDecorator(RetryingClient.newDecorator(retryRule))
       .withDecorator(LoggingClient.newDecorator())
-      .withResponseTimeout(httpConfig.responseTimeout)
       .resource
   }
 
-  // private def buildHttp4sClient[F[_]: Monad: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] = {
-  //   val HttpConfig(proxyHost, proxyPort, maxConnections, maxConnectionsPerHost) = httpConfig
-  //
-  //   val proxyServer = new ProxyServer.Builder(proxyHost, proxyPort).build()
-  //
+  // private def buildHttp4sClient[F[_]: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] = {
+  //   val HttpConfig(_, _, _, responseTimeout, maxTotalConnections, maxConnectionsPerHost) = httpConfig
+
   //   val httpClientConfig = Dsl
   //     .config()
-  //     .setMaxConnections(maxConnections)
+  //     .setPooledConnectionIdleTimeout(500)
+  //     .setMaxConnections(maxTotalConnections)
   //     .setMaxConnectionsPerHost(maxConnectionsPerHost)
   //     .setFollowRedirect(false)
-  //     .setKeepAlive(true)
-  //     .setMaxRequestRetry(0)
-  //     .setProxyServer(proxyServer)
+  //     .setRequestTimeout(responseTimeout.toMillis.toInt)
   //     .build()
-  //
+
   //   AsyncHttpClient.resource(httpClientConfig)
   // }
 

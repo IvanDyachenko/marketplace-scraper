@@ -16,8 +16,8 @@ final case class HttpConfig(
   responseTimeoutForEachAttempt: FiniteDuration,
   maxTotalAttempts: Int,
   maxTotalConnections: Int,
-  maxNumRequestsPerConnection: Int,
-  eventLoopGroupNumThreads: Int
+  maxNumConnectionsPerHost: Int
+//eventLoopGroupNumThreads: Int
 )
 
 object HttpConfig {

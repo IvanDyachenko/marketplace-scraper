@@ -1,5 +1,6 @@
 package marketplace.clients
 
+import java.util.concurrent.TimeoutException
 import scala.util.control.NoStackTrace
 
 import cats.syntax.show._
@@ -19,14 +20,13 @@ import io.circe.{Decoder, DecodingFailure}
 import org.http4s.{Request => Http4sRequest, Status}
 import org.http4s.circe.jsonOf
 import org.http4s.client.Client
-import org.http4s.armeria.client.ArmeriaClientBuilder
-import com.linecorp.armeria.client.{ClientFactory, ResponseTimeoutException, WebClient}
-import com.linecorp.armeria.client.retry.{RetryConfig, RetryRule, RetryingClient}
-import com.linecorp.armeria.common.util.EventLoopGroups
-import com.linecorp.armeria.common.stream.ClosedStreamException
+import org.http4s.client.blaze.BlazeClientBuilder
+//import org.http4s.armeria.client.ArmeriaClientBuilder
+//import com.linecorp.armeria.client.{ClientFactory, ResponseTimeoutException, WebClient}
+//import com.linecorp.armeria.client.retry.{RetryConfig, RetryRule, RetryingClient}
+//import com.linecorp.armeria.common.util.EventLoopGroups
 //import com.linecorp.armeria.client.proxy.ProxyConfig
 //import com.linecorp.armeria.client.logging.LoggingClient
-//import org.http4s.client.blaze.BlazeClientBuilder
 //import org.asynchttpclient.Dsl
 //import org.http4s.client.asynchttpclient.AsyncHttpClient
 
@@ -46,7 +46,7 @@ object HttpClientError {
   final case class DecodingError(message: String) extends HttpClientError
 
   @derive(loggable)
-  final case class ResponseTimeoutError(message: String) extends HttpClientError
+  final case class TimeoutError(message: String) extends HttpClientError
 
   @derive(loggable)
   final case class UnexpectedStatusError(message: String) extends HttpClientError
@@ -73,16 +73,12 @@ object HttpClient extends ContextEmbed[HttpClient] {
           }
         }
         .run(request)
-        .recoverWith[ResponseTimeoutException] { case error: ResponseTimeoutException =>
+        .recoverWith[TimeoutException] { case error: TimeoutException =>
           HttpClientError
-            .ResponseTimeoutError(error.toString())
+            .TimeoutError(error.toString())
             .raise[F, Res]
         }
-        .recoverWith[ClosedStreamException] { case error: ClosedStreamException =>
-          HttpClientError
-            .ResponseTimeoutError(error.toString())
-            .raise[F, Res]
-        }
+        .retryOnly[HttpClientError](3)
         .recoverWith[DecodingFailure] { case error: DecodingFailure =>
           HttpClientError
             .DecodingError(
@@ -112,55 +108,57 @@ object HttpClient extends ContextEmbed[HttpClient] {
   private def translateHttp4sClient[F[_]: Sync, G[_]: Sync](client: Client[F])(implicit U: Unlift[F, G]): Client[G] =
     Client(req => Resource.suspend(U.unlift.map(gf => client.run(req.mapK(gf)).mapK(U.liftF).map(_.mapK(U.liftF)))))
 
-  private def buildHttp4sClient[F[_]: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] = {
-    val retryRule: RetryRule =
-      RetryRule
-        .failsafe()
-
-    val retryConfig = RetryConfig
-      .builder(retryRule)
-      .maxTotalAttempts(httpConfig.maxTotalAttempts)
-      .responseTimeoutMillisForEachAttempt(httpConfig.responseTimeoutForEachAttempt.toMillis)
-      .build()
-
-    val clientFactory = ClientFactory
-      .builder()
-      .useHttp2Preface(false)
-      .useHttp1Pipelining(false)
-      .tlsNoVerify()
-      .workerGroup(EventLoopGroups.newEventLoopGroup(httpConfig.eventLoopGroupNumThreads, "armeria-event-loop-groups"), true)
-      //.proxyConfig(ProxyConfig.connect(new InetSocketAddress(httpConfig.proxyHost, httpConfig.proxyPort)))
-      .maxNumRequestsPerConnection(httpConfig.maxNumRequestsPerConnection)
-      .build()
-
-    ArmeriaClientBuilder(
-      WebClient
-        .builder()
-        .responseTimeoutMillis(httpConfig.responseTimeout.toMillis)
-        .decorator(RetryingClient.newDecorator(retryConfig))
-      //.decorator(LoggingClient.newDecorator())
-    ).withClientFactory(clientFactory).resource
-  }
-
   // private def buildHttp4sClient[F[_]: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] = {
-  //   val HttpConfig(_, _, _, responseTimeout, maxTotalConnections, maxConnectionsPerHost) = httpConfig
+  //   val retryRule: RetryRule =
+  //     RetryRule
+  //       .failsafe()
   //
-  //   val httpClientConfig = Dsl
-  //     .config()
-  //     .setPooledConnectionIdleTimeout(500)
-  //     .setMaxConnections(maxTotalConnections)
-  //     .setMaxConnectionsPerHost(maxConnectionsPerHost)
-  //     .setFollowRedirect(false)
-  //     .setRequestTimeout(responseTimeout.toMillis.toInt)
-  //     .build()
+  //   val retryConfig =
+  //     RetryConfig
+  //       .builder(retryRule)
+  //       .maxTotalAttempts(httpConfig.maxTotalAttempts)
+  //       .responseTimeoutMillisForEachAttempt(httpConfig.responseTimeoutForEachAttempt.toMillis)
+  //       .build()
   //
-  //   AsyncHttpClient.resource(httpClientConfig)
+  //   val clientFactory: ClientFactory =
+  //     ClientFactory
+  //       .builder()
+  //       .tlsNoVerify()
+  //       .useHttp2Preface(false)
+  //       .useHttp1Pipelining(false)
+  //     //.workerGroup(EventLoopGroups.newEventLoopGroup(httpConfig.eventLoopGroupNumThreads, "armeria-event-loop-groups"), true)
+  //       .maxNumRequestsPerConnection(httpConfig.maxNumRequestsPerConnection)
+  //       .build()
+  //
+  //   val webClient =
+  //     WebClient
+  //       .builder()
+  //       .factory(clientFactory)
+  //       .responseTimeoutMillis(httpConfig.responseTimeout.toMillis)
+  //       .decorator(RetryingClient.newDecorator(retryConfig))
+  //     //.decorator(LoggingClient.newDecorator())
+  //
+  //   ArmeriaClientBuilder(webClient).resource
   // }
 
-  // private def buildHttp4sClient[F[_]: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] =
-  //   Resource.liftF(Execute[F].executionContext) >>= (BlazeClientBuilder[F](_)
-  //     .withRequestTimeout(httpConfig.requestTimeout)
-  //     .withMaxTotalConnections(httpConfig.maxTotalConnections)
-  //     .withMaxConnectionsPerRequestKey(Function.const(httpConfig.maxConnectionsPerHost))
-  //     .resource)
+  // private def buildHttp4sClient[F[_]: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] =
+  //   AsyncHttpClient.resource {
+  //     Dsl
+  //       .config()
+  //       .setMaxConnections(httpConfig.maxTotalConnections)
+  //       .setMaxConnectionsPerHost(httpConfig.maxNumConnectionsPerHost)
+  //       .setFollowRedirect(false)
+  //       //.setMaxRequestRetry(httpConfig.maxTotalAttempts)
+  //       .setRequestTimeout(httpConfig.responseTimeoutForEachAttempt.toMillis.toInt)
+  //       .build()
+  //   }
+
+  private def buildHttp4sClient[F[_]: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] =
+    Resource.liftF(Execute[F].executionContext) >>= (BlazeClientBuilder[F](_)
+      .withRequestTimeout(httpConfig.responseTimeoutForEachAttempt)
+      .withMaxTotalConnections(httpConfig.maxTotalConnections)
+      .withSocketKeepAlive(true)
+      .withSocketReuseAddress(true)
+      .withMaxConnectionsPerRequestKey(Function.const(httpConfig.maxNumConnectionsPerHost))
+      .resource)
 }

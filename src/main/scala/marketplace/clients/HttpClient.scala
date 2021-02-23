@@ -21,6 +21,7 @@ import org.http4s.{Request => Http4sRequest, Status}
 import org.http4s.circe.jsonOf
 import org.http4s.client.Client
 import org.http4s.client.blaze.BlazeClientBuilder
+import org.http4s.blaze.http.parser.BaseExceptions.ParserException
 //import org.http4s.armeria.client.ArmeriaClientBuilder
 //import com.linecorp.armeria.client.{ClientFactory, ResponseTimeoutException, WebClient}
 //import com.linecorp.armeria.client.retry.{RetryConfig, RetryRule, RetryingClient}
@@ -75,7 +76,14 @@ object HttpClient extends ContextEmbed[HttpClient] {
         .run(request)
         .recoverWith[TimeoutException] { case error: TimeoutException =>
           HttpClientError
-            .TimeoutError(error.toString())
+            .TimeoutError(error.toString)
+            .raise[F, Res]
+        }
+        .recoverWith[ParserException] { case error: ParserException =>
+          HttpClientError
+            .DecodingError(
+              s"A response received as a result of the request to ${request.uri.show} was rejected because of a parser exception: ${error.toString}"
+            )
             .raise[F, Res]
         }
         .retryOnly[HttpClientError](3)

@@ -1,8 +1,8 @@
 package marketplace
 
 import io.circe.Encoder
-import org.http4s.{Headers, Uri, MediaType, Method, Request => Http4sRequest, ContentCoding}
-import org.http4s.headers.{`Accept-Encoding`, `User-Agent`, Accept, AgentComment, AgentProduct, Host}
+import org.http4s.{Headers, Uri, MediaType, Method, Request => Http4sRequest, ContentCoding, ProductId, ProductComment}
+import org.http4s.headers.{`Accept-Encoding`, `User-Agent`, Accept, Host}
 import org.http4s.circe.jsonEncoderOf
 
 import marketplace.models.ozon.{Request => OzonRequest}
@@ -20,7 +20,7 @@ package object marshalling {
       Headers.of(
         Host(host.value),
         Accept(MediaType.application.json),
-        `User-Agent`(AgentProduct("OzonStore", Some("400")))
+        `User-Agent`(ProductId("OzonStore", Some("400")))
       )
 
     val uri: Uri =
@@ -43,7 +43,7 @@ package object marshalling {
         Host(host.value),
         Accept(MediaType.application.json, MediaType.text.plain),
         `Accept-Encoding`(ContentCoding.deflate, ContentCoding.gzip),
-        `User-Agent`(AgentProduct("Beru", Some("330")), List(AgentComment("iPhone; iOS 14.2; Scale/3.00"))),
+        `User-Agent`(ProductId("Beru", Some("330")), List(ProductComment("iPhone; iOS 14.2; Scale/3.00"))),
         `X-Device-Type`("SMARTPHONE"),
         `X-Platform`("IOS"),
         `X-App-Version`("3.3.0"),

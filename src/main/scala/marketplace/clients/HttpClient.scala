@@ -61,7 +61,8 @@ object HttpClient extends ContextEmbed[HttpClient] {
 
     def send[Res](request: Http4sRequest[F])(implicit decoder: Decoder[Res]): F[Res] =
       http4sClient
-        .toKleisli { response =>
+        .run(request)
+        .use { response =>
           response match {
             case Status.Successful(_) =>
               jsonOf(Sync[F], decoder)
@@ -73,7 +74,6 @@ object HttpClient extends ContextEmbed[HttpClient] {
                 .raise[F, Res]
           }
         }
-        .run(request)
         .recoverWith[TimeoutException] { case error: TimeoutException =>
           HttpClientError
             .TimeoutError(error.toString)

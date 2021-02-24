@@ -41,13 +41,15 @@ object KafkaClient {
       RecordDeserializer.const(avroDeserializer[K].using(avroSettings).forKey.map(implicit der => Deserializer.option[F, K]))
     val valueDeserializer: RecordDeserializer[F, V]       = avroDeserializer[V].using(avroSettings)
 
-    val consumerSettings = ConsumerSettings[F, Option[K], V](keyDeserializer, valueDeserializer)
+    val consumerSettings1 = ConsumerSettings[F, Option[K], V](keyDeserializer, valueDeserializer)
       .withBootstrapServers(kafkaConfig.bootstrapServers)
       .withGroupId(kafkaConsumerConfig.groupId)
       .withAutoOffsetReset(AutoOffsetReset.Earliest)
       .withProperty("connections.max.idle.ms", "-1")
-      .withCommitTimeout(kafkaConsumerConfig.commitTimeout)
+    val consumerSettings2 = kafkaConsumerConfig.commitTimeout.fold(consumerSettings1)(consumerSettings1.withCommitTimeout)
+    val consumerSettings3 = kafkaConsumerConfig.maxPollRecords.fold(consumerSettings2)(consumerSettings2.withMaxPollRecords)
+    val consumerSettings4 = kafkaConsumerConfig.maxPollInterval.fold(consumerSettings3)(consumerSettings3.withMaxPollInterval)
 
-    consumerResource[F, Option[K], V](consumerSettings).evalTap(_.subscribeTo(kafkaConsumerConfig.topic))
+    consumerResource[F, Option[K], V](consumerSettings4).evalTap(_.subscribeTo(kafkaConsumerConfig.topic))
   }
 }

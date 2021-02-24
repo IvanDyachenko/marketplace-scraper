@@ -12,7 +12,9 @@ import pureconfig.module.catseffect.syntax._
 final case class KafkaConsumerConfig(
   groupId: String,
   topic: String,
-  commitTimeout: FiniteDuration = 15 seconds,
+  maxPollRecords: Option[Int],
+  maxPollInterval: Option[FiniteDuration],
+  commitTimeout: Option[FiniteDuration],
   commitTimeWindow: FiniteDuration,
   commitEveryNOffsets: Int
 )

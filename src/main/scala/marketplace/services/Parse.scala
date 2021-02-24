@@ -60,8 +60,8 @@ object Parse {
       case Command.ParseOzonResponse(created, response) => // format: off
         parse[ozon.SearchResultsV2](response) >>= (_.traverse { // format: on
           _ match {
-            case searchResultsV2: ozon.SearchResultsV2.Success => Event.ozonSearchResultsV2ItemParsed(created, searchResultsV2)
-            case ozon.SearchResultsV2.Failure(_)               => List.empty[Event].pure[F] // ToDo: Raise an error
+            case searchResultsV2: ozon.SearchResultsV2.Success => Event.OzonSearchResultsV2ItemParsed(created, searchResultsV2)
+            case ozon.SearchResultsV2.Failure(_)               => List.empty[Event].pure[F]
           }
         })
     }

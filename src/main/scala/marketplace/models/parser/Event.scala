@@ -28,15 +28,13 @@ object ParserEvent {
     override val key: Option[Event.Key] = Some(category.name @@@ Event.Key)
   }
 
-  def ozonSearchResultsV2ItemParsed[F[_]: Monad: Clock](
-    timestamp: Timestamp,
-    searchResultsV2: ozon.SearchResultsV2.Success
-  ): F[List[ParserEvent]] = {
-    val ozon.SearchResultsV2.Success(category, page, items) = searchResultsV2
-    items.traverse(item => Clock[F].instantNow.map(instant => OzonSearchResultsV2ItemParsed(instant @@ Timestamp, timestamp, category, page, item)))
-  }
-
   object OzonSearchResultsV2ItemParsed {
+
+    def apply[F[_]: Monad: Clock](timestamp: Timestamp, searchResultsV2: ozon.SearchResultsV2.Success): F[List[ParserEvent]] = {
+      val ozon.SearchResultsV2.Success(category, page, items) = searchResultsV2
+      items.traverse(item => Clock[F].instantNow.map(instant => OzonSearchResultsV2ItemParsed(instant @@ Timestamp, timestamp, category, page, item)))
+    }
+
     implicit val vulcanCodec: Codec[OzonSearchResultsV2ItemParsed] =
       Codec.record[OzonSearchResultsV2ItemParsed](
         name = "OzonSearchResultsV2ItemParsed",

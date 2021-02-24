@@ -16,7 +16,7 @@ import supertagged.postfix._
 
 import marketplace.config.{CrawlerConfig, SchedulerConfig, SourceConfig}
 import marketplace.context.AppContext
-import marketplace.api.OzonApi
+import marketplace.api.{OzonApi, WildBerriesApi}
 import marketplace.services.Crawl
 import marketplace.models.{ozon, Command, Event}
 import marketplace.models.crawler.{CrawlerCommand, CrawlerEvent}
@@ -93,9 +93,11 @@ object Crawler {
     }
 
   def makeCommandsSource[F[_]: Timer: Concurrent](sourceConfig: SourceConfig)(
+    wbApi: WildBerriesApi[F, Stream[F, *]],
     ozonApi: OzonApi[F, Stream[F, *]]
   ): Stream[F, CrawlerCommand] =
     sourceConfig match {
+      case SourceConfig.WbCatalog(_, _)                     => ???
       case SourceConfig.OzonCategory(rootCategoryId, every) =>
         Stream.awakeEvery[F](every) >>= { _ =>
           ozonApi.getCategories(rootCategoryId)(_.isLeaf) >>= { leafCategory =>

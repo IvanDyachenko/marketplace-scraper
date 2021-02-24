@@ -10,7 +10,7 @@ import tofu.syntax.monadic._
 
 import marketplace.config.Config
 import marketplace.context.AppContext
-import marketplace.api.OzonApi
+import marketplace.api.{OzonApi, WildBerriesApi}
 import marketplace.modules.{Crawler, Parser}
 import marketplace.clients.{HttpClient, KafkaClient}
 import marketplace.services.{Crawl, Parse}
@@ -66,8 +66,9 @@ object Main extends TaskApp {
       implicit0(httpClientI: HttpClient[AppI]) <- HttpClient.make[AppI, AppI](cfg.httpConfig)
       implicit0(httpClientF: HttpClient[AppF]) <- HttpClient.make[AppI, AppF](cfg.httpConfig)
       crawl                                    <- Crawl.make[AppI, AppF]
+      wbApi                                    <- Resource.liftF(WildBerriesApi.make[AppI, AppS].pure[AppI])
       ozonApi                                  <- Resource.liftF(OzonApi.make[AppI, AppS].pure[AppI])
-      sourcesOfCommands                         = cfg.sourcesConfig.sources.map(Crawler.makeCommandsSource[AppI](_)(ozonApi))
+      sourcesOfCommands                         = cfg.sourcesConfig.sources.map(Crawler.makeCommandsSource[AppI](_)(wbApi, ozonApi))
       producerOfEvents                         <- KafkaClient.makeProducer[AppI, Event.Key, CrawlerEvent](
                                                     cfg.kafkaConfig,
                                                     cfg.schemaRegistryConfig,

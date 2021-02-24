@@ -45,6 +45,7 @@ object KafkaClient {
       .withBootstrapServers(kafkaConfig.bootstrapServers)
       .withGroupId(kafkaConsumerConfig.groupId)
       .withAutoOffsetReset(AutoOffsetReset.Earliest)
+      .withProperty("connections.max.idle.ms", "-1")
       .withCommitTimeout(kafkaConsumerConfig.commitTimeout)
 
     consumerResource[F, Option[K], V](consumerSettings).evalTap(_.subscribeTo(kafkaConsumerConfig.topic))

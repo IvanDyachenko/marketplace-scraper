@@ -1,6 +1,7 @@
 package marketplace.api
 
 import cats.{~>, Functor}
+import tofu.syntax.handle._
 import tofu.syntax.monadic._
 import fs2.Stream
 import tofu.lift.Lift
@@ -16,19 +17,17 @@ trait WildBerriesApi[F[_], S[_]] {
 }
 
 object WildBerriesApi {
-  final class Impl[F[_]: Functor: HttpClient: HttpClient.Raising] extends WildBerriesApi[F, Stream[F, *]] {
-    def getCatalog(id: Catalog.Id): F[Option[Catalog]] =
-      getCatalogMenu.map(_.catalog(id))
+  final class Impl[F[_]: Functor: HttpClient: HttpClient.Handling] extends WildBerriesApi[F, Stream[F, *]] {
+    def getCatalog(id: Catalog.Id): F[Option[Catalog]] = getCatalogMenu.map(_ >>= (_.catalog(id)))
 
     def getCatalogs(rootId: Catalog.Id)(p: Catalog => Boolean): Stream[F, Catalog] =
-      Stream.eval(getCatalog(rootId)).map(_.get) >>= (cat => Stream.emits(cat.filter(p)))
+      Stream.eval(getCatalog(rootId)) >>= (_.fold[Stream[F, Catalog]](Stream.empty)(catalog => Stream.emits(catalog.filter(p))))
 
-    private def getCatalogMenu: F[CatalogMenu] =
-      HttpClient[F].send[CatalogMenu](Request.GetWildBerriesMenu)
+    private def getCatalogMenu: F[Option[CatalogMenu]] = HttpClient[F].send[CatalogMenu](Request.GetWildBerriesMenu).restore
   }
 
   def make[
-    F[_]: Functor: HttpClient: HttpClient.Raising,
+    F[_]: Functor: HttpClient: HttpClient.Handling,
     S[_]: Functor: LiftStream[*[_], F]
   ]: WildBerriesApi[F, S] =
     bifunctorK.bimapK(new Impl[F])(Lift.liftIdentity[F].liftF)(LiftStream[S, F].liftF)

@@ -10,7 +10,7 @@ import org.http4s.{QueryParam, QueryParamEncoder, QueryParameterKey, QueryParame
 
 @derive(loggable)
 sealed trait Request {
-  def host: String
+  def host: String           = "wbxmenu-ru.wildberries.ru"
   def path: String
   def lang: Request.Lang     = Request.Lang.Ru
   def locale: Request.Locale = Request.Locale.Ru
@@ -20,7 +20,6 @@ object Request {
 
   @derive(loggable)
   final object GetWildBerriesMenu extends Request {
-    val host: String = "wbxmenu-ru.wildberries.ru"
     val path: String = "/v2/api"
   }
 

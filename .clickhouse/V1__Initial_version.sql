@@ -1,8 +1,7 @@
-CREATE DATABASE IF NOT EXISTS marketplace;
+CREATE DATABASE IF NOT EXISTS dalytics;
 
-USE marketplace;
-
-CREATE TABLE IF NOT EXISTS ozon_category_search_results_v2_items_stream
+CREATE TABLE IF NOT EXISTS dalytics.ozon_category_search_results_v2_items_stream
+ON CLUSTER cluster
 (
     timestamp            DateTime64(3, 'Europe/Moscow'),
     itemId               UInt64,
@@ -48,7 +47,8 @@ ENGINE = Kafka SETTINGS kafka_broker_list = 'broker:29092',
                         kafka_thread_per_consumer = 1,
                         format_avro_schema_registry_url = 'http://schema-registry:8081';
 
-CREATE TABLE IF NOT EXISTS ozon_category_search_results_v2_items
+CREATE TABLE IF NOT EXISTS dalytics.ozon_category_search_results_v2_items
+ON CLUSTER cluster
 (
     timestamp               DateTime64(3, 'Europe/Moscow') CODEC(DoubleDelta),
     time                    DateTime('Europe/Moscow') CODEC(Delta, LZ4),
@@ -84,11 +84,13 @@ CREATE TABLE IF NOT EXISTS ozon_category_search_results_v2_items
     is_personalized         UInt8,
     is_promoted_product     UInt8,
     free_rest               Int32
-) ENGINE = MergeTree() ORDER     BY (toYYYYMMDD(timestamp), category_id, item_id)
-                       PARTITION BY toYYYYMM(timestamp);
+) ENGINE = ReplicatedMergeTree('/clickhouse/tables/{database}/{table}', '{replica}')
+           ORDER     BY (toYYYYMMDD(timestamp), category_id, item_id)
+           PARTITION BY toYYYYMM(timestamp);
 
-CREATE MATERIALIZED VIEW IF NOT EXISTS ozon_category_search_results_v2_items_consumer
-TO ozon_category_search_results_v2_items
+CREATE MATERIALIZED VIEW IF NOT EXISTS dalytics.ozon_category_search_results_v2_items_consumer
+ON CLUSTER cluster
+TO dalytics.ozon_category_search_results_v2_items
 AS
     SELECT
         timestamp                              AS timestamp,
@@ -125,4 +127,4 @@ AS
         isPersonalized                         AS is_personalized,
         isPromotedProduct                      AS is_promoted_product,
         freeRest                               AS free_rest
-    FROM ozon_category_search_results_v2_items_stream;
+    FROM dalytics.ozon_category_search_results_v2_items_stream;

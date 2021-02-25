@@ -6,7 +6,8 @@ import io.circe.{Decoder, DecodingFailure, HCursor}
 
 @derive(loggable)
 final case class CategoryMenu(@masked(MaskMode.ForLength(0, 50)) categories: List[Category]) {
-  def category(categoryId: Category.Id): Option[Category] = categories.map(_.find(categoryId)).flatten.headOption
+  def category(id: Category.Id): Option[Category] =
+    categories.foldLeft[Option[Category]](None)((result, category) => result.orElse(category.find(id)))
 }
 
 object CategoryMenu {

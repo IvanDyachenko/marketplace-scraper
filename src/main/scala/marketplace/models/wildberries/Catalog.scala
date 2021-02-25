@@ -14,9 +14,9 @@ import marketplace.models.{LiftedCats, LiftedCirce, LiftedLoggable}
 final case class Catalog(
   id: Catalog.Id,
   name: Catalog.Name,
-  shardKey: Catalog.ShardKey,
+  shardKey: Option[Catalog.ShardKey],
   url: Url,
-  filters: String,
+  filters: Option[String],
   children: Map[Catalog.Id, Catalog] = Map.empty
 ) {
   val isLeaf: Boolean       = children.isEmpty
@@ -40,7 +40,7 @@ object Catalog {
   object ShardKey extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce {}
   type ShardKey = ShardKey.Type
 
-  def apply(id: Id, name: Name, shardKey: ShardKey, url: Url, filters: String, children: List[Catalog]): Catalog =
+  def apply(id: Id, name: Name, shardKey: Option[ShardKey], url: Url, filters: Option[String], children: List[Catalog]): Catalog =
     apply(id, name, shardKey, url, filters, children.groupMapReduce[Id, Catalog](_.id)(identity)((c, _) => c))
 
   implicit final val childrenLoggable: Loggable[Map[Id, Catalog]] = Loggable.empty
@@ -49,9 +49,9 @@ object Catalog {
     (
       c.get[Id]("id"),
       c.get[Name]("name"),
-      c.get[ShardKey]("shardKey"),
+      c.get[Option[ShardKey]]("shardKey"),
       c.as[Url],
-      c.get[String]("filters"),
+      c.get[Option[String]]("filters"),
       c.getOrElse[List[Catalog]]("childNodes")(List.empty)
     ).mapN(apply)
   }

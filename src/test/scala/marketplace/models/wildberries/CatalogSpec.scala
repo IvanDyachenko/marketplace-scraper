@@ -55,4 +55,54 @@ class CatalogSpec extends AnyFlatSpec with Matchers {
 
     decode[Catalog](catalogRawJson).isRight shouldBe true
   }
+
+  it should "decode Catalog from a valid JSON (2)" in {
+    val catalogRawJson =
+      """
+        |{
+        |  "id": 4853,
+        |  "name": "Бренды  ",
+        |  "pageUrl": "/brandlist/all",
+        |  "urlType": "brandList",
+        |  "childNodes": [
+        |    {
+        |      "id": 7987,
+        |      "name": "Бренды на букву",
+        |      "pageUrl": "/brandlist/all",
+        |      "urlType": "brandList"
+        |    },
+        |    {
+        |      "id": 7988,
+        |      "name": "Страницы брендов",
+        |      "pageUrl": "/brandlist/all",
+        |      "urlType": "brandList",
+        |      "childNodes": [
+        |        {
+        |          "id": 7995,
+        |          "name": "ASICS",
+        |          "pageUrl": "/brands/asics",
+        |          "urlType": "catalog"
+        |        }
+        |      ]
+        |    }
+        |  ]
+        |}
+      """.stripMargin
+
+    decode[Catalog](catalogRawJson).isRight shouldBe true
+  }
+
+  it should "decode Catalog from a valid JSON (3)" in {
+    val catalogRawJson =
+      """
+        |{
+        |  "id": 62813,
+        |  "name": "Цифровые товары",
+        |  "pageUrl": "https://www.wildberries.ru/services/tsifrovye-tovary",
+        |  "urlType": "external"
+        |}
+      """.stripMargin
+
+    decode[Catalog](catalogRawJson).isRight shouldBe true
+  }
 }

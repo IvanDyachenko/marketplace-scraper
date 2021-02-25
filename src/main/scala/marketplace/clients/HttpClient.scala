@@ -83,11 +83,11 @@ object HttpClient extends ContextEmbed[HttpClient] {
         }
         .retryOnly[HttpClientError](3)
         .recoverWith[DecodeFailure] { case error =>
-          val errorDetails = error.message.takeWhile(_ != '{')
+          val errorDetails = error.cause.fold(error.message.takeWhile(_ != '{'))(_.getMessage)
 
           HttpClientError
             .ResponseDecodeError(
-              s"A response received as a result of the request to ${request.uri.show} was rejected because of a decoding failure: ${errorDetails}"
+              s"A response received as a result of the request to ${request.uri.show} was rejected because of a decoding failure. ${errorDetails}"
             )
             .raise[F, Res]
         }

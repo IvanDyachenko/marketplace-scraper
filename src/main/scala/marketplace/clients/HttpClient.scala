@@ -16,13 +16,12 @@ import tofu.lift.Unlift
 import tofu.higherKind.Embed
 import tofu.data.derived.ContextEmbed
 import tofu.logging.{Logging, Logs}
-import io.circe.{Decoder, DecodingFailure}
-import org.http4s.{Request => Http4sRequest, Status}
+import io.circe.Decoder
+import org.http4s.{DecodeFailure, Request => Http4sRequest, Status}
 import org.http4s.circe.jsonOf
 import org.http4s.client.Client
 import org.http4s.client.middleware.GZip
 import org.http4s.client.blaze.BlazeClientBuilder
-import org.http4s.blaze.http.parser.BaseExceptions.ParserException
 //import org.http4s.armeria.client.ArmeriaClientBuilder
 //import com.linecorp.armeria.client.{ClientFactory, ResponseTimeoutException, WebClient}
 //import com.linecorp.armeria.client.retry.{RetryConfig, RetryRule, RetryingClient}
@@ -45,20 +44,21 @@ sealed trait HttpClientError extends NoStackTrace {
 
 object HttpClientError {
   @derive(loggable)
-  final case class DecodingError(message: String) extends HttpClientError
+  final case class ResponseDecodeError(message: String) extends HttpClientError
 
   @derive(loggable)
-  final case class TimeoutError(message: String) extends HttpClientError
+  final case class ResponseTimeoutError(message: String) extends HttpClientError
 
   @derive(loggable)
-  final case class UnexpectedStatusError(message: String) extends HttpClientError
+  final case class ResponseUnexpectedStatusError(message: String) extends HttpClientError
 }
 
 object HttpClient extends ContextEmbed[HttpClient] {
   type Raising[F[_]]  = Raise[F, HttpClientError]
   type Handling[F[_]] = Handle[F, HttpClientError]
 
-  class Impl[F[_]: Sync: Logging: Raising](http4sClient: Client[F]) extends HttpClient[F] {
+  class Impl[F[_]: Sync: Logging: Raising: Handle[*[_], TimeoutException]: Handle[*[_], DecodeFailure]](http4sClient: Client[F])
+      extends HttpClient[F] {
 
     def send[Res](request: Http4sRequest[F])(implicit decoder: Decoder[Res]): F[Res] =
       http4sClient
@@ -69,29 +69,25 @@ object HttpClient extends ContextEmbed[HttpClient] {
               jsonOf(Sync[F], decoder)
                 .decode(response, strict = false)
                 .rethrowT
-            case unexpected           =>
+
+            case unexpected =>
               HttpClientError
-                .UnexpectedStatusError(s"Received ${unexpected.status.code} status during execution of the request to ${request.uri.show}")
+                .ResponseUnexpectedStatusError(s"Received ${unexpected.status.code} status during execution of the request to ${request.uri.show}")
                 .raise[F, Res]
           }
         }
         .recoverWith[TimeoutException] { case error: TimeoutException =>
           HttpClientError
-            .TimeoutError(error.toString)
-            .raise[F, Res]
-        }
-        .recoverWith[ParserException] { case error: ParserException =>
-          HttpClientError
-            .DecodingError(
-              s"A response received as a result of the request to ${request.uri.show} was rejected because of a parser exception: ${error.toString}"
-            )
+            .ResponseTimeoutError(error.toString)
             .raise[F, Res]
         }
         .retryOnly[HttpClientError](3)
-        .recoverWith[DecodingFailure] { case error: DecodingFailure =>
+        .recoverWith[DecodeFailure] { case error =>
+          val errorDetails = error.message.takeWhile(_ != '{')
+
           HttpClientError
-            .DecodingError(
-              s"A response received as a result of the request to ${request.uri.show} was rejected because of a decoding failure: ${error.show}"
+            .ResponseDecodeError(
+              s"A response received as a result of the request to ${request.uri.show} was rejected because of a decoding failure: ${errorDetails}"
             )
             .raise[F, Res]
         }

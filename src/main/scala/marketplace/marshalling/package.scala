@@ -22,7 +22,6 @@ package object marshalling {
       Headers.of(
         Host(host.value),
         Accept(MediaType.application.json),
-        `Accept-Encoding`(ContentCoding.deflate, ContentCoding.gzip, ContentCoding.br),
         `User-Agent`(ProductId("OzonStore", Some("400")))
       )
 
@@ -45,7 +44,7 @@ package object marshalling {
       Headers.of(
         Host(host.value),
         Accept(MediaType.application.json),
-        `Accept-Encoding`(ContentCoding.deflate, ContentCoding.gzip, ContentCoding.br),
+        `Accept-Encoding`(ContentCoding.gzip),
         `User-Agent`(
           ProductId("Wildberries", Some("3.3.1000")),
           List(ProductComment("RU.WILDBERRIES.MOBILEAPP; build:1433770; iOS 14.4.0"), ProductId("Alamofire", Some("5.2.2")))
@@ -54,11 +53,11 @@ package object marshalling {
 
     val uri: Uri =
       Uri(Some(Uri.Scheme.https), Some(Uri.Authority(host = host)))
-        .addPath(request.path)
+        .withPath(Uri.Path.fromString(request.path))
         .+*?(request.lang)
         .+*?(request.locale)
 
-    Http4sRequest(
+    Http4sRequest[F](
       method = Method.GET,
       uri = uri,
       headers = headers
@@ -71,8 +70,7 @@ package object marshalling {
     val headers: Headers =
       Headers.of(
         Host(host.value),
-        Accept(MediaType.application.json, MediaType.text.plain),
-        `Accept-Encoding`(ContentCoding.deflate, ContentCoding.gzip),
+        Accept(MediaType.application.json),
         `User-Agent`(ProductId("Beru", Some("330")), List(ProductComment("iPhone; iOS 14.2; Scale/3.00"))),
         `X-Device-Type`("SMARTPHONE"),
         `X-Platform`("IOS"),

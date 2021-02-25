@@ -20,6 +20,7 @@ import io.circe.{Decoder, DecodingFailure}
 import org.http4s.{Request => Http4sRequest, Status}
 import org.http4s.circe.jsonOf
 import org.http4s.client.Client
+import org.http4s.client.middleware.GZip
 import org.http4s.client.blaze.BlazeClientBuilder
 import org.http4s.blaze.http.parser.BaseExceptions.ParserException
 //import org.http4s.armeria.client.ArmeriaClientBuilder
@@ -162,11 +163,13 @@ object HttpClient extends ContextEmbed[HttpClient] {
   //   }
 
   private def buildHttp4sClient[F[_]: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] =
-    Resource.liftF(Execute[F].executionContext) >>= (BlazeClientBuilder[F](_)
-      .withRequestTimeout(httpConfig.responseTimeoutForEachAttempt)
-      .withMaxTotalConnections(httpConfig.maxTotalConnections)
-      .withSocketKeepAlive(true)
-      .withSocketReuseAddress(true)
-      .withMaxConnectionsPerRequestKey(Function.const(httpConfig.maxNumConnectionsPerHost))
-      .resource)
+    Resource.liftF(Execute[F].executionContext) >>= (
+      BlazeClientBuilder[F](_)
+        .withRequestTimeout(httpConfig.responseTimeoutForEachAttempt)
+        .withMaxTotalConnections(httpConfig.maxTotalConnections)
+        .withMaxConnectionsPerRequestKey(Function.const(httpConfig.maxNumConnectionsPerHost))
+        .resource
+        .map(GZip())
+    )
+
 }

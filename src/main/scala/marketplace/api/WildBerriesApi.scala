@@ -23,7 +23,7 @@ object WildBerriesApi {
     def getCatalogs(rootId: Catalog.Id)(p: Catalog => Boolean): Stream[F, Catalog] =
       Stream.eval(getCatalog(rootId)) >>= (_.fold[Stream[F, Catalog]](Stream.empty)(catalog => Stream.emits(catalog.filter(p))))
 
-    private def getCatalogMenu: F[Option[CatalogMenu]] = HttpClient[F].send[CatalogMenu](Request.GetWildBerriesMenu).restore
+    private def getCatalogMenu: F[Option[CatalogMenu]] = HttpClient[F].send[CatalogMenu](Request.GetCatalogMenu).restore
   }
 
   def make[

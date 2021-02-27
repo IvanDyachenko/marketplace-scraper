@@ -99,21 +99,26 @@ object Crawler {
     sourceConfig match {
       case SourceConfig.WbCatalog(_, _)                     => ???
       case SourceConfig.OzonCategory(rootCategoryId, every) =>
-        Stream.awakeEvery[F](every) >>= { _ =>
-          ozonApi.getCategories(rootCategoryId)(_.isLeaf) >>= { leafCategory =>
-            Stream.eval(ozonApi.getCategorySearchResultsV2(leafCategory.id, 1 @@ ozon.Url.Page)) >>= { searchResultsV2Option =>
-              searchResultsV2Option
-                .fold[Stream[F, Int]](Stream.range(1, 50)) {
-                  _ match {
-                    case ozon.SearchResultsV2.Failure(_)          => Stream.empty
-                    case ozon.SearchResultsV2.Success(_, page, _) => Stream.range(1, page.total)
+        Stream
+          .awakeEvery[F](every)
+          .flatMap { _ =>
+            ozonApi
+              .getCategories(rootCategoryId)(_.isLeaf)
+              .parEvalMapUnordered(128)(leaf => ozonApi.getCategorySearchResultsV2(leaf.id, 1 @@ ozon.Url.Page).map(leaf -> _))
+              .flatMap { case (leafCategory, searchResultsV2Option) =>
+                searchResultsV2Option
+                  .fold[Stream[F, Int]](Stream.range(1, 50)) {
+                    _ match {
+                      case ozon.SearchResultsV2.Failure(error)      => Stream.empty
+                      case ozon.SearchResultsV2.Success(_, page, _) => Stream.range(1, page.total)
+                    }
                   }
-                }
-                .parEvalMapUnordered(100) { p =>
-                  CrawlerCommand.handleOzonRequest[F](ozon.Request.GetCategorySearchResultsV2(leafCategory.id, leafCategory.name, p @@ ozon.Url.Page))
-                }
-            }
+                  .parEvalMapUnordered(1000) { p =>
+                    CrawlerCommand.handleOzonRequest[F](
+                      ozon.Request.GetCategorySearchResultsV2(leafCategory.id, leafCategory.name, p @@ ozon.Url.Page)
+                    )
+                  }
+              }
           }
-        }
     }
 }

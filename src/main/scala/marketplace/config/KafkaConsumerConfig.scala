@@ -16,7 +16,8 @@ final case class KafkaConsumerConfig(
   maxPollInterval: Option[FiniteDuration],
   commitTimeout: Option[FiniteDuration],
   commitTimeWindow: FiniteDuration,
-  commitEveryNOffsets: Int
+  commitEveryNOffsets: Int,
+  maxConcurrentPerPartition: Int
 )
 
 object KafkaConsumerConfig {

@@ -1,7 +1,7 @@
 object Versions {
   lazy val monix                 = "3.3.0"
   lazy val tofu                  = "0.9.2"
-  lazy val derevo                = "0.12.0"
+  lazy val derevo                = "0.12.1"
   lazy val supertagged           = "2.0-RC2"
   lazy val enumeratum            = "1.6.1"
   lazy val circe                 = "0.13.0"

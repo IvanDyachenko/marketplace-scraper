@@ -161,12 +161,12 @@ object HttpClient extends ContextEmbed[HttpClient] {
   private def buildHttp4sClient[F[_]: Timer: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] =
     Resource.liftF(Execute[F].executionContext) >>= (
       BlazeClientBuilder[F](_)
-        .withRequestTimeout(httpConfig.responseTimeoutForEachAttempt)
+        .withRequestTimeout(httpConfig.requestTimeoutForEachAttempt)
         .withMaxTotalConnections(httpConfig.maxTotalConnections)
         .withMaxConnectionsPerRequestKey(Function.const(httpConfig.maxNumConnectionsPerHost))
         .resource
         .map(GZip())
-        .map(Retry(recklesslyRetryPolicy(httpConfig.responseTimeoutForEachAttempt, httpConfig.maxTotalAttempts)))
+        .map(Retry(recklesslyRetryPolicy(httpConfig.requestTimeout, httpConfig.maxTotalAttempts)))
     )
 
   private def recklesslyRetryPolicy[F[_]](maxWait: Duration, maxRetry: Int): RetryPolicy[F] =

@@ -23,10 +23,15 @@ import scala.concurrent.ExecutionContext.Implicits.global
 object Main extends TaskApp {
 
   override def run(args: List[String]): Task[ExitCode] =
-    Task
-      .parZip2(
-        initParser.use(_.run.compile.drain),
-        initCrawler.use(crawler => Task.parZip2(crawler.schedule.compile.drain, crawler.run.compile.drain))
+    initCrawler
+      .use(crawler =>
+        initParser.use(parser =>
+          Task.parZip3(
+            parser.run.compile.drain.executeAsync,
+            crawler.run.compile.drain.executeAsync,
+            crawler.schedule.compile.drain.executeAsync
+          )
+        )
       )
       .as(ExitCode.Success)
 

@@ -1,8 +1,9 @@
 package marketplace
 
+import org.typelevel.ci.CIString
 import io.circe.Encoder
 import org.http4s.{Headers, Uri, MediaType, Method, Request => Http4sRequest, ContentCoding, ProductId, ProductComment}
-import org.http4s.headers.{`Accept-Encoding`, `User-Agent`, Accept, Host}
+import org.http4s.headers.{`Accept-Encoding`, `User-Agent`, Accept, Connection, Host}
 import org.http4s.circe.jsonEncoderOf
 
 import marketplace.models.ozon.{Request => OzonRequest}
@@ -21,6 +22,7 @@ package object marshalling {
     val headers: Headers =
       Headers.of(
         Host(host.value),
+        Connection(CIString("Keep-Alive")),
         Accept(MediaType.application.json),
         `User-Agent`(ProductId("OzonStore", Some("400")))
       )
@@ -43,6 +45,7 @@ package object marshalling {
     val headers: Headers =
       Headers.of(
         Host(host.value),
+        Connection(CIString("Keep-Alive")),
         Accept(MediaType.application.json),
         `Accept-Encoding`(ContentCoding.gzip),
         `User-Agent`(
@@ -70,6 +73,7 @@ package object marshalling {
     val headers: Headers =
       Headers.of(
         Host(host.value),
+        Connection(CIString("Keep-Alive")),
         Accept(MediaType.application.json),
         `User-Agent`(ProductId("Beru", Some("330")), List(ProductComment("iPhone; iOS 14.2; Scale/3.00"))),
         `X-Device-Type`("SMARTPHONE"),

@@ -2,7 +2,7 @@ package marketplace.clients
 
 import java.util.concurrent.TimeoutException
 import scala.util.control.NoStackTrace
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 
 import cats.syntax.show._
 import tofu.syntax.raise._
@@ -161,9 +161,13 @@ object HttpClient extends ContextEmbed[HttpClient] {
   private def buildHttp4sClient[F[_]: Timer: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] =
     Resource.liftF(Execute[F].executionContext) >>= (
       BlazeClientBuilder[F](_)
-        .withRequestTimeout(httpConfig.requestPerAttemptTimeout)
+        .withTcpNoDelay(true) // Disable Nagle's algorithm.
+        .withSocketKeepAlive(true)
         .withMaxTotalConnections(httpConfig.maxTotalConnections)
         .withMaxConnectionsPerRequestKey(Function.const(httpConfig.maxTotalConnectionsPerHost))
+        .withIdleTimeout(httpConfig.idleTimeout)
+        .withConnectTimeout(httpConfig.connectTimeout)
+        .withRequestTimeout(httpConfig.requestTimeout)
         .resource
         .map(GZip())
         .map(Retry(recklesslyRetryPolicy(httpConfig.requestMaxDelayBetweenAttempts, httpConfig.requestMaxTotalAttempts)))

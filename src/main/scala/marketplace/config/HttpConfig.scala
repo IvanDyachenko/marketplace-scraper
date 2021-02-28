@@ -10,12 +10,14 @@ import pureconfig.module.catseffect.syntax._
 
 @derive(pureconfigReader)
 final case class HttpConfig(
-  proxyHost: String,
-  proxyPort: Int,
+  //proxyHost: String,
+  //proxyPort: Int,
   maxTotalConnections: Int,
   maxTotalConnectionsPerHost: Int,
+  idleTimeout: FiniteDuration,
+  connectTimeout: FiniteDuration,
+  requestTimeout: FiniteDuration,
   requestMaxTotalAttempts: Int,
-  requestPerAttemptTimeout: FiniteDuration,
   requestMaxDelayBetweenAttempts: FiniteDuration
 )
 

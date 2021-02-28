@@ -27,9 +27,9 @@ object Main extends TaskApp {
       .use(crawler =>
         initParser.use(parser =>
           Task.parZip3(
-            parser.run.compile.drain.executeAsync,
-            crawler.run.compile.drain.executeAsync,
-            crawler.schedule.compile.drain.executeAsync
+            parser.run.compile.drain,
+            crawler.run.compile.drain,
+            crawler.schedule.compile.drain
           )
         )
       )

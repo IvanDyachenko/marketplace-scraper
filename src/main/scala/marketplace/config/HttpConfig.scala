@@ -14,6 +14,7 @@ final case class HttpConfig(
   //proxyPort: Int,
   maxTotalConnections: Int,
   maxTotalConnectionsPerHost: Int,
+  maxWaitQueueLimit: Int,
   idleTimeout: FiniteDuration,
   connectTimeout: FiniteDuration,
   requestTimeout: FiniteDuration,

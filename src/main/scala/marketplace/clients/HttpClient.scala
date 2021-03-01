@@ -165,6 +165,7 @@ object HttpClient extends ContextEmbed[HttpClient] {
         .withSocketKeepAlive(true)
         .withMaxTotalConnections(httpConfig.maxTotalConnections)
         .withMaxConnectionsPerRequestKey(Function.const(httpConfig.maxTotalConnectionsPerHost))
+        .withMaxWaitQueueLimit(httpConfig.maxWaitQueueLimit)
         .withIdleTimeout(httpConfig.idleTimeout)
         .withConnectTimeout(httpConfig.connectTimeout)
         .withRequestTimeout(httpConfig.requestTimeout)

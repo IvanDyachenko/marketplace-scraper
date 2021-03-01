@@ -20,7 +20,7 @@ import tofu.logging.{Logging, Logs}
 import io.circe.Decoder
 import org.http4s.{DecodeFailure, Request => Http4sRequest, Status}
 import org.http4s.circe.jsonOf
-import org.http4s.client.Client
+import org.http4s.client.{Client, ConnectionFailure}
 import org.http4s.client.middleware.{GZip, Retry, RetryPolicy}
 import org.http4s.client.blaze.BlazeClientBuilder
 //import org.asynchttpclient.Dsl
@@ -39,10 +39,13 @@ sealed trait HttpClientError extends NoStackTrace {
 
 object HttpClientError {
   @derive(loggable)
-  final case class ResponseDecodeError(message: String) extends HttpClientError
+  final case class ConnectTimeoutError(message: String) extends HttpClientError
 
   @derive(loggable)
-  final case class ResponseTimeoutError(message: String) extends HttpClientError
+  final case class RequestTimeoutError(message: String) extends HttpClientError
+
+  @derive(loggable)
+  final case class ResponseDecodeError(message: String) extends HttpClientError
 
   @derive(loggable)
   final case class ResponseUnexpectedStatusError(message: String) extends HttpClientError
@@ -71,9 +74,14 @@ object HttpClient extends ContextEmbed[HttpClient] {
                 .raise[F, Res]
           }
         }
+        .recoverWith[ConnectionFailure] { error =>
+          HttpClientError
+            .ConnectTimeoutError(error.toString)
+            .raise[F, Res]
+        }
         .recoverWith[TimeoutException] { error =>
           HttpClientError
-            .ResponseTimeoutError(error.toString)
+            .RequestTimeoutError(error.toString)
             .raise[F, Res]
         }
         .recoverWith[DecodeFailure] { error =>

@@ -23,12 +23,6 @@ import org.http4s.circe.jsonOf
 import org.http4s.client.Client
 import org.http4s.client.middleware.{GZip, Retry, RetryPolicy}
 import org.http4s.client.blaze.BlazeClientBuilder
-//import org.http4s.armeria.client.ArmeriaClientBuilder
-//import com.linecorp.armeria.client.{ClientFactory, ResponseTimeoutException, WebClient}
-//import com.linecorp.armeria.client.retry.{RetryConfig, RetryRule, RetryingClient}
-//import com.linecorp.armeria.common.util.EventLoopGroups
-//import com.linecorp.armeria.client.proxy.ProxyConfig
-//import com.linecorp.armeria.client.logging.LoggingClient
 //import org.asynchttpclient.Dsl
 //import org.http4s.client.asynchttpclient.AsyncHttpClient
 
@@ -113,48 +107,15 @@ object HttpClient extends ContextEmbed[HttpClient] {
   private def translateHttp4sClient[F[_]: Sync, G[_]: Sync](client: Client[F])(implicit U: Unlift[F, G]): Client[G] =
     Client(req => Resource.suspend(U.unlift.map(gf => client.run(req.mapK(gf)).mapK(U.liftF).map(_.mapK(U.liftF)))))
 
-  // private def buildHttp4sClient[F[_]: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] = {
-  //   val retryRule: RetryRule =
-  //     RetryRule
-  //       .failsafe()
-  //
-  //   val retryConfig =
-  //     RetryConfig
-  //       .builder(retryRule)
-  //       .maxTotalAttempts(httpConfig.maxTotalAttempts)
-  //       .responseTimeoutMillisForEachAttempt(httpConfig.responseTimeoutForEachAttempt.toMillis)
-  //       .build()
-  //
-  //   val clientFactory: ClientFactory =
-  //     ClientFactory
-  //       .builder()
-  //       .tlsNoVerify()
-  //       .useHttp2Preface(false)
-  //       .useHttp1Pipelining(false)
-  //     //.workerGroup(EventLoopGroups.newEventLoopGroup(httpConfig.eventLoopGroupNumThreads, "armeria-event-loop-groups"), true)
-  //       .maxNumRequestsPerConnection(httpConfig.maxNumRequestsPerConnection)
-  //       .build()
-  //
-  //   val webClient =
-  //     WebClient
-  //       .builder()
-  //       .factory(clientFactory)
-  //       .responseTimeoutMillis(httpConfig.responseTimeout.toMillis)
-  //       .decorator(RetryingClient.newDecorator(retryConfig))
-  //     //.decorator(LoggingClient.newDecorator())
-  //
-  //   ArmeriaClientBuilder(webClient).resource
-  // }
-
   // private def buildHttp4sClient[F[_]: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] =
   //   AsyncHttpClient.resource {
   //     Dsl
   //       .config()
   //       .setMaxConnections(httpConfig.maxTotalConnections)
-  //       .setMaxConnectionsPerHost(httpConfig.maxNumConnectionsPerHost)
+  //       .setMaxConnectionsPerHost(httpConfig.maxTotalConnectionsPerHost)
+  //       .setMaxRequestRetry(httpConfig.requestMaxTotalAttempts)
+  //       .setRequestTimeout(httpConfig.requestTimeout.toMillis.toInt)
   //       .setFollowRedirect(false)
-  //       //.setMaxRequestRetry(httpConfig.maxTotalAttempts)
-  //       .setRequestTimeout(httpConfig.responseTimeoutForEachAttempt.toMillis.toInt)
   //       .build()
   //   }
 
@@ -163,6 +124,7 @@ object HttpClient extends ContextEmbed[HttpClient] {
       BlazeClientBuilder[F](_)
         .withTcpNoDelay(true) // Disable Nagle's algorithm.
         .withSocketKeepAlive(true)
+        .withCheckEndpointAuthentication(false)
         .withMaxTotalConnections(httpConfig.maxTotalConnections)
         .withMaxConnectionsPerRequestKey(Function.const(httpConfig.maxTotalConnectionsPerHost))
         .withMaxWaitQueueLimit(httpConfig.maxWaitQueueLimit)
@@ -170,8 +132,8 @@ object HttpClient extends ContextEmbed[HttpClient] {
         .withConnectTimeout(httpConfig.connectTimeout)
         .withRequestTimeout(httpConfig.requestTimeout)
         .resource
-        .map(GZip())
-        .map(Retry(recklesslyRetryPolicy(httpConfig.requestMaxDelayBetweenAttempts, httpConfig.requestMaxTotalAttempts)))
+        .map(client => GZip()(client))
+        .map(client => Retry(recklesslyRetryPolicy(httpConfig.requestMaxDelayBetweenAttempts, httpConfig.requestMaxTotalAttempts))(client))
     )
 
   private def recklesslyRetryPolicy[F[_]](maxWait: Duration, maxRetry: Int): RetryPolicy[F] =

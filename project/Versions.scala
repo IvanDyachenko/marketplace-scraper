@@ -10,7 +10,7 @@ object Versions {
   lazy val fs2                   = "2.5.3"
   lazy val fs2Kafka              = "1.1.0+101-ee43a77b-SNAPSHOT"
   lazy val http4s                = "1.0-234-d1a2b53"
-  lazy val http4sArmeriaClient   = "0.2.0"
+  lazy val http4sBlazeClient     = "1.0-234-d1a2b53"
   lazy val http4sAsyncHttpClient = "1.0-234-d1a2b53"
   lazy val asyncHttpClient       = "2.12.2"
   lazy val doobie                = "0.10.0"

@@ -22,9 +22,9 @@ import org.http4s.{DecodeFailure, Request => Http4sRequest, Status}
 import org.http4s.circe.jsonOf
 import org.http4s.client.Client
 import org.http4s.client.middleware.{GZip, Retry, RetryPolicy}
-import org.http4s.client.blaze.BlazeClientBuilder
-//import org.asynchttpclient.Dsl
-//import org.http4s.client.asynchttpclient.AsyncHttpClient
+//import org.http4s.client.blaze.BlazeClientBuilder
+import org.asynchttpclient.Dsl
+import org.http4s.client.asynchttpclient.AsyncHttpClient
 
 import marketplace.config.HttpConfig
 
@@ -107,34 +107,43 @@ object HttpClient extends ContextEmbed[HttpClient] {
   private def translateHttp4sClient[F[_]: Sync, G[_]: Sync](client: Client[F])(implicit U: Unlift[F, G]): Client[G] =
     Client(req => Resource.suspend(U.unlift.map(gf => client.run(req.mapK(gf)).mapK(U.liftF).map(_.mapK(U.liftF)))))
 
-  // private def buildHttp4sClient[F[_]: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] =
-  //   AsyncHttpClient.resource {
-  //     Dsl
-  //       .config()
-  //       .setMaxConnections(httpConfig.maxTotalConnections)
-  //       .setMaxConnectionsPerHost(httpConfig.maxTotalConnectionsPerHost)
-  //       .setMaxRequestRetry(httpConfig.requestMaxTotalAttempts)
-  //       .setRequestTimeout(httpConfig.requestTimeout.toMillis.toInt)
-  //       .setFollowRedirect(false)
-  //       .build()
-  //   }
+  private def buildHttp4sClient[F[_]: Timer: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] =
+    AsyncHttpClient
+      .resource {
+        Dsl
+          .config()
+          .setIoThreadsCount(8)
+          .setSoReuseAddress(true)
+          .setUseNativeTransport(false)
+          .setTcpNoDelay(true)
+          .setKeepAlive(true)
+          .setMaxConnections(httpConfig.maxTotalConnections)
+          .setMaxConnectionsPerHost(httpConfig.maxTotalConnectionsPerHost)
+          .setMaxRequestRetry(httpConfig.requestMaxTotalAttempts)
+          .setConnectTimeout(httpConfig.connectTimeout.toMillis.toInt)
+          .setRequestTimeout(httpConfig.requestTimeout.toMillis.toInt)
+          .setFollowRedirect(false)
+          .build()
+      }
+      .map(client => GZip()(client))
+      .map(client => Retry(recklesslyRetryPolicy(httpConfig.requestMaxDelayBetweenAttempts, httpConfig.requestMaxTotalAttempts))(client))
 
-  private def buildHttp4sClient[F[_]: Timer: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] =
-    Resource.liftF(Execute[F].executionContext) >>= (
-      BlazeClientBuilder[F](_)
-        .withTcpNoDelay(true) // Disable Nagle's algorithm.
-        .withSocketKeepAlive(true)
-        .withCheckEndpointAuthentication(false)
-        .withMaxTotalConnections(httpConfig.maxTotalConnections)
-        .withMaxConnectionsPerRequestKey(Function.const(httpConfig.maxTotalConnectionsPerHost))
-        .withMaxWaitQueueLimit(httpConfig.maxWaitQueueLimit)
-        .withIdleTimeout(httpConfig.idleTimeout)
-        .withConnectTimeout(httpConfig.connectTimeout)
-        .withRequestTimeout(httpConfig.requestTimeout)
-        .resource
-        .map(client => GZip()(client))
-        .map(client => Retry(recklesslyRetryPolicy(httpConfig.requestMaxDelayBetweenAttempts, httpConfig.requestMaxTotalAttempts))(client))
-    )
+  // private def buildHttp4sClient[F[_]: Timer: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] =
+  //   Resource.liftF(Execute[F].executionContext) >>= (
+  //     BlazeClientBuilder[F](_)
+  //       .withTcpNoDelay(true) // Disable Nagle's algorithm.
+  //       .withSocketKeepAlive(true)
+  //       .withCheckEndpointAuthentication(false)
+  //       .withMaxTotalConnections(httpConfig.maxTotalConnections)
+  //       .withMaxConnectionsPerRequestKey(Function.const(httpConfig.maxTotalConnectionsPerHost))
+  //       .withMaxWaitQueueLimit(httpConfig.maxWaitQueueLimit)
+  //       .withIdleTimeout(httpConfig.idleTimeout)
+  //       .withConnectTimeout(httpConfig.connectTimeout)
+  //       .withRequestTimeout(httpConfig.requestTimeout)
+  //       .resource
+  //       .map(client => GZip()(client))
+  //       .map(client => Retry(recklesslyRetryPolicy(httpConfig.requestMaxDelayBetweenAttempts, httpConfig.requestMaxTotalAttempts))(client))
+  //   )
 
   private def recklesslyRetryPolicy[F[_]](maxWait: Duration, maxRetry: Int): RetryPolicy[F] =
     RetryPolicy(RetryPolicy.exponentialBackoff(maxWait = maxWait, maxRetry = maxRetry), (_, result) => RetryPolicy.recklesslyRetriable(result))

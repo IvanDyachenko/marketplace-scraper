@@ -56,4 +56,6 @@
         <appender-ref ref="STDOUT"/>
         <appender-ref ref="STDERR"/>
     </root>
+
+    <logger name="org.http4s.client.middleware.Retry" level="WARN"/>
 </configuration>

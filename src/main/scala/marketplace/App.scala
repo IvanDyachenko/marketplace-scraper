@@ -18,6 +18,8 @@ import marketplace.models.{Command, Event}
 import marketplace.models.parser.{ParserCommand, ParserEvent}
 import marketplace.models.crawler.{CrawlerCommand, CrawlerEvent}
 
+import scala.concurrent.ExecutionContext.Implicits.global
+
 object Main extends TaskApp {
 
   override def run(args: List[String]): Task[ExitCode] =

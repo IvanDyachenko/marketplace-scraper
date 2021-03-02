@@ -1,7 +1,7 @@
 package marketplace.clients
 
-import java.util.concurrent.{Executor, TimeoutException}
-import java.net.http.{HttpClient => jdkHttpClient}
+import java.util.concurrent.TimeoutException
+//import java.net.http.{HttpClient => jdkHttpClient}
 
 import scala.util.control.NoStackTrace
 import scala.concurrent.duration._
@@ -13,8 +13,8 @@ import tofu.syntax.monadic._
 import derevo.derive
 import tofu.logging.derivation.loggable
 import cats.FlatMap
-import cats.effect.{Blocker, ConcurrentEffect, ContextShift, Resource, Sync, Timer}
-import tofu.{Handle, Raise}
+import cats.effect.{ConcurrentEffect, Resource, Sync, Timer}
+import tofu.{Execute, Handle, Raise}
 import tofu.lift.Unlift
 import tofu.higherKind.Embed
 import tofu.data.derived.ContextEmbed
@@ -23,7 +23,8 @@ import io.circe.Decoder
 import org.http4s.{DecodeFailure, Request => Http4sRequest, Status}
 import org.http4s.circe.jsonOf
 import org.http4s.client.{Client, ConnectionFailure}
-import org.http4s.client.jdkhttpclient.JdkHttpClient
+//import org.http4s.client.jdkhttpclient.JdkHttpClient
+import org.http4s.client.blaze.BlazeClientBuilder
 import org.http4s.client.middleware.{GZip, Retry, RetryPolicy}
 
 import marketplace.config.HttpConfig
@@ -103,12 +104,11 @@ object HttpClient extends ContextEmbed[HttpClient] {
   def apply[F[_]](implicit ev: HttpClient[F]): ev.type = ev
 
   def make[
-    I[_]: Timer: ContextShift: ConcurrentEffect: Unlift[*[_], F],
+    I[_]: Execute: ConcurrentEffect: Timer: Unlift[*[_], F],
     F[_]: Sync
   ](httpConfig: HttpConfig)(implicit logs: Logs[I, F]): Resource[I, HttpClient[F]] =
     for {
-      blocker      <- Blocker[I]
-      http4sClient <- buildHttp4sClient[I](blocker, httpConfig)
+      http4sClient <- buildHttp4sClient[I](httpConfig)
                         .map(GZip())
                         .map { http4sClient =>
                           val retryPolicy = recklesslyRetryPolicy[I](httpConfig.requestMaxDelayBetweenAttempts, httpConfig.requestMaxTotalAttempts)
@@ -121,26 +121,26 @@ object HttpClient extends ContextEmbed[HttpClient] {
   private def translateHttp4sClient[F[_], G[_]: Sync](client: Client[F])(implicit U: Unlift[F, G]): Client[G] =
     Client(req => Resource.suspend(U.unlift.map(gf => client.run(req.mapK(gf)).mapK(U.liftF).map(_.mapK(U.liftF)))))
 
-  private def buildHttp4sClient[F[_]: ContextShift: ConcurrentEffect](blocker: Blocker, httpConfig: HttpConfig): Resource[F, Client[F]] = {
-    def blockerExecutor(blocker: Blocker): Executor = new Executor {
-      override def execute(command: Runnable): Unit = blocker.blockingContext.execute(command)
-    }
-
-    Resource.liftF(
-      Sync[F].delay {
-        val httpClient = jdkHttpClient
-          .newBuilder()
-          .executor(blockerExecutor(blocker))
-          //.proxy(ProxySelector.of(new InetSocketAddress(httpConfig.proxyHost, httpConfig.proxyPort)))
-          .version(jdkHttpClient.Version.HTTP_1_1)
-          .followRedirects(jdkHttpClient.Redirect.NEVER)
-          .connectTimeout(java.time.Duration.ofNanos(httpConfig.connectTimeout.toNanos))
-          .build()
-
-        JdkHttpClient[F](httpClient)
-      }
-    )
-  }
+  // private def buildHttp4sClient[F[_]: ContextShift: ConcurrentEffect](blocker: Blocker, httpConfig: HttpConfig): Resource[F, Client[F]] = {
+  //   def blockerExecutor(blocker: Blocker): Executor = new Executor {
+  //     override def execute(command: Runnable): Unit = blocker.blockingContext.execute(command)
+  //   }
+  //
+  //   Resource.liftF(
+  //     Sync[F].delay {
+  //       val httpClient = jdkHttpClient
+  //         .newBuilder()
+  //         .executor(blockerExecutor(blocker))
+  //         //.proxy(ProxySelector.of(new InetSocketAddress(httpConfig.proxyHost, httpConfig.proxyPort)))
+  //         .version(jdkHttpClient.Version.HTTP_1_1)
+  //         .followRedirects(jdkHttpClient.Redirect.NEVER)
+  //         .connectTimeout(java.time.Duration.ofNanos(httpConfig.connectTimeout.toNanos))
+  //         .build()
+  //
+  //       JdkHttpClient[F](httpClient)
+  //     }
+  //   )
+  // }
 
   // private def buildHttp4sClient[F[_]: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] =
   //   AsyncHttpClient.resource {
@@ -154,20 +154,20 @@ object HttpClient extends ContextEmbed[HttpClient] {
   //       .build()
   //   }
 
-  // private def buildHttp4sClient[F[_]: Timer: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] =
-  //   Resource.liftF(Execute[F].executionContext) >>= (
-  //     BlazeClientBuilder[F](_)
-  //       .withTcpNoDelay(true) // Disable Nagle's algorithm.
-  //       .withSocketKeepAlive(true)
-  //       .withCheckEndpointAuthentication(false)
-  //       .withMaxTotalConnections(httpConfig.maxTotalConnections)
-  //       .withMaxConnectionsPerRequestKey(Function.const(httpConfig.maxTotalConnectionsPerHost))
-  //       .withMaxWaitQueueLimit(httpConfig.maxWaitQueueLimit)
-  //       .withIdleTimeout(httpConfig.idleTimeout)
-  //       .withConnectTimeout(httpConfig.connectTimeout)
-  //       .withRequestTimeout(httpConfig.requestTimeout)
-  //       .resource
-  //   )
+  private def buildHttp4sClient[F[_]: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] =
+    Resource.liftF(Execute[F].executionContext) >>= (
+      BlazeClientBuilder[F](_)
+        .withTcpNoDelay(true) // Disable Nagle's algorithm.
+        .withSocketKeepAlive(true)
+        .withCheckEndpointAuthentication(false)
+        .withMaxTotalConnections(httpConfig.maxTotalConnections)
+        .withMaxConnectionsPerRequestKey(Function.const(httpConfig.maxTotalConnectionsPerHost))
+        .withMaxWaitQueueLimit(httpConfig.maxWaitQueueLimit)
+        .withIdleTimeout(httpConfig.idleTimeout)
+        .withConnectTimeout(httpConfig.connectTimeout)
+        .withRequestTimeout(httpConfig.requestTimeout)
+        .resource
+    )
 
   private def recklesslyRetryPolicy[F[_]](maxWait: Duration, maxRetry: Int): RetryPolicy[F] =
     RetryPolicy(RetryPolicy.exponentialBackoff(maxWait = maxWait, maxRetry = maxRetry), (_, result) => RetryPolicy.recklesslyRetriable(result))

@@ -20,29 +20,29 @@ lazy val `marketplace-crawler` =
       packageName in Docker := "marketplace-crawler",
       version in Docker := sys.env.getOrElse("GITHUB_SHA", default = "latest"),
       maintainer in Docker := "Ivan Dyachenko <vandyachen@gmail.com>",
-      dockerBaseImage := "openjdk:8",
+      dockerBaseImage := "openjdk:11",
       dockerExposedPorts := Seq(9000),
       dockerUsername := Some("ivandyachenko"),
-      dockerBuildOptions ++= Seq(
-        "--secret",
-        s"id=mitmproxycert,src=${sys.env.get("GITHUB_WORKSPACE").get}/mitmproxy-ca-cert.pem"
-      ),
-      dockerCommands ~= { cmds =>
-        val imageConfig = Cmd("# syntax = docker/dockerfile:1.0-experimental")
-        imageConfig +: cmds
-      },
-      dockerCommands ++= Seq(
-        Cmd("USER", "root"),
-        Cmd(
-          "RUN",
-          "--mount=type=secret,id=mitmproxycert",
-          "${JAVA_HOME}/bin/keytool -noprompt -importcert -trustcacerts",
-          "-keystore ${JAVA_HOME}/jre/lib/security/cacerts",
-          "-storepass changeit",
-          "-alias mitmproxycert",
-          "-file /run/secrets/mitmproxycert"
-        )
-      ),
+      //dockerBuildOptions ++= Seq(
+      //  "--secret",
+      //  s"id=mitmproxycert,src=${sys.env.get("GITHUB_WORKSPACE").get}/mitmproxy-ca-cert.pem"
+      //),
+      //dockerCommands ~= { cmds =>
+      //  val imageConfig = Cmd("# syntax = docker/dockerfile:1.0-experimental")
+      //  imageConfig +: cmds
+      //},
+      //dockerCommands ++= Seq(
+      //  Cmd("USER", "root"),
+      //  Cmd(
+      //    "RUN",
+      //    "--mount=type=secret,id=mitmproxycert",
+      //    "${JAVA_HOME}/bin/keytool -noprompt -importcert -trustcacerts",
+      //    "-keystore ${JAVA_HOME}/jre/lib/security/cacerts",
+      //    "-storepass changeit",
+      //    "-alias mitmproxycert",
+      //    "-file /run/secrets/mitmproxycert"
+      //  )
+      //),
       javaOptions in Universal ++= Seq(
         "-J-XX:+UnlockExperimentalVMOptions",
         "-J-XX:+UseCGroupMemoryLimitForHeap"

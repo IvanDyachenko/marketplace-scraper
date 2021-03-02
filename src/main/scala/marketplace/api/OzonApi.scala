@@ -23,7 +23,7 @@ trait OzonApi[F[_], S[_]] {
 
 object OzonApi {
 
-  final class Impl[F[_]: Functor: Concurrent: HttpClient: HttpClient.Handling] extends OzonApi[F, Stream[F, *]] {
+  final class Impl[F[_]: Concurrent: HttpClient: HttpClient.Handling] extends OzonApi[F, Stream[F, *]] {
 
     def getCategory(id: Category.Id): F[Option[Category]] = getCategoryMenu(id).map(_ >>= (_.category(id)))
 
@@ -55,8 +55,8 @@ object OzonApi {
   }
 
   def make[
-    F[_]: Functor: Concurrent: HttpClient: HttpClient.Handling,
-    S[_]: Functor: LiftStream[*[_], F]
+    F[_]: Concurrent: HttpClient: HttpClient.Handling,
+    S[_]: LiftStream[*[_], F]
   ]: OzonApi[F, S] =
     bifunctorK.bimapK(new Impl[F])(Lift.liftIdentity[F].liftF)(LiftStream[S, F].liftF)
 

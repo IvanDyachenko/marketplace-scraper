@@ -50,7 +50,7 @@ lazy val `marketplace-crawler` =
     )
 
 lazy val projectSettings = Seq(
-  scalaVersion := "2.13.3",
+  scalaVersion := "2.13.5",
   resolvers += Resolver.sonatypeRepo("snapshots"),
   resolvers += "confluent".at("https://packages.confluent.io/maven/"),
   fork in Global := true, // https://github.com/sbt/sbt/issues/2274
@@ -133,5 +133,6 @@ lazy val compilerOptions =
     "-Ywarn-unused:patvars",         // Warn if a variable bound in a pattern is unused
     "-Ywarn-unused:privates",        // Warn if a private member is unused
     "-Ywarn-value-discard",          // Warn when non-Unit expression results are unused
-    "-Ymacro-annotations"
+    "-Ymacro-annotations",
+    "-Wunused:params"
   )

@@ -1,7 +1,6 @@
 package marketplace.clients
 
 import java.util.concurrent.{Executor, TimeoutException}
-import java.net.{InetSocketAddress, ProxySelector}
 import java.net.http.{HttpClient => jdkHttpClient}
 
 import scala.util.control.NoStackTrace
@@ -132,7 +131,7 @@ object HttpClient extends ContextEmbed[HttpClient] {
         val httpClient = jdkHttpClient
           .newBuilder()
           .executor(blockerExecutor(blocker))
-          .proxy(ProxySelector.of(new InetSocketAddress(httpConfig.proxyHost, httpConfig.proxyPort)))
+          //.proxy(ProxySelector.of(new InetSocketAddress(httpConfig.proxyHost, httpConfig.proxyPort)))
           .version(jdkHttpClient.Version.HTTP_1_1)
           .followRedirects(jdkHttpClient.Redirect.NEVER)
           .connectTimeout(java.time.Duration.ofNanos(httpConfig.connectTimeout.toNanos))

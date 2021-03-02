@@ -44,8 +44,8 @@ lazy val `marketplace-crawler` =
         )
       ),
       javaOptions in Universal ++= Seq(
-        "-J-XX:+UnlockExperimentalVMOptions",
-        "-J-XX:+UseCGroupMemoryLimitForHeap"
+        "-J-XX:MinRAMPercentage=30",
+        "-J-XX:+UseContainerSupport"
       )
     )
 

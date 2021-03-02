@@ -11,6 +11,7 @@ in
     buildInputs =
       [
         pkgs.kafkacat
+        pkgs.mitmproxy
         pkgs.metals-emacs
       ];
   }

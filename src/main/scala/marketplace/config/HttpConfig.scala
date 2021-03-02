@@ -10,8 +10,8 @@ import pureconfig.module.catseffect.syntax._
 
 @derive(pureconfigReader)
 final case class HttpConfig(
-  //proxyHost: String,
-  //proxyPort: Int,
+  proxyHost: String,
+  proxyPort: Int,
   maxTotalConnections: Int,
   maxTotalConnectionsPerHost: Int,
   maxWaitQueueLimit: Int,

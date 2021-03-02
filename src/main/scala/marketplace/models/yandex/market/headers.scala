@@ -2,9 +2,9 @@ package marketplace.models.yandex.market
 
 package headers {
   import cats.implicits._
+  import org.http4s.syntax.string._
   import org.http4s.{Header, HeaderKey, ParseFailure, ParseResult}
-  import org.http4s.util.Writer
-  import org.typelevel.ci.CIString
+  import org.http4s.util.{CaseInsensitiveString, Writer}
 
   final case class `X-Region-Id`(geoId: Region.GeoId) extends Header.Parsed {
     def key                                      = `X-Region-Id`
@@ -14,7 +14,7 @@ package headers {
   object `X-Region-Id` extends HeaderKey.Singleton {
     type HeaderT = `X-Region-Id`
 
-    def name: CIString = CIString("X-Region-Id")
+    def name: CaseInsensitiveString = "X-Region-Id".ci
 
     def parse(s: String): ParseResult[`X-Region-Id`] =
       Region.GeoId(s) match {
@@ -35,7 +35,7 @@ package headers {
   object `X-Device-Type` extends HeaderKey.Singleton {
     type HeaderT = `X-Device-Type`
 
-    def name: CIString = CIString("X-Device-Type")
+    def name: CaseInsensitiveString = "X-Device-Type".ci
 
     def parse(s: String): ParseResult[`X-Device-Type`] = Right(`X-Device-Type`(s))
 
@@ -52,7 +52,7 @@ package headers {
   object `X-Platform` extends HeaderKey.Singleton {
     type HeaderT = `X-Platform`
 
-    def name: CIString = CIString("X-Platform")
+    def name: CaseInsensitiveString = "X-Platform".ci
 
     def parse(s: String): ParseResult[`X-Platform`] = Right(`X-Platform`(s))
 
@@ -69,7 +69,7 @@ package headers {
   object `X-App-Version` extends HeaderKey.Singleton {
     type HeaderT = `X-App-Version`
 
-    def name: CIString = CIString("X-App-Version")
+    def name: CaseInsensitiveString = "X-App-Version".ci
 
     def parse(s: String): ParseResult[`X-App-Version`] = Right(`X-App-Version`(s))
 

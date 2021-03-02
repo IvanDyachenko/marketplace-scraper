@@ -1,9 +1,9 @@
 package marketplace
 
-import org.typelevel.ci.CIString
 import io.circe.Encoder
-import org.http4s.{Headers, Uri, MediaType, Method, Request => Http4sRequest, ContentCoding, ProductId, ProductComment}
-import org.http4s.headers.{`Accept-Encoding`, `User-Agent`, Accept, Connection, Host}
+import org.http4s.{Headers, Uri, MediaType, Method, Request => Http4sRequest, ContentCoding}
+import org.http4s.headers.{`Accept-Encoding`, `User-Agent`, Accept, AgentComment, AgentProduct, Connection, Host}
+import org.http4s.util.CaseInsensitiveString
 import org.http4s.circe.jsonEncoderOf
 
 import marketplace.models.ozon.{Request => OzonRequest}
@@ -22,9 +22,9 @@ package object marshalling {
     val headers: Headers =
       Headers.of(
         Host(host.value),
-        Connection(CIString("Keep-Alive")),
+        Connection(CaseInsensitiveString("Keep-Alive")),
         Accept(MediaType.application.json),
-        `User-Agent`(ProductId("OzonStore", Some("400")))
+        `User-Agent`(AgentProduct("OzonStore", Some("430")))
       )
 
     val uri: Uri =
@@ -45,18 +45,18 @@ package object marshalling {
     val headers: Headers =
       Headers.of(
         Host(host.value),
-        Connection(CIString("Keep-Alive")),
+        Connection(CaseInsensitiveString("Keep-Alive")),
         Accept(MediaType.application.json),
         `Accept-Encoding`(ContentCoding.gzip),
         `User-Agent`(
-          ProductId("Wildberries", Some("3.3.1000")),
-          List(ProductComment("RU.WILDBERRIES.MOBILEAPP; build:1433770; iOS 14.4.0"), ProductId("Alamofire", Some("5.2.2")))
+          AgentProduct("Wildberries", Some("3.3.1000")),
+          List(AgentComment("RU.WILDBERRIES.MOBILEAPP; build:1433770; iOS 14.4.0"), AgentProduct("Alamofire", Some("5.2.2")))
         )
       )
 
     val uri: Uri =
       Uri(Some(Uri.Scheme.https), Some(Uri.Authority(host = host)))
-        .withPath(Uri.Path.fromString(request.path))
+        .withPath(request.path)
         .+*?(request.lang)
         .+*?(request.locale)
 
@@ -73,9 +73,9 @@ package object marshalling {
     val headers: Headers =
       Headers.of(
         Host(host.value),
-        Connection(CIString("Keep-Alive")),
+        Connection(CaseInsensitiveString("Keep-Alive")),
         Accept(MediaType.application.json),
-        `User-Agent`(ProductId("Beru", Some("330")), List(ProductComment("iPhone; iOS 14.2; Scale/3.00"))),
+        `User-Agent`(AgentProduct("Beru", Some("330")), List(AgentComment("iPhone; iOS 14.2; Scale/3.00"))),
         `X-Device-Type`("SMARTPHONE"),
         `X-Platform`("IOS"),
         `X-App-Version`("3.3.0"),

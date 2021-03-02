@@ -9,7 +9,7 @@ object Versions {
   lazy val vulkan                = "1.3.0"
   lazy val fs2                   = "2.5.3"
   lazy val fs2Kafka              = "1.1.0+101-ee43a77b-SNAPSHOT"
-  lazy val http4s                = "1.0-234-d1a2b53"
+  lazy val http4s                = "0.21.19"
   lazy val http4sJDKHttpClient   = "0.3.5"
   lazy val doobie                = "0.10.0"
   lazy val clickhouseJDBC        = "0.2.6"

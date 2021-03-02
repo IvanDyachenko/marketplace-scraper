@@ -28,7 +28,7 @@ object WildBerriesApi {
 
   def make[
     F[_]: Functor: HttpClient: HttpClient.Handling,
-    S[_]: Functor: LiftStream[*[_], F]
+    S[_]: LiftStream[*[_], F]
   ]: WildBerriesApi[F, S] =
     bifunctorK.bimapK(new Impl[F])(Lift.liftIdentity[F].liftF)(LiftStream[S, F].liftF)
 

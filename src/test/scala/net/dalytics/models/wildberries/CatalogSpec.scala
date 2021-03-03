@@ -1,4 +1,4 @@
-package marketplace.models.wildberries
+package net.dalytics.models.wildberries
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers

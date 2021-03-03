@@ -1,10 +1,10 @@
-package marketplace.models.yandex.market
+package net.dalytics.models.yandex.market
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-import marketplace.models.yandex.market.headers._
-import marketplace.models.yandex.market.Region
+import net.dalytics.models.yandex.market.headers._
+import net.dalytics.models.yandex.market.Region
 
 class headersSpec extends AnyFlatSpec with Matchers {
 

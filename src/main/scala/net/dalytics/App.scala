@@ -26,7 +26,7 @@ object Main extends TaskApp {
     Task
       .parZip2(
         initParser.use(_.run.compile.drain),
-        initCrawler.use(crawler => Task.parZip2(crawler.schedule.compile.drain, crawler.run.compile.drain))
+        initHandler.use(handler => Task.parZip2(handler.schedule.compile.drain, handler.run.compile.drain))
       )
       .as(ExitCode.Success)
 
@@ -59,7 +59,7 @@ object Main extends TaskApp {
                                      )
     } yield parser
 
-  def initCrawler: Resource[Task, Handler[AppS]] =
+  def initHandler: Resource[Task, Handler[AppS]] =
     for {
       implicit0(blocker: Blocker)              <- Blocker[AppI]
       cfg                                      <- Resource.liftF(Config.make[AppI])
@@ -84,12 +84,12 @@ object Main extends TaskApp {
                                                     cfg.schemaRegistryConfig,
                                                     cfg.handlerConfig.kafkaConsumer
                                                   )
-      crawler                                  <- Handler.make[AppI, AppF, AppS](cfg.handlerConfig, cfg.schedulerConfig)(
+      handler                                  <- Handler.make[AppI, AppF, AppS](cfg.handlerConfig, cfg.schedulerConfig)(
                                                     crawl,
                                                     sourcesOfCommands,
                                                     producerOfEvents,
                                                     producerOfCommands,
                                                     consumerOfCommands
                                                   )
-    } yield crawler
+    } yield handler
 }

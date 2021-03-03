@@ -6,6 +6,7 @@ import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry, VulcanEnum}
 import enumeratum.EnumEntry.Lowercase
 import tofu.logging.{Loggable, LoggableEnum}
 import vulcan.Codec
+import vulcan.generic.AvroNamespace
 import io.circe.{Decoder, HCursor}
 import supertagged.TaggedType
 
@@ -38,6 +39,7 @@ object Item {
   object Id extends TaggedType[Long] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec
   type Id = Id.Type
 
+  @AvroNamespace("ozon.models.item")
   sealed trait Type extends EnumEntry with Lowercase with Product with Serializable
   object Type       extends Enum[Type] with CatsEnum[Type] with CirceEnum[Type] with LoggableEnum[Type] with VulcanEnum[Type] {
     val values = findValues
@@ -45,6 +47,7 @@ object Item {
     case object SKU extends Type
   }
 
+  @AvroNamespace("ozon.models.item")
   sealed abstract class Availability extends EnumEntry
   object Availability                extends Enum[Availability] with CirceEnum[Availability] with VulcanEnum[Availability] {
     val values = findValues

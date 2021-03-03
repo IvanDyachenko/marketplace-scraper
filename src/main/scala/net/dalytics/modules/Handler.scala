@@ -14,48 +14,48 @@ import fs2.Stream
 import fs2.kafka.{commitBatchWithin, KafkaConsumer, KafkaProducer, ProducerRecord, ProducerRecords}
 import supertagged.postfix._
 
-import net.dalytics.config.{CrawlerConfig, SchedulerConfig, SourceConfig}
+import net.dalytics.config.{HandlerConfig, SchedulerConfig, SourceConfig}
 import net.dalytics.context.AppContext
 import net.dalytics.api.{OzonApi, WildBerriesApi}
-import net.dalytics.services.Crawl
+import net.dalytics.services.Handle
 import net.dalytics.models.{ozon, Command, Event}
-import net.dalytics.models.crawler.{CrawlerCommand, CrawlerEvent}
+import net.dalytics.models.handler.{HandlerCommand, HandlerEvent}
 
 @derive(representableK)
-trait Crawler[S[_]] {
+trait Handler[S[_]] {
   def run: S[Unit]
   def schedule: S[Unit]
 }
 
-object Crawler {
-  def apply[F[_]](implicit ev: Crawler[F]): ev.type = ev
+object Handler {
+  def apply[F[_]](implicit ev: Handler[F]): ev.type = ev
 
   private final class Impl[
     I[_]: Monad: Timer: Concurrent,
     F[_]: WithRun[*[_], I, AppContext]
-  ](crawlerConfig: CrawlerConfig, schedulerConfig: SchedulerConfig)(
-    crawl: Crawl[F],
-    sourcesOfCommands: List[Stream[I, CrawlerCommand]],
-    producerOfEvents: KafkaProducer[I, Option[Event.Key], CrawlerEvent],
-    producerOfCommands: KafkaProducer[I, Option[Command.Key], CrawlerCommand],
-    consumerOfCommands: KafkaConsumer[I, Option[Command.Key], CrawlerCommand]
-  ) extends Crawler[Stream[I, *]] {
+  ](handlerConfig: HandlerConfig, schedulerConfig: SchedulerConfig)(
+    handle: Handle[F],
+    sourcesOfCommands: List[Stream[I, HandlerCommand]],
+    producerOfEvents: KafkaProducer[I, Option[Event.Key], HandlerEvent],
+    producerOfCommands: KafkaProducer[I, Option[Command.Key], HandlerCommand],
+    consumerOfCommands: KafkaConsumer[I, Option[Command.Key], HandlerCommand]
+  ) extends Handler[Stream[I, *]] {
     def run: Stream[I, Unit] =
       consumerOfCommands.partitionedStream.map { partition =>
         partition
-          .parEvalMap(crawlerConfig.kafkaConsumer.maxConcurrentPerPartition) { committable =>
-            runContext(crawl.handle(committable.record.value))(AppContext()).map(_.toOption -> committable.offset)
+          .parEvalMap(handlerConfig.kafkaConsumer.maxConcurrentPerPartition) { committable =>
+            runContext(handle.handle(committable.record.value))(AppContext()).map(_.toOption -> committable.offset)
           }
           .collect { case (eventOption, offset) =>
             val events  = List(eventOption).flatten
-            val records = events.map(event => ProducerRecord(crawlerConfig.kafkaProducer.topic, event.key, event))
+            val records = events.map(event => ProducerRecord(handlerConfig.kafkaProducer.topic, event.key, event))
 
             ProducerRecords(records, offset)
           }
           .evalMap(producerOfEvents.produce)
-          .parEvalMap(crawlerConfig.kafkaProducer.maxBufferSize)(identity)
+          .parEvalMap(handlerConfig.kafkaProducer.maxBufferSize)(identity)
           .map(_.passthrough)
-          .through(commitBatchWithin(crawlerConfig.kafkaConsumer.commitEveryNOffsets, crawlerConfig.kafkaConsumer.commitTimeWindow))
+          .through(commitBatchWithin(handlerConfig.kafkaConsumer.commitEveryNOffsets, handlerConfig.kafkaConsumer.commitTimeWindow))
       }.parJoinUnbounded
 
     def schedule: Stream[I, Unit] =
@@ -72,18 +72,18 @@ object Crawler {
     I[_]: Monad: Concurrent: Timer,
     F[_]: WithRun[*[_], I, AppContext],
     S[_]: LiftStream[*[_], I]
-  ](crawlerConfig: CrawlerConfig, schedulerConfig: SchedulerConfig)(
-    crawl: Crawl[F],
-    sourcesOfCommands: List[Stream[I, CrawlerCommand]],
-    producerOfEvents: KafkaProducer[I, Option[Event.Key], CrawlerEvent],
-    producerOfCommands: KafkaProducer[I, Option[Command.Key], CrawlerCommand],
-    consumerOfCommands: KafkaConsumer[I, Option[Command.Key], CrawlerCommand]
-  ): Resource[I, Crawler[S]] =
+  ](handlerConfig: HandlerConfig, schedulerConfig: SchedulerConfig)(
+    handle: Handle[F],
+    sourcesOfCommands: List[Stream[I, HandlerCommand]],
+    producerOfEvents: KafkaProducer[I, Option[Event.Key], HandlerEvent],
+    producerOfCommands: KafkaProducer[I, Option[Command.Key], HandlerCommand],
+    consumerOfCommands: KafkaConsumer[I, Option[Command.Key], HandlerCommand]
+  ): Resource[I, Handler[S]] =
     Resource.liftF {
       Stream
         .eval {
-          val impl: Crawler[Stream[I, *]] =
-            new Impl[I, F](crawlerConfig, schedulerConfig)(crawl, sourcesOfCommands, producerOfEvents, producerOfCommands, consumerOfCommands)
+          val impl: Handler[Stream[I, *]] =
+            new Impl[I, F](handlerConfig, schedulerConfig)(handle, sourcesOfCommands, producerOfEvents, producerOfCommands, consumerOfCommands)
 
           impl.pure[I]
         }
@@ -95,7 +95,7 @@ object Crawler {
   def makeCommandsSource[F[_]: Timer: Concurrent](sourceConfig: SourceConfig)(
     wbApi: WildBerriesApi[F, Stream[F, *]],
     ozonApi: OzonApi[F, Stream[F, *]]
-  ): Stream[F, CrawlerCommand] =
+  ): Stream[F, HandlerCommand] =
     sourceConfig match {
       case SourceConfig.WbCatalog(_, _)                     => ???
       case SourceConfig.OzonCategory(rootCategoryId, every) =>
@@ -114,7 +114,7 @@ object Crawler {
                     }
                   }
                   .parEvalMapUnordered(1000) { p =>
-                    CrawlerCommand.handleOzonRequest[F](
+                    HandlerCommand.handleOzonRequest[F](
                       ozon.Request.GetCategorySearchResultsV2(leafCategory.id, leafCategory.name, p @@ ozon.Url.Page)
                     )
                   }

@@ -7,14 +7,14 @@ import pureconfig.ConfigSource
 import pureconfig.module.catseffect.syntax._
 
 @derive(pureconfigReader)
-final case class CrawlerConfig(
+final case class HandlerConfig(
   kafkaConsumer: KafkaConsumerConfig,
   kafkaProducer: KafkaProducerConfig
 )
 
-object CrawlerConfig {
-  lazy val load: CrawlerConfig = ConfigSource.default.at("crawler").loadOrThrow[CrawlerConfig]
+object HandlerConfig {
+  lazy val load: HandlerConfig = ConfigSource.default.at("handler").loadOrThrow[HandlerConfig]
 
-  def loadF[F[_]: Sync: ContextShift](implicit blocker: Blocker): F[CrawlerConfig] =
-    ConfigSource.default.at("crawler").loadF[F, CrawlerConfig](blocker)
+  def loadF[F[_]: Sync: ContextShift](implicit blocker: Blocker): F[HandlerConfig] =
+    ConfigSource.default.at("handler").loadF[F, HandlerConfig](blocker)
 }

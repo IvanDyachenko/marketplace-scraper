@@ -21,7 +21,7 @@ object ParserCommand {
       Codec.record[ParseOzonResponse](
         name = "ParseOzonResponse",
         namespace = "parser.commands",
-        aliases = Seq("crawler.events.OzonRequestHandled")
+        aliases = Seq("handler.events.OzonRequestHandled")
       )(field => (field("_created", _.created), field("response", _.response, aliases = Seq("raw"))).mapN(apply))
   }
 

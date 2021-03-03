@@ -1,4 +1,4 @@
-package net.dalytics.models.crawler
+package net.dalytics.models.handler
 
 import cats.implicits._
 import cats.FlatMap
@@ -12,14 +12,14 @@ import supertagged.postfix._
 import net.dalytics.models._
 
 @derive(loggable)
-sealed trait CrawlerEvent extends Event
+sealed trait HandlerEvent extends Event
 
-object CrawlerEvent {
+object HandlerEvent {
 
   @derive(loggable)
-  final case class OzonRequestHandled private (created: Timestamp, raw: Json) extends CrawlerEvent
+  final case class OzonRequestHandled private (created: Timestamp, raw: Json) extends HandlerEvent
 
-  def ozonRequestHandled[F[_]: FlatMap: Clock](raw: Json): F[CrawlerEvent] =
+  def ozonRequestHandled[F[_]: FlatMap: Clock](raw: Json): F[HandlerEvent] =
     for {
       instant <- Clock[F].instantNow
     } yield OzonRequestHandled(instant @@ Timestamp, raw)
@@ -28,9 +28,9 @@ object CrawlerEvent {
     implicit val vulcanCodec: Codec[OzonRequestHandled] =
       Codec.record[OzonRequestHandled](
         name = "OzonRequestHandled",
-        namespace = "crawler.events"
+        namespace = "handler.events"
       )(field => (field("_created", _.created), field("raw", _.raw)).mapN(apply))
   }
 
-  implicit val vulcanCodec: Codec[CrawlerEvent] = Codec.union[CrawlerEvent](alt => alt[OzonRequestHandled])
+  implicit val vulcanCodec: Codec[HandlerEvent] = Codec.union[HandlerEvent](alt => alt[OzonRequestHandled])
 }

@@ -11,7 +11,7 @@ final case class Config(
   schemaRegistryConfig: SchemaRegistryConfig,
   sourcesConfig: SourcesConfig,
   parserConfig: ParserConfig,
-  crawlerConfig: CrawlerConfig,
+  handlerConfig: HandlerConfig,
   schedulerConfig: SchedulerConfig
 )
 
@@ -23,7 +23,7 @@ object Config {
       SchemaRegistryConfig.loadF[F],
       SourcesConfig.loadF[F],
       ParserConfig.loadF[F],
-      CrawlerConfig.loadF[F],
+      HandlerConfig.loadF[F],
       SchedulerConfig.loadF[F]
     )
       .mapN(Config.apply)

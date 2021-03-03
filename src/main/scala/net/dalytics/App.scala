@@ -11,12 +11,12 @@ import tofu.syntax.monadic._
 import net.dalytics.config.Config
 import net.dalytics.context.AppContext
 import net.dalytics.api.{OzonApi, WildBerriesApi}
-import net.dalytics.modules.{Crawler, Parser}
+import net.dalytics.modules.{Handler, Parser}
 import net.dalytics.clients.{HttpClient, KafkaClient}
-import net.dalytics.services.{Crawl, Parse}
+import net.dalytics.services.{Handle, Parse}
 import net.dalytics.models.{Command, Event}
 import net.dalytics.models.parser.{ParserCommand, ParserEvent}
-import net.dalytics.models.crawler.{CrawlerCommand, CrawlerEvent}
+import net.dalytics.models.handler.{HandlerCommand, HandlerEvent}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -59,32 +59,32 @@ object Main extends TaskApp {
                                      )
     } yield parser
 
-  def initCrawler: Resource[Task, Crawler[AppS]] =
+  def initCrawler: Resource[Task, Handler[AppS]] =
     for {
       implicit0(blocker: Blocker)              <- Blocker[AppI]
       cfg                                      <- Resource.liftF(Config.make[AppI])
       implicit0(httpClientI: HttpClient[AppI]) <- HttpClient.make[AppI, AppI](cfg.httpConfig)
       implicit0(httpClientF: HttpClient[AppF]) <- HttpClient.make[AppI, AppF](cfg.httpConfig)
-      crawl                                    <- Crawl.make[AppI, AppF]
+      crawl                                    <- Handle.make[AppI, AppF]
       wbApi                                    <- Resource.liftF(WildBerriesApi.make[AppI, AppS].pure[AppI])
       ozonApi                                  <- Resource.liftF(OzonApi.make[AppI, AppS].pure[AppI])
-      sourcesOfCommands                         = cfg.sourcesConfig.sources.map(Crawler.makeCommandsSource[AppI](_)(wbApi, ozonApi))
-      producerOfEvents                         <- KafkaClient.makeProducer[AppI, Event.Key, CrawlerEvent](
+      sourcesOfCommands                         = cfg.sourcesConfig.sources.map(Handler.makeCommandsSource[AppI](_)(wbApi, ozonApi))
+      producerOfEvents                         <- KafkaClient.makeProducer[AppI, Event.Key, HandlerEvent](
                                                     cfg.kafkaConfig,
                                                     cfg.schemaRegistryConfig,
-                                                    cfg.crawlerConfig.kafkaProducer
+                                                    cfg.handlerConfig.kafkaProducer
                                                   )
-      producerOfCommands                       <- KafkaClient.makeProducer[AppI, Command.Key, CrawlerCommand](
+      producerOfCommands                       <- KafkaClient.makeProducer[AppI, Command.Key, HandlerCommand](
                                                     cfg.kafkaConfig,
                                                     cfg.schemaRegistryConfig,
                                                     cfg.schedulerConfig.kafkaProducer
                                                   )
-      consumerOfCommands                       <- KafkaClient.makeConsumer[AppI, Command.Key, CrawlerCommand](
+      consumerOfCommands                       <- KafkaClient.makeConsumer[AppI, Command.Key, HandlerCommand](
                                                     cfg.kafkaConfig,
                                                     cfg.schemaRegistryConfig,
-                                                    cfg.crawlerConfig.kafkaConsumer
+                                                    cfg.handlerConfig.kafkaConsumer
                                                   )
-      crawler                                  <- Crawler.make[AppI, AppF, AppS](cfg.crawlerConfig, cfg.schedulerConfig)(
+      crawler                                  <- Handler.make[AppI, AppF, AppS](cfg.handlerConfig, cfg.schedulerConfig)(
                                                     crawl,
                                                     sourcesOfCommands,
                                                     producerOfEvents,

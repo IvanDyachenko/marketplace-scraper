@@ -1,8 +1,8 @@
 package marketplace.clients
 
 import tofu.syntax.monadic._
-import cats.effect.{Concurrent, ConcurrentEffect, ContextShift, Resource, Timer}
-import fs2.kafka.{consumerResource, AutoOffsetReset, ConsumerSettings, Deserializer, KafkaConsumer, KafkaProducer, ProducerSettings, RecordDeserializer, RecordSerializer, Serializer}
+import cats.effect.{ConcurrentEffect, ContextShift, Resource, Timer}
+import fs2.kafka.{AutoOffsetReset, ConsumerSettings, Deserializer, KafkaConsumer, KafkaProducer, ProducerSettings, RecordDeserializer, RecordSerializer, Serializer}
 import vulcan.Codec
 import fs2.kafka.vulcan.{avroDeserializer, avroSerializer, AvroSettings, SchemaRegistryClientSettings}
 
@@ -10,7 +10,7 @@ import marketplace.config.{KafkaConfig, KafkaConsumerConfig, KafkaProducerConfig
 
 object KafkaClient {
 
-  def makeProducer[F[_]: ContextShift: Concurrent, K: Codec, V: Codec](
+  def makeProducer[F[_]: ContextShift: ConcurrentEffect, K: Codec, V: Codec](
     kafkaConfig: KafkaConfig,
     schemaRegistryConfig: SchemaRegistryConfig,
     kafkaProducerConfig: KafkaProducerConfig
@@ -42,15 +42,20 @@ object KafkaClient {
       RecordDeserializer.const(avroDeserializer[K].using(avroSettings).forKey.map(implicit der => Deserializer.option[F, K]))
     val valueDeserializer: RecordDeserializer[F, V]       = avroDeserializer[V].using(avroSettings)
 
-    val consumerSettings1 = ConsumerSettings[F, Option[K], V](keyDeserializer, valueDeserializer)
-      .withBootstrapServers(kafkaConfig.bootstrapServers)
-      .withGroupId(kafkaConsumerConfig.groupId)
-      .withAutoOffsetReset(AutoOffsetReset.Earliest)
-      .withProperty("connections.max.idle.ms", "-1")
-    val consumerSettings2 = kafkaConsumerConfig.commitTimeout.fold(consumerSettings1)(consumerSettings1.withCommitTimeout)
-    val consumerSettings3 = kafkaConsumerConfig.maxPollRecords.fold(consumerSettings2)(consumerSettings2.withMaxPollRecords)
-    val consumerSettings4 = kafkaConsumerConfig.maxPollInterval.fold(consumerSettings3)(consumerSettings3.withMaxPollInterval)
+    val consumerSettingsBase =
+      ConsumerSettings[F, Option[K], V](keyDeserializer, valueDeserializer)
+        .withBootstrapServers(kafkaConfig.bootstrapServers)
+        .withGroupId(kafkaConsumerConfig.groupId)
+        .withAutoOffsetReset(AutoOffsetReset.Earliest)
+        .withProperty("connections.max.idle.ms", "-1")
 
-    consumerResource[F, Option[K], V](consumerSettings4).evalTap(_.subscribeTo(kafkaConsumerConfig.topic))
+    val consumerSettingWithCommitTimeout    =
+      kafkaConsumerConfig.commitTimeout.fold(consumerSettingsBase)(consumerSettingsBase.withCommitTimeout)
+    val consumerSettingsWithMaxPollRecords  =
+      kafkaConsumerConfig.maxPollRecords.fold(consumerSettingWithCommitTimeout)(consumerSettingWithCommitTimeout.withMaxPollRecords)
+    val consumerSettingsWithMaxPollInterval =
+      kafkaConsumerConfig.maxPollInterval.fold(consumerSettingsWithMaxPollRecords)(consumerSettingsWithMaxPollRecords.withMaxPollInterval)
+
+    KafkaConsumer.resource[F, Option[K], V](consumerSettingsWithMaxPollInterval).evalTap(_.subscribeTo(kafkaConsumerConfig.topic))
   }
 }

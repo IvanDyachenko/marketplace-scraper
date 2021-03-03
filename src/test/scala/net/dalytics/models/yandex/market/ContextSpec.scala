@@ -1,11 +1,11 @@
-package marketplace.models.yandex.market
+package net.dalytics.models.yandex.market
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import io.circe.parser.decode
 
-import marketplace.models.yandex.market.Context
+import net.dalytics.models.yandex.market.Context
 
 class ContextSpec extends AnyFlatSpec with Matchers {
   it should "decode context from a valid JSON" in {

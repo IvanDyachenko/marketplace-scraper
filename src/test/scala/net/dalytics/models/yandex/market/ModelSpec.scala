@@ -1,11 +1,11 @@
-package marketplace.models.yandex.market
+package net.dalytics.models.yandex.market
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import io.circe.parser.decode
 
-import marketplace.models.yandex.market.Model
+import net.dalytics.models.yandex.market.Model
 
 class ModelSpec extends AnyFlatSpec with Matchers {
   it should "decode model identifier from a string" in {

@@ -1,11 +1,11 @@
 import com.typesafe.sbt.packager.docker.Cmd
 
-lazy val `marketplace-crawler` =
+lazy val `marketplace-scraper` =
   project
     .in(file("."))
-    .settings(name := "marketplace-crawler")
-    .settings(organization := "io.ivandyachenko")
-    .settings(homepage := Some(url("https://github.com/ivandyachenko/marketplace-crawler")))
+    .settings(name := "marketplace-scraper")
+    .settings(organization := "net.dalytics")
+    .settings(homepage := Some(url("https://github.com/ivandyachenko/marketplace-scraper")))
     .settings(
       projectSettings,
       projectDependencies,
@@ -17,7 +17,7 @@ lazy val `marketplace-crawler` =
     .enablePlugins(AshScriptPlugin)
     .enablePlugins(JavaAppPackaging)
     .settings(
-      packageName in Docker := "marketplace-crawler",
+      packageName in Docker := "marketplace-scraper",
       version in Docker := sys.env.getOrElse("GITHUB_SHA", default = "latest"),
       maintainer in Docker := "Ivan Dyachenko <vandyachen@gmail.com>",
       dockerBaseImage := "openjdk:11",

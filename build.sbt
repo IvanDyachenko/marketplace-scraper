@@ -134,8 +134,9 @@ lazy val `marketplace-scheduler` = (project in file("modules/scheduler"))
   .settings(
     Universal / javaOptions ++= Seq(
       "-Dlogback.configurationFile=/src/resources/logback.xml",
-      "-J-XX:MinRAMPercentage=30",
-      "-J-XX:+UseContainerSupport"
+      "-J-XX:+UseContainerSupport",
+      "-J-XX:InitialRAMPercentage=25",
+      "-J-XX:MaxRAMPercentage=75"
     )
   )
 

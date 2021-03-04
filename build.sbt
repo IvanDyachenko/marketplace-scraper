@@ -38,8 +38,9 @@ lazy val `marketplace-parser` = (project in file("modules/parser"))
   .settings(
     Universal / javaOptions ++= Seq(
       "-Dlogback.configurationFile=/src/resources/logback.xml",
-      "-J-XX:MinRAMPercentage=30",
-      "-J-XX:+UseContainerSupport"
+      "-J-XX:+UseContainerSupport",
+      "-J-XX:InitialRAMPercentage=25",
+      "-J-XX:MaxRAMPercentage=75"
     )
   )
 
@@ -86,8 +87,9 @@ lazy val `marketplace-handler` = (project in file("modules/handler"))
   .settings(
     Universal / javaOptions ++= Seq(
       "-Dlogback.configurationFile=/src/resources/logback.xml",
-      "-J-XX:MinRAMPercentage=30",
-      "-J-XX:+UseContainerSupport"
+      "-J-XX:+UseContainerSupport",
+      "-J-XX:InitialRAMPercentage=25",
+      "-J-XX:MaxRAMPercentage=75"
     )
   )
 

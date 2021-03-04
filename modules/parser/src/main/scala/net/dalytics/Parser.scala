@@ -1,4 +1,4 @@
-package net.dalytics.modules
+package net.dalytics
 
 import cats.tagless.syntax.functorK._
 import cats.{Applicative, Monad}
@@ -13,7 +13,7 @@ import tofu.fs2.LiftStream
 import fs2.Stream
 import fs2.kafka.{commitBatchWithin, CommittableOffset, KafkaConsumer, KafkaProducer, ProducerRecord, ProducerRecords}
 
-import net.dalytics.config.ParserConfig
+import net.dalytics.config.Config
 import net.dalytics.context.AppContext
 import net.dalytics.services.Parse
 import net.dalytics.models.{Command, Event}
@@ -30,7 +30,7 @@ object Parser {
   private final class Impl[
     I[_]: Monad: Timer: Concurrent,
     F[_]: Applicative: WithRun[*[_], I, AppContext]
-  ](config: ParserConfig)(
+  ](config: Config)(
     parse: Parse[F],
     producerOfEvents: KafkaProducer[I, Option[Event.Key], ParserEvent],
     consumerOfCommands: KafkaConsumer[I, Option[Command.Key], ParserCommand.ParseOzonResponse]
@@ -38,18 +38,18 @@ object Parser {
     def run: Stream[I, Unit] =
       consumerOfCommands.partitionedStream.map { partition =>
         partition
-          .parEvalMap(config.kafkaConsumer.maxConcurrentPerPartition) { committable =>
+          .parEvalMap(config.kafkaConsumerConfig.maxConcurrentPerPartition) { committable =>
             runContext(parse.handle(committable.record.value))(AppContext()).map(
               _.toOption.fold[(List[ParserEvent], CommittableOffset[I])](List.empty -> committable.offset)(_ -> committable.offset)
             )
           }
           .collect { case (events, offset) =>
-            ProducerRecords(events.map(event => ProducerRecord(config.kafkaProducer.topic, event.key, event)), offset)
+            ProducerRecords(events.map(event => ProducerRecord(config.kafkaProducerConfig.topic, event.key, event)), offset)
           }
           .evalMap(producerOfEvents.produce)
-          .parEvalMap(config.kafkaProducer.maxBufferSize)(identity)
+          .parEvalMap(config.kafkaProducerConfig.maxBufferSize)(identity)
           .map(_.passthrough)
-          .through(commitBatchWithin(config.kafkaConsumer.commitEveryNOffsets, config.kafkaConsumer.commitTimeWindow))
+          .through(commitBatchWithin(config.kafkaConsumerConfig.commitEveryNOffsets, config.kafkaConsumerConfig.commitTimeWindow))
       }.parJoinUnbounded
   }
 
@@ -57,7 +57,7 @@ object Parser {
     I[_]: Monad: Concurrent: Timer,
     F[_]: Applicative: WithRun[*[_], I, AppContext],
     S[_]: LiftStream[*[_], I]
-  ](config: ParserConfig)(
+  ](config: Config)(
     parse: Parse[F],
     producerOfEvents: KafkaProducer[I, Option[Event.Key], ParserEvent],
     consumerOfCommands: KafkaConsumer[I, Option[Command.Key], ParserCommand.ParseOzonResponse]

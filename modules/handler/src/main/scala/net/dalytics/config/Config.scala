@@ -7,24 +7,14 @@ import tofu.optics.macros.ClassyOptics
 @ClassyOptics("contains_")
 final case class Config(
   httpConfig: HttpConfig,
-  kafkaConfig: KafkaConfig,
   schemaRegistryConfig: SchemaRegistryConfig,
-  sourcesConfig: SourcesConfig,
-  parserConfig: ParserConfig,
-  handlerConfig: HandlerConfig,
-  schedulerConfig: SchedulerConfig
+  kafkaConfig: KafkaConfig,
+  kafkaConsumerConfig: KafkaConsumerConfig,
+  kafkaProducerConfig: KafkaProducerConfig
 )
 
 object Config {
   def make[F[_]: Sync: ContextShift](implicit blocker: Blocker): F[Config] =
-    (
-      HttpConfig.loadF[F],
-      KafkaConfig.loadF[F],
-      SchemaRegistryConfig.loadF[F],
-      SourcesConfig.loadF[F],
-      ParserConfig.loadF[F],
-      HandlerConfig.loadF[F],
-      SchedulerConfig.loadF[F]
-    )
+    (HttpConfig.loadF[F], SchemaRegistryConfig.loadF[F], KafkaConfig.loadF[F], KafkaConsumerConfig.loadF[F], KafkaProducerConfig.loadF[F])
       .mapN(Config.apply)
 }

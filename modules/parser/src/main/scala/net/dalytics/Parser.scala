@@ -38,7 +38,7 @@ object Parser {
     def run: Stream[I, Unit] =
       consumerOfCommands.partitionedStream.map { partition =>
         partition
-          .parEvalMap(config.kafkaConsumerConfig.maxConcurrentPerPartition) { committable =>
+          .parEvalMap(config.kafkaConsumerConfig.maxConcurrentPerTopic) { committable =>
             runContext(parse.handle(committable.record.value))(AppContext()).map(
               _.toOption.fold[(List[ParserEvent], CommittableOffset[I])](List.empty -> committable.offset)(_ -> committable.offset)
             )

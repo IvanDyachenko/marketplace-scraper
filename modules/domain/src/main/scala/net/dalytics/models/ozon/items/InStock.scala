@@ -2,8 +2,9 @@ package net.dalytics.models.ozon.items
 
 import cats.implicits._
 import derevo.derive
+import tofu.syntax.loggable._
 import tofu.logging.derivation.loggable
-import io.circe.{Decoder, DecodingFailure, HCursor}
+import io.circe.{Decoder, DecodingFailure, HCursor, Json}
 
 import net.dalytics.models.ozon.{Brand, Category, Delivery, Item, MarketplaceSeller, Price, Rating, Template}
 
@@ -41,11 +42,15 @@ object InStock {
                           val message = s"'cellTrackingInfo' doesn't contain 'availability' which is equal to '${Item.Availability.InStock}'"
                           DecodingFailure(message, c.history)
                         }(Item.Availability.from(_) == Item.Availability.InStock)
-      addToCart     = c.get[Template]("templateState")
-                        .flatMap(_.addToCart.fold[Decoder.Result[(Int, Int)]] {
-                          val message = "'templateState' doesn't contain an object which describes 'addToCart...' action"
-                          Left(DecodingFailure(message, c.history))
-                        }(Right(_)))
+      templateJson <- c.get[Json]("templateState")
+      template     <- c.get[Template]("templateState")
+      addToCart     = template.addToCart.fold[Decoder.Result[(Int, Int)]] {
+                        val message = List(
+                          s"'templateState' which is equal to ${templateJson.noSpacesSortKeys} doesn't contain an object which describes 'add to cart' action.",
+                          s"Decoded value of 'templateState': ${template.logShow}."
+                        ).mkString(" ")
+                        Left(DecodingFailure(message, c.history))
+                      }(Right(_))
       item         <- (
                         i.get[Item.Id]("id"),
                         i.get[Int]("index"),

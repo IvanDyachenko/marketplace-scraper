@@ -4,7 +4,7 @@ import cats.implicits._
 import cats.FlatMap
 import cats.effect.Clock
 import derevo.derive
-import tofu.logging.derivation.loggable
+import tofu.logging.derivation.{loggable, unembed}
 import vulcan.Codec
 import supertagged.postfix._
 
@@ -17,7 +17,7 @@ sealed trait HandlerCommand extends Command
 object HandlerCommand {
 
   @derive(loggable)
-  final case class HandleOzonRequest private (created: Timestamp, request: OzonRequest) extends HandlerCommand {
+  final case class HandleOzonRequest private (created: Timestamp, @unembed request: OzonRequest) extends HandlerCommand {
     override val key: Option[Command.Key] = Some(request.url.path @@ Command.Key)
   }
 

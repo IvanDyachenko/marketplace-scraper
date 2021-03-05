@@ -1,11 +1,11 @@
 package net.dalytics.models.ozon
 
 import derevo.derive
-import tofu.logging.derivation.{loggable, masked, MaskMode}
+import tofu.logging.derivation.loggable
 import io.circe.{Decoder, DecodingFailure, HCursor}
 
 @derive(loggable)
-final case class CategoryMenu(@masked(MaskMode.ForLength(0, 50)) categories: List[Category]) {
+final case class CategoryMenu(categories: List[Category]) {
   def category(id: Category.Id): Option[Category] =
     categories.foldLeft[Option[Category]](None)((result, category) => result.orElse(category.find(id)))
 }

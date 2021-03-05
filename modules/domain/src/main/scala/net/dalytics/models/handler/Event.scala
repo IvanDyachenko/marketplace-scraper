@@ -4,7 +4,7 @@ import cats.implicits._
 import cats.FlatMap
 import cats.effect.Clock
 import derevo.derive
-import tofu.logging.derivation.loggable
+import tofu.logging.derivation.{loggable, masked, MaskMode}
 import io.circe.Json
 import vulcan.Codec
 import supertagged.postfix._
@@ -17,7 +17,7 @@ sealed trait HandlerEvent extends Event
 object HandlerEvent {
 
   @derive(loggable)
-  final case class OzonRequestHandled private (created: Timestamp, raw: Json) extends HandlerEvent
+  final case class OzonRequestHandled private (created: Timestamp, @masked(MaskMode.Erase) raw: Json) extends HandlerEvent
 
   def ozonRequestHandled[F[_]: FlatMap: Clock](raw: Json): F[HandlerEvent] =
     for {

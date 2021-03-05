@@ -14,7 +14,7 @@ import fs2.Stream
 import fs2.kafka.{commitBatchWithin, CommittableOffset, KafkaConsumer, KafkaProducer, ProducerRecord, ProducerRecords}
 
 import net.dalytics.config.Config
-import net.dalytics.context.AppContext
+import net.dalytics.context.MessageContext
 import net.dalytics.services.Parse
 import net.dalytics.models.{Command, Event}
 import net.dalytics.models.parser.{ParserCommand, ParserEvent}
@@ -29,7 +29,7 @@ object Parser {
 
   private final class Impl[
     I[_]: Monad: Timer: Concurrent,
-    F[_]: Applicative: WithRun[*[_], I, AppContext]
+    F[_]: Applicative: WithRun[*[_], I, MessageContext]
   ](config: Config)(
     parse: Parse[F],
     producerOfEvents: KafkaProducer[I, Option[Event.Key], ParserEvent],
@@ -39,9 +39,19 @@ object Parser {
       consumerOfCommands.partitionedStream.map { partition =>
         partition
           .parEvalMap(config.kafkaConsumerConfig.maxConcurrentPerTopic) { committable =>
-            runContext(parse.handle(committable.record.value))(AppContext()).map(
-              _.toOption.fold[(List[ParserEvent], CommittableOffset[I])](List.empty -> committable.offset)(_ -> committable.offset)
+            val offset  = committable.offset
+            val command = committable.record.value
+            val context = MessageContext(
+              consumerGroupId = offset.consumerGroupId,
+              topic = offset.topicPartition.topic,
+              partition = offset.topicPartition.partition,
+              offset = offset.offsetAndMetadata.offset,
+              metadata = offset.offsetAndMetadata.metadata
             )
+
+            runContext(parse.handle(command))(context).map { eventsE =>
+              eventsE.toOption.fold[(List[ParserEvent], CommittableOffset[I])](List.empty -> offset)(_ -> offset)
+            }
           }
           .collect { case (events, offset) =>
             ProducerRecords(events.map(event => ProducerRecord(config.kafkaProducerConfig.topic, event.key, event)), offset)
@@ -55,7 +65,7 @@ object Parser {
 
   def make[
     I[_]: Monad: Concurrent: Timer,
-    F[_]: Applicative: WithRun[*[_], I, AppContext],
+    F[_]: Applicative: WithRun[*[_], I, MessageContext],
     S[_]: LiftStream[*[_], I]
   ](config: Config)(
     parse: Parse[F],

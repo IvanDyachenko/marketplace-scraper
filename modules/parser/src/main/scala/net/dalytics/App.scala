@@ -8,7 +8,7 @@ import fs2.Stream
 import tofu.fs2Instances._
 
 import net.dalytics.config.Config
-import net.dalytics.context.CommandContext
+import net.dalytics.context.MessageContext
 import net.dalytics.models.{Command, Event}
 import net.dalytics.models.parser.{ParserCommand, ParserEvent}
 import net.dalytics.clients.KafkaClient
@@ -18,7 +18,7 @@ object Main extends TaskApp {
 
   override def run(args: List[String]): Task[ExitCode] = init.use(_.run.compile.drain).as(ExitCode.Success)
 
-  type AppF[+A] = Env[CommandContext, A]
+  type AppF[+A] = Env[MessageContext, A]
   type AppI[+A] = Task[A]
   type AppS[+A] = Stream[AppI, A]
 

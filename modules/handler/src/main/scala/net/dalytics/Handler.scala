@@ -14,7 +14,7 @@ import fs2.Stream
 import fs2.kafka.{commitBatchWithin, KafkaConsumer, KafkaProducer, ProducerRecord, ProducerRecords}
 
 import net.dalytics.config.Config
-import net.dalytics.context.CommandContext
+import net.dalytics.context.MessageContext
 import net.dalytics.services.Handle
 import net.dalytics.models.{Command, Event}
 import net.dalytics.models.handler.{HandlerCommand, HandlerEvent}
@@ -29,7 +29,7 @@ object Handler {
 
   private final class Impl[
     I[_]: Monad: Timer: Concurrent,
-    F[_]: WithRun[*[_], I, CommandContext]
+    F[_]: WithRun[*[_], I, MessageContext]
   ](config: Config)(
     handle: Handle[F],
     producerOfEvents: KafkaProducer[I, Option[Event.Key], HandlerEvent],
@@ -46,7 +46,17 @@ object Handler {
 
             partition
               .parEvalMap(maxConcurrentPerPartition) { committable =>
-                runContext(handle.handle(committable.record.value))(CommandContext()).map(_.toOption -> committable.offset)
+                val offset  = committable.offset
+                val command = committable.record.value
+                val context = MessageContext(
+                  consumerGroupId = offset.consumerGroupId,
+                  topic = topicPartition.topic,
+                  partition = topicPartition.partition,
+                  offset = offset.offsetAndMetadata.offset,
+                  metadata = offset.offsetAndMetadata.metadata
+                )
+
+                runContext(handle.handle(command))(context).map(_.toOption -> offset)
               }
               .collect { case (eventOption, offset) =>
                 val events  = List(eventOption).flatten
@@ -68,7 +78,7 @@ object Handler {
 
   def make[
     I[_]: Monad: Concurrent: Timer,
-    F[_]: WithRun[*[_], I, CommandContext],
+    F[_]: WithRun[*[_], I, MessageContext],
     S[_]: LiftStream[*[_], I]
   ](config: Config)(
     handle: Handle[F],

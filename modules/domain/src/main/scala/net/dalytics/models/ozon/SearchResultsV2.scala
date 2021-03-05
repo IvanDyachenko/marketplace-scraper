@@ -3,7 +3,7 @@ package net.dalytics.models.ozon
 import cats.implicits._
 import derevo.derive
 import derevo.circe.decoder
-import tofu.logging.derivation.{loggable, masked, MaskMode}
+import tofu.logging.derivation.loggable
 import io.circe.{Decoder, DecodingFailure, HCursor}
 
 @derive(loggable)
@@ -12,7 +12,7 @@ sealed trait SearchResultsV2
 object SearchResultsV2 {
 
   @derive(loggable)
-  final case class Success(category: Category, page: Page, @masked(MaskMode.ForLength(0, 50)) items: List[Item]) extends SearchResultsV2
+  final case class Success(category: Category, page: Page, items: List[Item]) extends SearchResultsV2
 
   @derive(loggable, decoder)
   final case class Failure(error: String) extends SearchResultsV2

@@ -36,21 +36,31 @@ object Handler {
     consumerOfCommands: KafkaConsumer[I, Option[Command.Key], HandlerCommand]
   ) extends Handler[Stream[I, *]] {
     def run: Stream[I, Unit] =
-      consumerOfCommands.partitionedStream.map { partition =>
-        partition
-          .parEvalMap(config.kafkaConsumerConfig.maxConcurrentPerPartition) { committable =>
-            runContext(handle.handle(committable.record.value))(AppContext()).map(_.toOption -> committable.offset)
-          }
-          .collect { case (eventOption, offset) =>
-            val events  = List(eventOption).flatten
-            val records = events.map(event => ProducerRecord(config.kafkaProducerConfig.topic, event.key, event))
+      consumerOfCommands.partitionsMapStream.map { assignments =>
+        val numberOfAssignedPartitionsPerTopic = assignments.keySet.groupMapReduce(_.topic)(_ => 1)(_ + _)
 
-            ProducerRecords(records, offset)
-          }
-          .evalMap(producerOfEvents.produce)
-          .parEvalMap(config.kafkaProducerConfig.maxBufferSize)(identity)
-          .map(_.passthrough)
-          .through(commitBatchWithin(config.kafkaConsumerConfig.commitEveryNOffsets, config.kafkaConsumerConfig.commitTimeWindow))
+        val partitions = assignments.map { case (topicPartition, partition) =>
+          val maxConcurrentPerPartition = config.kafkaConsumerConfig.maxConcurrentPerTopic / numberOfAssignedPartitionsPerTopic(topicPartition.topic)
+
+          partition
+            .parEvalMap(maxConcurrentPerPartition) { committable =>
+              runContext(handle.handle(committable.record.value))(AppContext()).map(_.toOption -> committable.offset)
+            }
+            .collect { case (eventOption, offset) =>
+              val events  = List(eventOption).flatten
+              val records = events.map(event => ProducerRecord(config.kafkaProducerConfig.topic, event.key, event))
+
+              ProducerRecords(records, offset)
+            }
+            .evalMap(producerOfEvents.produce)
+            .parEvalMap(config.kafkaProducerConfig.maxBufferSize)(identity)
+            .map(_.passthrough)
+            .through(commitBatchWithin(config.kafkaConsumerConfig.commitEveryNOffsets, config.kafkaConsumerConfig.commitTimeWindow))
+        }.toList
+
+        Stream
+          .emits(partitions)
+          .flatten[I, Unit]
       }.parJoinUnbounded
   }
 

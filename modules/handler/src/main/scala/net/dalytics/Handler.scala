@@ -41,8 +41,8 @@ object Handler {
           val numberOfAssignedPartitionsPerTopic = assignments.keySet.groupMapReduce(_.topic)(_ => 1)(_ + _)
 
           val partitions = assignments.map { case (topicPartition, partition) =>
-            val maxConcurrentPerPartition =
-              config.kafkaConsumerConfig.maxConcurrentPerTopic / numberOfAssignedPartitionsPerTopic(topicPartition.topic)
+            val numberOfAssignedPartitions = numberOfAssignedPartitionsPerTopic(topicPartition.topic)
+            val maxConcurrentPerPartition  = config.kafkaConsumerConfig.maxConcurrentPerTopic / numberOfAssignedPartitions
 
             partition
               .parEvalMap(maxConcurrentPerPartition) { committable =>

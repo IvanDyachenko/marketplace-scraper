@@ -14,7 +14,7 @@ import fs2.Stream
 import fs2.kafka.{commitBatchWithin, KafkaConsumer, KafkaProducer, ProducerRecord, ProducerRecords}
 
 import net.dalytics.config.Config
-import net.dalytics.context.AppContext
+import net.dalytics.context.CommandContext
 import net.dalytics.services.Handle
 import net.dalytics.models.{Command, Event}
 import net.dalytics.models.handler.{HandlerCommand, HandlerEvent}
@@ -29,7 +29,7 @@ object Handler {
 
   private final class Impl[
     I[_]: Monad: Timer: Concurrent,
-    F[_]: WithRun[*[_], I, AppContext]
+    F[_]: WithRun[*[_], I, CommandContext]
   ](config: Config)(
     handle: Handle[F],
     producerOfEvents: KafkaProducer[I, Option[Event.Key], HandlerEvent],
@@ -46,7 +46,7 @@ object Handler {
 
             partition
               .parEvalMap(maxConcurrentPerPartition) { committable =>
-                runContext(handle.handle(committable.record.value))(AppContext()).map(_.toOption -> committable.offset)
+                runContext(handle.handle(committable.record.value))(CommandContext()).map(_.toOption -> committable.offset)
               }
               .collect { case (eventOption, offset) =>
                 val events  = List(eventOption).flatten
@@ -68,7 +68,7 @@ object Handler {
 
   def make[
     I[_]: Monad: Concurrent: Timer,
-    F[_]: WithRun[*[_], I, AppContext],
+    F[_]: WithRun[*[_], I, CommandContext],
     S[_]: LiftStream[*[_], I]
   ](config: Config)(
     handle: Handle[F],

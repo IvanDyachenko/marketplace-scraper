@@ -14,7 +14,7 @@ import fs2.kafka.{KafkaProducer, ProducerRecord, ProducerRecords}
 import supertagged.postfix._
 
 import net.dalytics.config.{Config, SourceConfig}
-import net.dalytics.context.AppContext
+import net.dalytics.context.CommandContext
 import net.dalytics.models.{ozon, Command}
 import net.dalytics.models.handler.HandlerCommand
 import net.dalytics.api.{OzonApi, WildBerriesApi}
@@ -29,7 +29,7 @@ object Scheduler {
 
   private final class Impl[
     I[_]: Monad: Concurrent,
-    F[_]: WithRun[*[_], I, AppContext]
+    F[_]: WithRun[*[_], I, CommandContext]
   ](config: Config)(
     sourcesOfCommands: List[Stream[I, HandlerCommand]],
     producerOfCommands: KafkaProducer[I, Option[Command.Key], HandlerCommand]
@@ -46,7 +46,7 @@ object Scheduler {
 
   def make[
     I[_]: Monad: Concurrent,
-    F[_]: WithRun[*[_], I, AppContext],
+    F[_]: WithRun[*[_], I, CommandContext],
     S[_]: LiftStream[*[_], I]
   ](config: Config)(
     sourcesOfCommands: List[Stream[I, HandlerCommand]],

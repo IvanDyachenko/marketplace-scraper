@@ -31,9 +31,8 @@ lazy val `marketplace-parser` = (project in file("modules/parser"))
     Docker / packageName := "marketplace-parser",
     Docker / version     := sys.env.getOrElse("GITHUB_SHA", default = "latest"),
     Docker / maintainer  := "Ivan Dyachenko <vandyachen@gmail.com>",
-    dockerBaseImage      := "openjdk:11",
-    dockerExposedPorts   := Seq(9000),
-    dockerUsername       := Some("ivandyachenko")
+    dockerUsername       := Some("ivandyachenko"),
+    dockerBaseImage      := "openjdk:11"
   )
   .settings(
     Universal / javaOptions ++= Seq(
@@ -60,9 +59,8 @@ lazy val `marketplace-handler` = (project in file("modules/handler"))
     Docker / packageName := "marketplace-handler",
     Docker / version     := sys.env.getOrElse("GITHUB_SHA", default = "latest"),
     Docker / maintainer  := "Ivan Dyachenko <vandyachen@gmail.com>",
-    dockerBaseImage      := "openjdk:11",
-    dockerExposedPorts   := Seq(9000),
     dockerUsername       := Some("ivandyachenko"),
+    dockerBaseImage      := "openjdk:11",
     dockerBuildOptions  ++= Seq(
       "--secret",
       s"id=mitmproxycert,src=${sys.env.get("GITHUB_WORKSPACE").get}/mitmproxy-ca-cert.pem"
@@ -109,9 +107,8 @@ lazy val `marketplace-scheduler` = (project in file("modules/scheduler"))
     Docker / packageName := "marketplace-scheduler",
     Docker / version     := sys.env.getOrElse("GITHUB_SHA", default = "latest"),
     Docker / maintainer  := "Ivan Dyachenko <vandyachen@gmail.com>",
-    dockerBaseImage      := "openjdk:11",
-    dockerExposedPorts   := Seq(9000),
     dockerUsername       := Some("ivandyachenko"),
+    dockerBaseImage      := "openjdk:11",
     dockerBuildOptions  ++= Seq(
       "--secret",
       s"id=mitmproxycert,src=${sys.env.get("GITHUB_WORKSPACE").get}/mitmproxy-ca-cert.pem"

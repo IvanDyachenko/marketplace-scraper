@@ -101,7 +101,8 @@ object Item {
         f(_) match {
           case item: items.InStock => Some(item.addToCart.isRedirect)
           case _                   => None
-        }
+        },
+        default = None
       ),
       field(
         "addToCartMinItems",

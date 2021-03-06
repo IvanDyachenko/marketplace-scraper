@@ -36,8 +36,7 @@ object CannotBeShipped {
     for {
       availability <- i.get[Short]("availability")
                         .ensure {
-                          val message =
-                            s"'cellTrackingInfo' doesn't contain 'availability' which is equal to '${Item.Availability.CannotBeShipped}'"
+                          val message = s"'cellTrackingInfo.availability' isn't equal to '${Item.Availability.CannotBeShipped}'"
                           DecodingFailure(message, c.history)
                         }(Item.Availability.from(_) == Item.Availability.CannotBeShipped)
       item         <- (

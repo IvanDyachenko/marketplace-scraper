@@ -31,14 +31,13 @@ object SearchResultsV2 {
         page            <- i.as[Page]
         searchResultsV2 <- layout.searchResultsV2.fold[Decoder.Result[SearchResultsV2]](
                              Left(
-                               DecodingFailure(
-                                 "\"layout\" object doesn't contain component with \"component\" which is corresponds to \"searchResultsV2\"",
-                                 c.history
-                               )
+                               DecodingFailure("\"layout\" object doesn't contain component which corresponds to \"searchResultsV2\"", c.history)
                              )
                            ) { component =>
-                             val circeDecoder =
-                               List[Decoder[SearchResultsV2]](Decoder[Failure].widen, Success.circeDecoder(category, page).widen).reduceLeft(_ or _)
+                             val circeDecoder = List[Decoder[SearchResultsV2]](
+                               Decoder[Failure].widen,
+                               Success.circeDecoder(category, page).widen
+                             ).reduceLeft(_ or _)
 
                              c.downField("catalog").downField("searchResultsV2").downField(component.stateId).as[SearchResultsV2](circeDecoder)
                            }

@@ -81,73 +81,170 @@ object Item {
     } yield item
   }
 
+  // Fix me:( It looks terrible!
   private[models] def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => Item): FreeApplicative[Codec.Field[A, *], Item] =
-    field("availability", f(_).availability).map2 {
-      (
-        field("itemId", f(_).id),
-        field("itemIndex", f(_).index),
-        field("itemType", f(_).`type`),
-        field("itemTitle", f(_).title),
-        Brand.vulcanCodecFieldFA(field)(f(_).brand),
-        Price.vulcanCodecFieldFA(field)(f(_).price),
-        Rating.vulcanCodecFieldFA(field)(f(_).rating),
-        field("categoryPath", f(_).categoryPath),
-        Delivery.vulcanCodecFieldFA(field)(f(_).delivery),
-        field("availableInDays", f(_).availableInDays),
-        field("marketplaceSellerId", f(_).marketplaceSellerId),
-        field("addToCartMinItems", f(_) match { case item: items.InStock => Some(item.addToCartMinItems); case _ => None }),
-        field("addToCartMaxItems", f(_) match { case item: items.InStock => Some(item.addToCartMaxItems); case _ => None }),
-        field("isAdult", f(_).isAdult),
-        field("isAlcohol", f(_).isAlcohol),
-        field("isAvailable", f(_).isAvailable),
-        field("isSupermarket", f(_).isSupermarket),
-        field("isPersonalized", f(_).isPersonalized),
-        field("isPromotedProduct", f(_).isPromotedProduct),
-        field("freeRest", f(_).freeRest)
-      ).tupled
-    } {
-      // format: off
+    (
+      field("itemId", f(_).id),
+      field("itemIndex", f(_).index),
+      field("itemType", f(_).`type`),
+      field("itemTitle", f(_).title),
+      Brand.vulcanCodecFieldFA(field)(f(_).brand),
+      Price.vulcanCodecFieldFA(field)(f(_).price),
+      Rating.vulcanCodecFieldFA(field)(f(_).rating),
+      field("categoryPath", f(_).categoryPath),
+      Delivery.vulcanCodecFieldFA(field)(f(_).delivery),
+      field("availability", f(_).availability),
+      field("availableInDays", f(_).availableInDays),
+      field("marketplaceSellerId", f(_).marketplaceSellerId),
+      field(
+        "addToCartIsRedirect",
+        f(_) match {
+          case item: items.InStock => Some(item.addToCart.isRedirect)
+          case _                   => None
+        },
+        default = None
+      ),
+      field(
+        "addToCartMinItems",
+        f(_) match {
+          case item: items.InStock =>
+            item.addToCart match {
+              case items.InStock.AddToCart.Redirect          => None
+              case items.InStock.AddToCart.With(minItems, _) => Some(minItems)
+            }
+          case _                   => None
+        }
+      ),
+      field(
+        "addToCartMaxItems",
+        f(_) match {
+          case item: items.InStock =>
+            item.addToCart match {
+              case items.InStock.AddToCart.Redirect          => None
+              case items.InStock.AddToCart.With(_, maxItems) => Some(maxItems)
+            }
+          case _                   => None
+        }
+      ),
+      field("isAdult", f(_).isAdult),
+      field("isAlcohol", f(_).isAlcohol),
+      field("isAvailable", f(_).isAvailable),
+      field("isSupermarket", f(_).isSupermarket),
+      field("isPersonalized", f(_).isPersonalized),
+      field("isPromotedProduct", f(_).isPromotedProduct),
+      field("freeRest", f(_).freeRest)
+    ).mapN {
       case (
+            itemId,
+            itemIndex,
+            itemType,
+            itemTitle,
+            brand,
+            price,
+            rating,
+            categoryPath,
+            delivery,
             availability,
-            (
-              itemId, itemIndex, itemType, itemTitle,
-              brand, price, rating, categoryPath, delivery, inDays, sellerId,
-              addToCartMinItems, addToCartMaxItems,
-              isAdult, isAlcohol, _, isSupermarket, isPersonalized, isPromoted,
-              freeRest
-            )
+            availableInDays,
+            marketplaceSellerId,
+            addToCartIsRedirect,
+            addToCartMinItems,
+            addToCartMaxItems,
+            isAdult,
+            isAlcohol,
+            _,
+            isSupermarket,
+            isPersonalized,
+            isPromotedProduct,
+            freeRest
           ) =>
         Availability.from(availability) match {
-          case Availability.PreOrder          =>
+          case Availability.PreOrder        =>
             items.PreOrder(
-              itemId, itemIndex, itemType, itemTitle,
-              brand, price, rating, categoryPath, delivery, availability, inDays, sellerId,
-              isAdult, isAlcohol, isSupermarket, isPersonalized, isPromoted,
+              itemId,
+              itemIndex,
+              itemType,
+              itemTitle,
+              brand,
+              price,
+              rating,
+              categoryPath,
+              delivery,
+              availability,
+              availableInDays,
+              marketplaceSellerId,
+              isAdult,
+              isAlcohol,
+              isSupermarket,
+              isPersonalized,
+              isPromotedProduct,
               freeRest
             )
-          case Availability.InStock           =>
+          case Availability.InStock         =>
             items.InStock(
-              itemId, itemIndex, itemType, itemTitle,
-              brand, price, rating, categoryPath, delivery, availability, inDays, sellerId,
-              addToCartMinItems.get, addToCartMaxItems.get,
-              isAdult, isAlcohol, isSupermarket, isPersonalized, isPromoted,
+              itemId,
+              itemIndex,
+              itemType,
+              itemTitle,
+              brand,
+              price,
+              rating,
+              categoryPath,
+              delivery,
+              availability,
+              availableInDays,
+              marketplaceSellerId,
+              if (addToCartIsRedirect.get) items.InStock.AddToCart.Redirect
+              else items.InStock.AddToCart.With(addToCartMinItems.get, addToCartMaxItems.get),
+              isAdult,
+              isAlcohol,
+              isSupermarket,
+              isPersonalized,
+              isPromotedProduct,
               freeRest
             )
-          case Availability.OutOfStock        =>
+          case Availability.OutOfStock      =>
             items.OutOfStock(
-              itemId, itemIndex, itemType, itemTitle,
-              brand, price, rating, categoryPath, delivery, availability, inDays, sellerId,
-              isAdult, isAlcohol, isSupermarket, isPersonalized, isPromoted,
+              itemId,
+              itemIndex,
+              itemType,
+              itemTitle,
+              brand,
+              price,
+              rating,
+              categoryPath,
+              delivery,
+              availability,
+              availableInDays,
+              marketplaceSellerId,
+              isAdult,
+              isAlcohol,
+              isSupermarket,
+              isPersonalized,
+              isPromotedProduct,
               freeRest
             )
-          case Availability.CannotBeShipped   =>
+          case Availability.CannotBeShipped =>
             items.CannotBeShipped(
-              itemId, itemIndex, itemType, itemTitle,
-              brand, price, rating, categoryPath, delivery, availability, inDays, sellerId,
-              isAdult, isAlcohol, isSupermarket, isPersonalized, isPromoted,
+              itemId,
+              itemIndex,
+              itemType,
+              itemTitle,
+              brand,
+              price,
+              rating,
+              categoryPath,
+              delivery,
+              availability,
+              availableInDays,
+              marketplaceSellerId,
+              isAdult,
+              isAlcohol,
+              isSupermarket,
+              isPersonalized,
+              isPromotedProduct,
               freeRest
             )
         }
-      // format: on
     }
 }

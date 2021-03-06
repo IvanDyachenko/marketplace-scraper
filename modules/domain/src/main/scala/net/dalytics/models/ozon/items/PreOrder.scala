@@ -36,7 +36,7 @@ object PreOrder {
     for {
       availability <- i.get[Short]("availability")
                         .ensure {
-                          val message = s"'cellTrackingInfo' doesn't contain 'availability' which is equal to '${Item.Availability.PreOrder}'"
+                          val message = s"'cellTrackingInfo.availability' isn't equal to '${Item.Availability.PreOrder}'"
                           DecodingFailure(message, c.history)
                         }(Item.Availability.from(_) == Item.Availability.PreOrder)
       item         <- (

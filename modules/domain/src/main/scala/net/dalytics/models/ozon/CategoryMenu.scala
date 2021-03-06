@@ -16,7 +16,7 @@ object CategoryMenu {
     for {
       layout       <- c.get[Layout]("layout")
       categoryMenu <- layout.categoryMenu.fold[Decoder.Result[CategoryMenu]](
-                        Left(DecodingFailure("\"layout\" object doesn't contain component which is corresponds to \"categoryMenu\"", c.history))
+                        Left(DecodingFailure("\"layout\" object doesn't contain component which corresponds to \"categoryMenu\"", c.history))
                       ) { component =>
                         c.downField("catalog")
                           .downField("categoryMenu")

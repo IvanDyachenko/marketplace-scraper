@@ -36,8 +36,7 @@ object OutOfStock {
     for {
       availability <- i.get[Short]("availability")
                         .ensure {
-                          val message =
-                            s"'cellTrackingInfo' doesn't contain 'availability' which is equal to '${Item.Availability.OutOfStock}'"
+                          val message = s"'cellTrackingInfo.availability' isn't equal to '${Item.Availability.OutOfStock}'"
                           DecodingFailure(message, c.history)
                         }(Item.Availability.from(_) == Item.Availability.OutOfStock)
       item         <- (

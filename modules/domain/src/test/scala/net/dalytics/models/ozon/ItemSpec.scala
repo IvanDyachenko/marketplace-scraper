@@ -7,7 +7,7 @@ import io.circe.parser.decode
 
 class ItemSpec extends AnyFlatSpec with Matchers {
 
-  it should "decode Item.InStock (1) from a valid JSON" in {
+  it should "decode Item.InStock (AddToCart.With, 1) from a valid JSON" in {
     val itemRawJson =
       """
         |{
@@ -144,7 +144,7 @@ class ItemSpec extends AnyFlatSpec with Matchers {
     decode[items.InStock](itemRawJson).isRight shouldBe true
   }
 
-  it should "decode Item.InStock (2) from a valid JSON" in {
+  it should "decode Item.InStock (AddToCart.With, 2) from a valid JSON" in {
     val itemRawJson =
       """
         |{
@@ -291,7 +291,7 @@ class ItemSpec extends AnyFlatSpec with Matchers {
     decode[items.InStock](itemRawJson).isRight shouldBe true
   }
 
-  it should "decode Item.InStock (3) from a valid JSON" in {
+  it should "decode Item.InStock (AddToCart.With, 3) from a valid JSON" in {
     val itemRawJson =
       """
         |{
@@ -480,6 +480,143 @@ class ItemSpec extends AnyFlatSpec with Matchers {
         |  "isInCompare": false,
         |  "outerCols": 12,
         |  "innerCols": 12
+        |}
+      """.stripMargin
+
+    decode[Item](itemRawJson).isRight shouldBe true
+    decode[items.InStock](itemRawJson).isRight shouldBe true
+  }
+
+  it should "decode Item.InStock (AddToCart.Redirect, 1) from a valid JSON" in {
+    val itemRawJson =
+      """
+        |{
+        |  "type": "tile_builder",
+        |  "images": [
+        |    "https://cdn1.ozone.ru/s3/multimedia-m/6032830294.jpg"
+        |  ],
+        |  "isGrey": false,
+        |  "isAdult": false,
+        |  "isAlcohol": false,
+        |  "link": "/product/zhair-neveruyushchiy-20-maya-2020-shimov-yaroslav-gostev-aleksandr-216183527/?asb=ZhvrGys1qagQRoj6FdQKVTGCX4c9viUiG0A1UKjJjec%253D",
+        |  "deepLink": "ozon://products/216183527/?asb=ZhvrGys1qagQRoj6FdQKVTGCX4c9viUiG0A1UKjJjec%253D",
+        |  "cellTrackingInfo": {
+        |    "index": 5257,
+        |    "type": "sku",
+        |    "id": 216183527,
+        |    "title": "Жаир неверующий - 20 мая, 2020 | Шимов Ярослав, Гостев Александр",
+        |    "availability": 1,
+        |    "price": 1,
+        |    "finalPrice": 1,
+        |    "deliverySchema": "Retail",
+        |    "marketplaceSellerId": 0,
+        |    "category": "Книги/Аудиокниги",
+        |    "brand": "",
+        |    "brandId": 0,
+        |    "availableInDays": 0,
+        |    "freeRest": 1,
+        |    "stockCount": 1,
+        |    "discount": 0,
+        |    "marketingActionIds": null,
+        |    "isPersonalized": false,
+        |    "deliveryTimeDiffDays": 1,
+        |    "isSupermarket": false,
+        |    "isPromotedProduct": false,
+        |    "rating": 0,
+        |    "countItems": 0,
+        |    "adv_second_bid": "ZhvrGys1qagQRoj6FdQKVTGCX4c9viUiG0A1UKjJjec=",
+        |    "availableDeliverySchema": [
+        |      111
+        |    ],
+        |    "credit_product_type": "credit,6",
+        |    "credit_product_price": 1
+        |  },
+        |  "template": "search",
+        |  "templateState": [
+        |    {
+        |      "type": "action",
+        |      "id": "favorite",
+        |      "components": null,
+        |      "title": "",
+        |      "activeTitle": "",
+        |      "align": "topRight",
+        |      "isActive": false,
+        |      "isSubscribed": false
+        |    },
+        |    {
+        |      "type": "atom",
+        |      "id": "atom",
+        |      "atom": {
+        |        "type": "price",
+        |        "price": {
+        |          "price": "1 ₽",
+        |          "priceColor": "ozTextPrimary",
+        |          "theme": "STYLE_TYPE_MEDIUM"
+        |        }
+        |      }
+        |    },
+        |    {
+        |      "type": "label",
+        |      "id": "label",
+        |      "components": null,
+        |      "items": [
+        |        {
+        |          "title": "Аудиокнига",
+        |          "isSelected": false,
+        |          "color": null,
+        |          "textColor": "ozTextPrimary"
+        |        }
+        |      ]
+        |    },
+        |    {
+        |      "type": "title",
+        |      "id": "name",
+        |      "components": null,
+        |      "items": null,
+        |      "text": "Жаир неверующий - 20 мая, 2020 | Шимов Ярослав, Гостев Александр",
+        |      "textColor": "ozTextPrimary",
+        |      "markupType": "",
+        |      "maxLines": 0
+        |    },
+        |    {
+        |      "type": "action",
+        |      "id": "redirect",
+        |      "components": null,
+        |      "title": "Перейти",
+        |      "activeTitle": "",
+        |      "align": "bottomLeft",
+        |      "isActive": false,
+        |      "link": "/product/zhair-neveruyushchiy-20-maya-2020-shimov-yaroslav-gostev-aleksandr-216183527/",
+        |      "deepLink": "ozon://web?url=https://ozon.ru/product/zhair-neveruyushchiy-20-maya-2020-shimov-yaroslav-gostev-aleksandr-216183527/",
+        |      "isSubscribed": false
+        |    },
+        |    {
+        |      "type": "textSmall",
+        |      "id": "deliveryInfo",
+        |      "components": null,
+        |      "items": null,
+        |      "text": "Доставка на электронную почту от <font color='ozAccentPrimary'><b>OZON</b></font>",
+        |      "textColor": "ozGray60",
+        |      "markupType": "html",
+        |      "maxLines": 3
+        |    }
+        |  ],
+        |  "badges": [
+        |    {
+        |      "type": "text",
+        |      "coordinates": {
+        |        "x": 3,
+        |        "y": 5
+        |      },
+        |      "text": "Цифровой",
+        |      "backgroundColor": "ozBluePale",
+        |      "textColor": "ozBlack"
+        |    }
+        |  ],
+        |  "isInFavorites": false,
+        |  "isInCompare": false,
+        |  "outerCols": 0,
+        |  "innerCols": 0
         |}
       """.stripMargin
 

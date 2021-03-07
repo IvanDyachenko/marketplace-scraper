@@ -34,9 +34,9 @@ object WildBerriesApi {
 
       HttpClient[F]
         .send[CatalogMenu](request)
-        .recoverWith[HttpClientError](error =>
-          errorCause"Error was thrown while attempting to execute ${request}" (error) *> error.raise[F, CatalogMenu]
-        )
+        .recoverWith[HttpClientError] { case error: HttpClientError =>
+          error"Error was thrown while attempting to execute ${request}. ${error}" *> error.raise[F, CatalogMenu]
+        }
         .restore
     }
   }

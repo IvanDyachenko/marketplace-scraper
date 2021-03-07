@@ -1,17 +1,20 @@
 package net.dalytics.api
 
+import tofu.syntax.raise._
 import tofu.syntax.handle._
 import tofu.syntax.monadic._
+import tofu.syntax.logging._
 import cats.syntax.traverse._
-import cats.{~>, Functor}
+import cats.{~>, Functor, Monad}
 import cats.free.Cofree
-import cats.effect.Concurrent
+import cats.effect.{Concurrent, Resource}
+import tofu.logging.{Logging, Logs}
 import fs2.Stream
 import tofu.lift.Lift
 import tofu.fs2.LiftStream
 
 import net.dalytics.marshalling._
-import net.dalytics.clients.HttpClient
+import net.dalytics.clients.{HttpClient, HttpClientError}
 import net.dalytics.models.ozon.{Category, CategoryMenu, Request, SearchResultsV2, Url}
 
 trait OzonApi[F[_], S[_]] {
@@ -23,15 +26,31 @@ trait OzonApi[F[_], S[_]] {
 
 object OzonApi {
 
-  final class Impl[F[_]: Concurrent: HttpClient: HttpClient.Handling] extends OzonApi[F, Stream[F, *]] {
+  private final class Impl[F[_]: Concurrent: Logging: HttpClient: HttpClient.Handling] extends OzonApi[F, Stream[F, *]] {
 
     def getCategory(id: Category.Id): F[Option[Category]] = getCategoryMenu(id).map(_ >>= (_.category(id)))
 
-    def getCategoryMenu(id: Category.Id): F[Option[CategoryMenu]] =
-      HttpClient[F].send[CategoryMenu](Request.GetCategoryMenu(id)).restore
+    def getCategoryMenu(id: Category.Id): F[Option[CategoryMenu]] = {
+      val request = Request.GetCategoryMenu(id)
 
-    def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): F[Option[SearchResultsV2]] =
-      HttpClient[F].send[SearchResultsV2](Request.GetCategorySearchResultsV2(id, page = page)).restore
+      HttpClient[F]
+        .send[CategoryMenu](request)
+        .recoverWith[HttpClientError](error =>
+          errorCause"Error was thrown while attempting to execute ${request}" (error) *> error.raise[F, CategoryMenu]
+        )
+        .restore
+    }
+
+    def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): F[Option[SearchResultsV2]] = {
+      val request = Request.GetCategorySearchResultsV2(id, page = page)
+
+      HttpClient[F]
+        .send[SearchResultsV2](request)
+        .recoverWith[HttpClientError](error =>
+          errorCause"Error was thrown while attempting to execute ${request}" (error) *> error.raise[F, SearchResultsV2]
+        )
+        .restore
+    }
 
     def getCategories(rootId: Category.Id)(p: Category => Boolean): Stream[F, Category] = {
       def go(tree: Category.Tree[Stream[F, *]]): Stream[F, Category] =
@@ -55,10 +74,15 @@ object OzonApi {
   }
 
   def make[
+    I[_]: Monad,
     F[_]: Concurrent: HttpClient: HttpClient.Handling,
     S[_]: LiftStream[*[_], F]
-  ]: OzonApi[F, S] =
-    bifunctorK.bimapK(new Impl[F])(Lift.liftIdentity[F].liftF)(LiftStream[S, F].liftF)
+  ](implicit logs: Logs[I, F]): Resource[I, OzonApi[F, S]] =
+    Resource.liftF {
+      logs
+        .forService[OzonApi[F, S]]
+        .map(implicit l => bifunctorK.bimapK(new Impl[F])(Lift.liftIdentity[F].liftF)(LiftStream[S, F].liftF))
+    }
 
   implicit val bifunctorK: BifunctorK[OzonApi] =
     new BifunctorK[OzonApi] {

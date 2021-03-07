@@ -6,7 +6,6 @@ import tofu.env.Env
 import tofu.logging.Logs
 import fs2.Stream
 import tofu.fs2Instances._
-import tofu.syntax.monadic._
 
 import net.dalytics.config.Config
 import net.dalytics.context.MessageContext
@@ -32,8 +31,8 @@ object Main extends TaskApp {
       implicit0(blocker: Blocker)              <- Blocker[AppI]
       cfg                                      <- Resource.liftF(Config.make[AppI])
       implicit0(httpClientI: HttpClient[AppI]) <- HttpClient.make[AppI, AppI](cfg.httpConfig)
-      wbApi                                    <- Resource.liftF(WildBerriesApi.make[AppI, AppS].pure[AppI])
-      ozonApi                                  <- Resource.liftF(OzonApi.make[AppI, AppS].pure[AppI])
+      wbApi                                    <- WildBerriesApi.make[AppI, AppI, AppS]
+      ozonApi                                  <- OzonApi.make[AppI, AppI, AppS]
       sourcesOfCommands                         = cfg.sourcesConfig.sources.map(Scheduler.makeCommandsSource[AppI](_)(wbApi, ozonApi))
       producerOfCommands                       <- KafkaClient.makeProducer[AppI, Command.Key, HandlerCommand](
                                                     cfg.kafkaConfig,

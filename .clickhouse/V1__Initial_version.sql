@@ -39,12 +39,12 @@ ON CLUSTER cluster
     freeRest             Int32
 )
 ENGINE = Kafka SETTINGS kafka_broker_list = 'broker:29092',
-                        kafka_topic_list = 'marketplace_parser-results-ozon_category_search_results_v2_items-version_3',
+                        kafka_topic_list = 'marketplace_parser-results-ozon_category_search_results_v2_items-version_1',
                         kafka_group_name = 'clickhouse-ozon_category_search_results_v2_items',
                         kafka_format = 'AvroConfluent',
                         kafka_commit_every_batch = 1,
                         kafka_max_block_size = 1048576,
-                        kafka_num_consumers = 10,
+                        kafka_num_consumers = 8,
                         kafka_thread_per_consumer = 1,
                         format_avro_schema_registry_url = 'http://schema-registry:8081';
 

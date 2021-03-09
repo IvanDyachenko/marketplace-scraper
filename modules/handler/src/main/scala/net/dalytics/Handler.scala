@@ -45,7 +45,7 @@ object Handler {
             val maxConcurrentPerPartition  = config.kafkaConsumerConfig.maxConcurrentPerTopic / numberOfAssignedPartitions
 
             partition
-              .parEvalMap(maxConcurrentPerPartition) { committable =>
+              .parEvalMapUnordered(maxConcurrentPerPartition) { committable =>
                 val offset  = committable.offset
                 val command = committable.record.value
                 val context = MessageContext(

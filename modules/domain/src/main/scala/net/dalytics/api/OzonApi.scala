@@ -35,6 +35,7 @@ object OzonApi {
 
       HttpClient[F]
         .send[CategoryMenu](request)
+        .retryOnly[HttpClientError.ResponseDecodeError](3)
         .recoverWith[HttpClientError] { case error: HttpClientError =>
           error"Error was thrown while attempting to execute ${request}. ${error}" *> error.raise[F, CategoryMenu]
         }
@@ -46,6 +47,7 @@ object OzonApi {
 
       HttpClient[F]
         .send[SearchResultsV2](request)
+        .retryOnly[HttpClientError.ResponseDecodeError](3)
         .recoverWith[HttpClientError] { case error: HttpClientError =>
           error"Error was thrown while attempting to execute ${request}. ${error}" *> error.raise[F, SearchResultsV2]
         }

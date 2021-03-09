@@ -33,7 +33,7 @@ package object marshalling {
         .+*?(request.url)
 
     Http4sRequest(
-      httpVersion = HttpVersion.`HTTP/2.0`,
+      httpVersion = HttpVersion.`HTTP/1.1`,
       method = Method.GET,
       uri = uri,
       headers = headers

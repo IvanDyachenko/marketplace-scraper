@@ -1,7 +1,7 @@
 package net.dalytics
 
 import io.circe.Encoder
-import org.http4s.{Headers, Uri, MediaType, Method, Request => Http4sRequest, ContentCoding}
+import org.http4s.{Headers, Uri, MediaType, Method, Request => Http4sRequest, ContentCoding, HttpVersion}
 import org.http4s.headers.{`Accept-Encoding`, `User-Agent`, Accept, AgentComment, AgentProduct, Connection, Host}
 import org.http4s.util.CaseInsensitiveString
 import org.http4s.circe.jsonEncoderOf
@@ -33,6 +33,7 @@ package object marshalling {
         .+*?(request.url)
 
     Http4sRequest(
+      httpVersion = HttpVersion.`HTTP/2.0`,
       method = Method.GET,
       uri = uri,
       headers = headers

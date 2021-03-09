@@ -158,7 +158,6 @@ object HttpClient extends ContextEmbed[HttpClient] {
     Resource.liftF(Execute[F].executionContext) >>= (
       BlazeClientBuilder[F](_)
         .withTcpNoDelay(true) // Disable Nagle's algorithm.
-        .withSocketKeepAlive(true)
         .withCheckEndpointAuthentication(false)
         .withMaxTotalConnections(httpConfig.maxTotalConnections)
         .withMaxConnectionsPerRequestKey(Function.const(httpConfig.maxTotalConnectionsPerHost))

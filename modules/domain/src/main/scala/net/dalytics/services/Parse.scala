@@ -58,8 +58,10 @@ object Parse {
   private final class Impl[F[_]: Monad: Clock] extends Parse[F] {
     def handle(command: Command): F[Result] = command match {
       case Command.ParseOzonResponse(created, response) => // format: off
-        parse[ozon.SearchResultsV2](response) >>= (_.traverse { // format: on
+        parse[ozon.Result](response) >>= (_.traverse { // format: on
           _ match {
+            case sellerList: ozon.SellerList.Success           => Event.OzonSellerListItemParsed(created, sellerList)
+            case ozon.SellerList.Failure(_)                    => List.empty[Event].pure[F]
             case searchResultsV2: ozon.SearchResultsV2.Success => Event.OzonSearchResultsV2ItemParsed(created, searchResultsV2)
             case ozon.SearchResultsV2.Failure(_)               => List.empty[Event].pure[F]
           }

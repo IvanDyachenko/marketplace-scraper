@@ -7,7 +7,7 @@ import tofu.logging.derivation.loggable
 import io.circe.{Decoder, DecodingFailure, HCursor}
 
 @derive(loggable)
-sealed trait SearchResultsV2
+sealed trait SearchResultsV2 extends Result
 
 object SearchResultsV2 {
 

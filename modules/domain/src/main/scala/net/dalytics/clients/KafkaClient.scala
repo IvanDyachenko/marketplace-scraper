@@ -47,13 +47,14 @@ object KafkaClient {
         .withBootstrapServers(kafkaConfig.bootstrapServers)
         .withGroupId(kafkaConsumerConfig.groupId)
         .withAutoOffsetReset(AutoOffsetReset.Earliest)
-        .withProperty("connections.max.idle.ms", "-1")
 
-    val consumerSettingWithCommitTimeout    =
-      kafkaConsumerConfig.commitTimeout.fold(consumerSettingsBase)(consumerSettingsBase.withCommitTimeout)
-    val consumerSettingsWithMaxPollRecords  =
+    val consumerSettingsWithEnableAutoCommit =
+      kafkaConsumerConfig.enableAutoCommit.fold(consumerSettingsBase)(consumerSettingsBase.withEnableAutoCommit)
+    val consumerSettingWithCommitTimeout     =
+      kafkaConsumerConfig.commitTimeout.fold(consumerSettingsWithEnableAutoCommit)(consumerSettingsWithEnableAutoCommit.withCommitTimeout)
+    val consumerSettingsWithMaxPollRecords   =
       kafkaConsumerConfig.maxPollRecords.fold(consumerSettingWithCommitTimeout)(consumerSettingWithCommitTimeout.withMaxPollRecords)
-    val consumerSettingsWithMaxPollInterval =
+    val consumerSettingsWithMaxPollInterval  =
       kafkaConsumerConfig.maxPollInterval.fold(consumerSettingsWithMaxPollRecords)(consumerSettingsWithMaxPollRecords.withMaxPollInterval)
 
     KafkaConsumer.resource[F, Option[K], V](consumerSettingsWithMaxPollInterval).evalTap(_.subscribeTo(kafkaConsumerConfig.topic))

@@ -58,4 +58,5 @@
     </root>
 
     <logger name="org.http4s.client.middleware.Retry" level="WARN"/>
+    <logger name="org.http4s.client.blaze.Http1Connection" level="ERROR"/>
 </configuration>

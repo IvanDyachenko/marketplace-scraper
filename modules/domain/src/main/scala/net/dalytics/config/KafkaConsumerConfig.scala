@@ -12,6 +12,7 @@ import pureconfig.module.catseffect.syntax._
 final case class KafkaConsumerConfig(
   groupId: String,
   topic: String,
+  enableAutoCommit: Option[Boolean],
   maxPollRecords: Option[Int],
   maxPollInterval: Option[FiniteDuration],
   commitTimeout: Option[FiniteDuration],

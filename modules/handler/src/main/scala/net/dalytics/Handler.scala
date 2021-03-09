@@ -11,7 +11,7 @@ import tofu.higherKind.derived.representableK
 import tofu.WithRun
 import tofu.fs2.LiftStream
 import fs2.Stream
-import fs2.kafka.{commitBatchWithin, KafkaConsumer, KafkaProducer, ProducerRecord, ProducerRecords}
+import fs2.kafka.{KafkaConsumer, KafkaProducer, ProducerRecord, ProducerRecords}
 
 import net.dalytics.config.Config
 import net.dalytics.context.MessageContext
@@ -66,8 +66,9 @@ object Handler {
               }
               .evalMap(producerOfEvents.produce)
               .parEvalMap(config.kafkaProducerConfig.maxBufferSize)(identity)
-              .map(_.passthrough)
-              .through(commitBatchWithin(config.kafkaConsumerConfig.commitEveryNOffsets, config.kafkaConsumerConfig.commitTimeWindow))
+              .void
+          //  .map(_.passthrough)
+          //  .through(commitBatchWithin(config.kafkaConsumerConfig.commitEveryNOffsets, config.kafkaConsumerConfig.commitTimeWindow))
           }.toList
 
           Stream.emits(partitions)

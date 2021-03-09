@@ -36,6 +36,9 @@ object SourceConfig {
   final case class WbCatalog(id: wb.Catalog.Id, every: FiniteDuration) extends SourceConfig
 
   @derive(pureconfigReader)
+  final case class OzonSeller(every: FiniteDuration) extends SourceConfig
+
+  @derive(pureconfigReader)
   final case class OzonCategory(id: ozon.Category.Id, every: FiniteDuration) extends SourceConfig
 
   implicit val fieldCoproductHint: FieldCoproductHint[SourceConfig] = new FieldCoproductHint[SourceConfig]("type") {

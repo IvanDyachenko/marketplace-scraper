@@ -70,6 +70,7 @@ object Scheduler {
   ): Stream[F, HandlerCommand] =
     sourceConfig match {
       case SourceConfig.WbCatalog(_, _)                     => ???
+      case SourceConfig.OzonSeller(every)                   => ???
       case SourceConfig.OzonCategory(rootCategoryId, every) =>
         Stream
           .awakeEvery[F](every)

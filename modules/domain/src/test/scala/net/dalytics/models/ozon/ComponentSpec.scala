@@ -7,6 +7,35 @@ import io.circe.parser.decode
 
 class ComponentSpec extends AnyFlatSpec with Matchers {
 
+  it should "decode Component.SellerList from a valid JSON" in {
+    val componentRawJson =
+      """
+        |{
+        |  "vertical": "cms",
+        |  "component": "sellerList",
+        |  "stateId": "sellerList-438294-default-400",
+        |  "version": 1,
+        |  "widgetTrackingInfo": {
+        |    "name": "marketing.sellerList",
+        |    "vertical": "cms",
+        |    "component": "sellerList",
+        |    "version": 1,
+        |    "originName": "marketing.sellerList",
+        |    "originVertical": "marketing",
+        |    "originComponent": "sellerList",
+        |    "originVersion": 1,
+        |    "id": 438294,
+        |    "revisionId": 480225,
+        |    "index": 1
+        |  },
+        |  "widgetToken": "124a0903d08b9c5f8d42f927b4b1e022ed8c24be",
+        |  "trackingOn": true
+        |}
+      """.stripMargin
+
+    decode[Component](componentRawJson).isRight shouldBe true
+  }
+
   it should "decode Component.CategoryMenu from a valid JSON" in {
     val componentRawJson =
       """

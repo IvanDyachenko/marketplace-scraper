@@ -23,6 +23,9 @@ object Component {
   final case class UWidgetSKU(stateId: Component.StateId) extends Component
 
   @derive(loggable)
+  final case class SellerList(stateId: Component.StateId) extends Component
+
+  @derive(loggable)
   final case class CategoryMenu(stateId: Component.StateId) extends Component
 
   @derive(loggable)

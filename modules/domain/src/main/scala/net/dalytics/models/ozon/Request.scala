@@ -20,20 +20,24 @@ sealed trait Request {
 object Request {
 
   @derive(loggable)
-  final case class GetCategoryMenu(categoryId: Category.Id) extends Request {
-    val url = Url(s"/modal/categoryMenu/category/${categoryId.show}/")
+  final case class GetSellerList(page: Url.Page) extends Request {
+    private val layoutContainer: Url.LayoutContainer = Url.LayoutContainer.Default
+    private val layoutPageIndex: Url.LayoutPageIndex = page.self @@ Url.LayoutPageIndex
+
+    val url = Url("/seller", Some(page), Some(layoutContainer), Some(layoutPageIndex))
+  }
+
+  object GetSellerList {
+    implicit val vulcanCodec: Codec[GetSellerList] =
+      Codec.record[GetSellerList](
+        name = "GetSellerList",
+        namespace = "ozon.models"
+      )(field => field("host", _.host) *> field("path", _.path) *> field("page", _.page).map(apply))
   }
 
   @derive(loggable)
-  final case class GetCategorySearchResultsV2 private (
-    categoryId: Category.Id,
-    categoryName: Option[Category.Name] = None,
-    page: Url.Page
-  ) extends Request {
-    val layoutContainer: Url.LayoutContainer = Url.LayoutContainer.Default
-    val layoutPageIndex: Url.LayoutPageIndex = page.self @@ Url.LayoutPageIndex
-
-    val url = Url(s"/category/${categoryId.show}/", Some(page), Some(layoutContainer), Some(layoutPageIndex))
+  final case class GetCategoryMenu(categoryId: Category.Id) extends Request {
+    val url = Url(s"/modal/categoryMenu/category/${categoryId.show}/")
   }
 
   object GetCategoryMenu {
@@ -42,6 +46,18 @@ object Request {
         name = "GetCategoryMenu",
         namespace = "ozon.models"
       )(field => field("host", _.host) *> field("path", _.path) *> field("categoryId", _.categoryId).map(apply))
+  }
+
+  @derive(loggable)
+  final case class GetCategorySearchResultsV2 private (
+    categoryId: Category.Id,
+    categoryName: Option[Category.Name] = None,
+    page: Url.Page
+  ) extends Request {
+    private val layoutContainer: Url.LayoutContainer = Url.LayoutContainer.Default
+    private val layoutPageIndex: Url.LayoutPageIndex = page.self @@ Url.LayoutPageIndex
+
+    val url = Url(s"/category/${categoryId.show}/", Some(page), Some(layoutContainer), Some(layoutPageIndex))
   }
 
   object GetCategorySearchResultsV2 {
@@ -57,5 +73,6 @@ object Request {
       }
   }
 
-  implicit val vulcanCodec: Codec[Request] = Codec.union[Request](alt => alt[GetCategoryMenu] |+| alt[GetCategorySearchResultsV2])
+  implicit val vulcanCodec: Codec[Request] =
+    Codec.union[Request](alt => alt[GetSellerList] |+| alt[GetCategoryMenu] |+| alt[GetCategorySearchResultsV2])
 }

@@ -53,8 +53,15 @@ object Parser {
               eventsE.toOption.fold[(List[ParserEvent], CommittableOffset[I])](List.empty -> offset)(_ -> offset)
             }
           }
-          .collect { case (events, offset) =>
-            ProducerRecords(events.map(event => ProducerRecord(config.kafkaProducerConfig.topic, event.key, event)), offset)
+          .map { case (events, offset) =>
+            val records = events.map {
+              case event: ParserEvent.OzonSellerListItemParsed      =>
+                ProducerRecord(config.kafkaProducerConfig.topic("results-ozon-seller-list-items"), event.key, event)
+              case event: ParserEvent.OzonSearchResultsV2ItemParsed =>
+                ProducerRecord(config.kafkaProducerConfig.topic("results-ozon-category-search-results-v2-items"), event.key, event)
+            }
+
+            ProducerRecords(records, offset)
           }
           .evalMap(producerOfEvents.produce)
           .parEvalMap(config.kafkaProducerConfig.maxBufferSize)(identity)

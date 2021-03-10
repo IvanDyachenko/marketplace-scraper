@@ -7,7 +7,7 @@ import tofu.logging.derivation.loggable
 import io.circe.{Decoder, DecodingFailure, HCursor}
 
 @derive(loggable)
-sealed trait SearchResultsV2
+sealed trait SearchResultsV2 extends Result
 
 object SearchResultsV2 {
 
@@ -31,7 +31,7 @@ object SearchResultsV2 {
         page            <- i.as[Page]
         searchResultsV2 <- layout.searchResultsV2.fold[Decoder.Result[SearchResultsV2]](
                              Left(
-                               DecodingFailure("\"layout\" object doesn't contain component which corresponds to \"searchResultsV2\"", c.history)
+                               DecodingFailure("'layout' object doesn't contain component which corresponds to 'searchResultsV2'", c.history)
                              )
                            ) { component =>
                              val circeDecoder = List[Decoder[SearchResultsV2]](

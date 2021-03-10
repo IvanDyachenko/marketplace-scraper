@@ -38,7 +38,7 @@ object Scheduler {
       Stream
         .emits(sourcesOfCommands)
         .parJoinUnbounded
-        .map(command => ProducerRecord(config.kafkaProducerConfig.topic, command.key, command))
+        .map(command => ProducerRecord(config.kafkaProducerConfig.topic("commands"), command.key, command))
         .evalMap(record => producerOfCommands.produce(ProducerRecords.one(record)))
         .parEvalMap(config.kafkaProducerConfig.maxBufferSize)(identity)
         .map(_.passthrough)
@@ -70,6 +70,14 @@ object Scheduler {
   ): Stream[F, HandlerCommand] =
     sourceConfig match {
       case SourceConfig.WbCatalog(_, _)                     => ???
+      case SourceConfig.OzonSeller(every)                   =>
+        Stream
+          .awakeEvery[F](every)
+          .flatMap { _ =>
+            Stream.range(1, 450).parEvalMapUnordered[F, HandlerCommand](1000) { p =>
+              HandlerCommand.handleOzonRequest[F](ozon.Request.GetSellerList(p @@ ozon.Url.Page))
+            }
+          }
       case SourceConfig.OzonCategory(rootCategoryId, every) =>
         Stream
           .awakeEvery[F](every)

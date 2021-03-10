@@ -60,7 +60,7 @@ object Handler {
               }
               .collect { case (eventOption, offset) =>
                 val events  = List(eventOption).flatten
-                val records = events.map(event => ProducerRecord(config.kafkaProducerConfig.topic, event.key, event))
+                val records = events.map(event => ProducerRecord(config.kafkaProducerConfig.topic("events"), event.key, event))
 
                 ProducerRecords(records, offset)
               }

@@ -93,6 +93,7 @@ object HttpClient extends ContextEmbed[HttpClient] {
             )
             .raise[F, Res]
         }
+        .retryOnly[HttpClientError.ResponseDecodeError](3)
   }
 
   implicit val embed: Embed[HttpClient] = new Embed[HttpClient] {

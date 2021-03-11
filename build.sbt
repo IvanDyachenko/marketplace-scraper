@@ -201,6 +201,7 @@ lazy val commonDependencies =
     "org.tpolecat"          %% "doobie-core"            % Versions.doobie,
     "org.tpolecat"          %% "doobie-hikari"          % Versions.doobie,
     "ru.yandex.clickhouse"   % "clickhouse-jdbc"        % Versions.clickhouseJDBC,
+    "org.slf4j"              % "slf4j-api"              % Versions.slf4j,
     "ch.qos.logback"         % "logback-classic"        % Versions.logback,
     "org.scalactic"         %% "scalactic"              % Versions.scalactic               % "test",
     "org.scalatest"         %% "scalatest"              % Versions.scalatest               % "test",

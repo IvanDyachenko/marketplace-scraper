@@ -14,6 +14,8 @@ object Versions {
   lazy val doobie              = "0.12.1"
   lazy val clickhouseJDBC      = "0.2.6"
   lazy val pureconfig          = "0.14.1"
+
+  lazy val slf4j               = "1.7.30"
   lazy val logback             = "1.2.3"
 
   lazy val betterMonadicFor = "0.3.1"

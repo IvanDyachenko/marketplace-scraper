@@ -37,22 +37,21 @@ ON CLUSTER cluster
     isPersonalized       UInt8,
     isPromotedProduct    UInt8,
     freeRest             Int32
-)
-ENGINE = Kafka SETTINGS kafka_broker_list = 'broker:29092',
-                        kafka_topic_list = 'marketplace_parser-results-ozon_category_search_results_v2_items-version_1',
-                        kafka_group_name = 'clickhouse-ozon_category_search_results_v2_items',
-                        kafka_format = 'AvroConfluent',
-                        kafka_commit_every_batch = 1,
-                        kafka_max_block_size = 1048576,
-                        kafka_num_consumers = 8,
-                        kafka_thread_per_consumer = 1,
-                        format_avro_schema_registry_url = 'http://schema-registry:8081';
+) ENGINE = Kafka SETTINGS kafka_broker_list = 'broker:29092',
+                          kafka_topic_list = 'marketplace_parser-results-ozon_category_search_results_v2_items-version_1',
+                          kafka_group_name = 'clickhouse-ozon_category_search_results_v2_items',
+                          kafka_format = 'AvroConfluent',
+                          kafka_commit_every_batch = 1,
+                          kafka_max_block_size = 1048576,
+                          kafka_num_consumers = 8,
+                          kafka_thread_per_consumer = 1,
+                          format_avro_schema_registry_url = 'http://schema-registry:8081';
 
 CREATE TABLE IF NOT EXISTS dalytics.ozon_category_search_results_v2_items
 ON CLUSTER cluster
 (
     timestamp               DateTime64(3, 'Europe/Moscow') CODEC(DoubleDelta),
-    time                    DateTime('Europe/Moscow') CODEC(Delta, LZ4),
+    time                    DateTime('Europe/Moscow')      CODEC(Delta, LZ4),
     item_id                 UInt64,
     item_index              UInt32,
     item_type               Enum('sku' = 1),
@@ -131,3 +130,42 @@ AS
         isPromotedProduct                      AS is_promoted_product,
         freeRest                               AS free_rest
     FROM dalytics.ozon_category_search_results_v2_items_stream;
+
+CREATE TABLE IF NOT EXISTS dalytics.ozon_seller_list_items_stream
+ON CLUSTER cluster
+(
+    timestamp      DateTime64(3, 'Europe/Moscow'),
+    sellerId       UInt64,
+    sellerTitle    String,
+    sellerSubtitle String
+) ENGINE = Kafka SETTINGS kafka_broker_list = 'broker:29092',
+                          kafka_topic_list = 'marketplace_parser-results-ozon_seller_list_items-version_1',
+                          kafka_group_name = 'clickhouse-ozon_seller_list_items',
+                          kafka_format = 'AvroConfluent',
+                          kafka_commit_every_batch = 1,
+                          kafka_max_block_size = 1048576,
+                          kafka_num_consumers = 2,
+                          kafka_thread_per_consumer = 1,
+                          format_avro_schema_registry_url = 'http://schema-registry:8081';
+
+CREATE TABLE IF NOT EXISTS dalytics.ozon_seller_list_items
+ON CLUSTER cluster
+(
+    updated_at DateTime('Europe/Moscow') CODEC(Delta, LZ4),
+    id         UInt64,
+    title      String,
+    subtitle   String
+) ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{database}/{table}', '{replica}', updated_at)
+           ORDER     BY id
+           PARTITION BY toYYYYMM(updated_at);
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS dalytics.ozon_seller_list_items_consumer
+ON CLUSTER cluster
+TO dalytics.ozon_seller_list_items
+AS
+    SELECT
+        toDateTime(timestamp, 'Europe/Moscow') AS updated_at,
+        sellerId                               AS id,
+        sellerTitle                            AS title,
+        sellerSubtitle                         AS subtitle
+    FROM dalytics.ozon_seller_list_items_stream;

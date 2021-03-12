@@ -90,7 +90,7 @@ object Scheduler {
                   .fold[Stream[F, Int]](Stream.range(1, 50)) {
                     _ match {
                       case ozon.SearchResultsV2.Failure(error)      => Stream.empty
-                      case ozon.SearchResultsV2.Success(_, page, _) => Stream.range(1, page.total + 1)
+                      case ozon.SearchResultsV2.Success(_, page, _) => Stream.range(1, page.total.max(278) + 1)
                     }
                   }
                   .parEvalMapUnordered(1000) { p =>

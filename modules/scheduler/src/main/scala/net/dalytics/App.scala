@@ -4,6 +4,7 @@ import monix.eval.{Task, TaskApp}
 import cats.effect.{Blocker, ExitCode, Resource}
 import tofu.logging.Logs
 import fs2.Stream
+import fs2.kafka.vulcan.SchemaRegistryClientSettings
 import tofu.fs2Instances._
 
 import net.dalytics.config.Config
@@ -28,14 +29,14 @@ object Main extends TaskApp {
       implicit0(blocker: Blocker)              <- Blocker[AppI]
       cfg                                      <- Resource.liftF(Config.make[AppI])
       implicit0(httpClientI: HttpClient[AppI]) <- HttpClient.make[AppI, AppI](cfg.httpConfig)
+      schemaRegistryClient                     <- Resource.liftF(SchemaRegistryClientSettings[AppI](cfg.schemaRegistryConfig.baseUrl).createSchemaRegistryClient)
       wbApi                                    <- WildBerriesApi.make[AppI, AppI, AppS]
       ozonApi                                  <- OzonApi.make[AppI, AppI, AppS]
       sourcesOfCommands                         = cfg.sourcesConfig.sources.map(Scheduler.makeCommandsSource[AppI](_)(wbApi, ozonApi))
       producerOfCommands                       <- KafkaClient.makeProducer[AppI, Command.Key, HandlerCommand](
                                                     cfg.kafkaConfig,
-                                                    cfg.schemaRegistryConfig,
                                                     cfg.kafkaProducerConfig
-                                                  )
+                                                  )(schemaRegistryClient)
       scheduler                                <- Scheduler.make[AppI, AppS](cfg)(
                                                     sourcesOfCommands,
                                                     producerOfCommands

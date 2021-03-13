@@ -2,20 +2,20 @@ package net.dalytics.clients
 
 import tofu.syntax.monadic._
 import cats.effect.{ConcurrentEffect, ContextShift, Resource, Timer}
+import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient
 import fs2.kafka.{AutoOffsetReset, ConsumerSettings, Deserializer, KafkaConsumer, KafkaProducer, ProducerSettings, RecordDeserializer, RecordSerializer, Serializer}
+import fs2.kafka.vulcan.{avroDeserializer, avroSerializer, AvroSettings}
 import vulcan.Codec
-import fs2.kafka.vulcan.{avroDeserializer, avroSerializer, AvroSettings, SchemaRegistryClientSettings}
 
-import net.dalytics.config.{KafkaConfig, KafkaConsumerConfig, KafkaProducerConfig, SchemaRegistryConfig}
+import net.dalytics.config.{KafkaConfig, KafkaConsumerConfig, KafkaProducerConfig}
 
 object KafkaClient {
 
   def makeProducer[F[_]: ContextShift: ConcurrentEffect, K: Codec, V: Codec](
     kafkaConfig: KafkaConfig,
-    schemaRegistryConfig: SchemaRegistryConfig,
     kafkaProducerConfig: KafkaProducerConfig
-  ): Resource[F, KafkaProducer[F, Option[K], V]] = {
-    val avroSettings = AvroSettings(SchemaRegistryClientSettings[F](schemaRegistryConfig.baseUrl))
+  )(schemaRegistryClient: SchemaRegistryClient): Resource[F, KafkaProducer[F, Option[K], V]] = {
+    val avroSettings = AvroSettings(schemaRegistryClient)
       // Setting auto.register.schemas to false disables
       // auto-registration of the event type, so that it does not
       // override the union as the latest schema in the subject.
@@ -45,10 +45,9 @@ object KafkaClient {
 
   def makeConsumer[F[_]: ContextShift: ConcurrentEffect: Timer, K: Codec, V: Codec](
     kafkaConfig: KafkaConfig,
-    schemaRegistryConfig: SchemaRegistryConfig,
     kafkaConsumerConfig: KafkaConsumerConfig
-  ): Resource[F, KafkaConsumer[F, Option[K], V]] = {
-    val avroSettings = AvroSettings(SchemaRegistryClientSettings[F](schemaRegistryConfig.baseUrl))
+  )(schemaRegistryClient: SchemaRegistryClient): Resource[F, KafkaConsumer[F, Option[K], V]] = {
+    val avroSettings = AvroSettings(schemaRegistryClient)
       // Setting auto.register.schemas to false disables
       // auto-registration of the event type, so that it does not
       // override the union as the latest schema in the subject.

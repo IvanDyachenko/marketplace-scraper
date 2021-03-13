@@ -139,6 +139,35 @@ lazy val `marketplace-scheduler` = (project in file("modules/scheduler"))
     )
   )
 
+lazy val `marketplace-aggregator` = (project in file("modules/aggregator"))
+  .settings(
+    moduleName := "marketplace-aggregator",
+    commonSettings,
+    commonDependencies,
+    aggregatorDependencies,
+    compilerOptions,
+    compilerDependencies
+  )
+  .dependsOn(`marketplace-domain` % "test->test;compile->compile")
+  .enablePlugins(DockerPlugin)
+  .enablePlugins(AshScriptPlugin)
+  .enablePlugins(JavaAppPackaging)
+  .settings(
+    Docker / packageName := "marketplace-aggregator",
+    Docker / version     := sys.env.getOrElse("GITHUB_SHA", default = "latest"),
+    Docker / maintainer  := "Ivan Dyachenko <vandyachen@gmail.com>",
+    dockerUsername       := Some("ivandyachenko"),
+    dockerBaseImage      := "openjdk:11"
+  )
+  .settings(
+    Universal / javaOptions ++= Seq(
+      "-Dlogback.configurationFile=/src/resources/logback.xml",
+      "-J-XX:+UseContainerSupport",
+      "-J-XX:InitialRAMPercentage=25",
+      "-J-XX:MaxRAMPercentage=75"
+    )
+  )
+
 lazy val `marketplace-scraper` = (project in file("."))
   .settings(
     moduleName      := "marketplace-scraper",
@@ -148,7 +177,8 @@ lazy val `marketplace-scraper` = (project in file("."))
     `marketplace-domain`,
     `marketplace-parser`,
     `marketplace-handler`,
-    `marketplace-scheduler`
+    `marketplace-scheduler`,
+    `marketplace-aggregator`
   )
 
 lazy val commonSettings = Seq(
@@ -208,6 +238,13 @@ lazy val commonDependencies =
     "org.scalatest"         %% "scalatest-flatspec"     % Versions.scalatest               % "test",
     "org.scalacheck"        %% "scalacheck"             % Versions.scalacheck              % "test",
     "org.scalatestplus"     %% "scalacheck-1-14"        % Versions.scalatestPlusScalacheck % "test"
+  )
+
+lazy val aggregatorDependencies =
+  libraryDependencies ++= List(
+    "com.compstak" %% "kafka-streams4s-core"     % Versions.kafkaStreams4s,
+    "com.compstak" %% "kafka-streams4s-vulcan"   % Versions.kafkaStreams4s,
+    "io.confluent"  % "kafka-streams-avro-serde" % Versions.kafkaStreamsAvroSerde
   )
 
 lazy val compilerDependencies =

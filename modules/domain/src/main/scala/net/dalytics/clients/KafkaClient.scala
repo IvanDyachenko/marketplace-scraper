@@ -72,15 +72,22 @@ object KafkaClient {
         .withGroupId(kafkaConsumerConfig.groupId)
         .withAutoOffsetReset(AutoOffsetReset.Earliest)
 
-    val consumerSettingsWithEnableAutoCommit =
-      kafkaConsumerConfig.enableAutoCommit.fold(consumerSettingsBase)(consumerSettingsBase.withEnableAutoCommit)
-    val consumerSettingWithCommitTimeout     =
-      kafkaConsumerConfig.commitTimeout.fold(consumerSettingsWithEnableAutoCommit)(consumerSettingsWithEnableAutoCommit.withCommitTimeout)
-    val consumerSettingsWithMaxPollRecords   =
-      kafkaConsumerConfig.maxPollRecords.fold(consumerSettingWithCommitTimeout)(consumerSettingWithCommitTimeout.withMaxPollRecords)
-    val consumerSettingsWithMaxPollInterval  =
-      kafkaConsumerConfig.maxPollInterval.fold(consumerSettingsWithMaxPollRecords)(consumerSettingsWithMaxPollRecords.withMaxPollInterval)
+    val consumerSettingWithCommitTimeout =
+      kafkaConsumerConfig.commitTimeout
+        .fold(consumerSettingsBase)(consumerSettingsBase.withCommitTimeout)
 
-    KafkaConsumer.resource[F, Option[K], V](consumerSettingsWithMaxPollInterval).evalTap(_.subscribeTo(kafkaConsumerConfig.topic))
+    val consumerSettingsWithMaxPollRecords =
+      kafkaConsumerConfig.maxPollRecords
+        .fold(consumerSettingWithCommitTimeout)(consumerSettingWithCommitTimeout.withMaxPollRecords)
+
+    val consumerSettingsWithMaxPollInterval =
+      kafkaConsumerConfig.maxPollInterval
+        .fold(consumerSettingsWithMaxPollRecords)(consumerSettingsWithMaxPollRecords.withMaxPollInterval)
+
+    val consumerSettingsWithEnableAutoCommit =
+      kafkaConsumerConfig.enableAutoCommit
+        .fold(consumerSettingsWithMaxPollInterval)(consumerSettingsWithMaxPollInterval.withEnableAutoCommit)
+
+    KafkaConsumer.resource[F, Option[K], V](consumerSettingsWithEnableAutoCommit).evalTap(_.subscribeTo(kafkaConsumerConfig.topic))
   }
 }

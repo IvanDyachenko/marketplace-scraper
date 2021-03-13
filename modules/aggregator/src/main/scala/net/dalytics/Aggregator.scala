@@ -1,21 +1,22 @@
 package net.dalytics
 
 import java.time.Duration
-import java.util.{Collections, Properties}
+import java.util.Properties
 
 import tofu.syntax.monadic._
 import cats.effect.{Concurrent, Resource, Sync}
-import org.apache.kafka.common.serialization.Serde
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.streams.{StreamsBuilder, StreamsConfig}
-import org.apache.kafka.streams.kstream.{Consumed, Produced}
+//import org.apache.kafka.streams.kstream.{Consumed, Produced}
 import compstak.kafkastreams4s.Platform
-import compstak.kafkastreams4s.vulcan.{VulcanSerdes, VulcanTable}
+import compstak.kafkastreams4s.vulcan.VulcanTable
 import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig
 
 import net.dalytics.config.Config
 import net.dalytics.models.Command
 import net.dalytics.models.handler.HandlerCommand
+import org.apache.kafka.common.serialization.Serde
+import org.apache.kafka.streams.kstream.Produced
 
 trait Aggregator[F[_]] {
   def run: F[compstak.kafkastreams4s.ShutdownStatus]
@@ -24,13 +25,14 @@ trait Aggregator[F[_]] {
 object Aggregator {
   def apply[F[_]](implicit ev: Aggregator[F]): ev.type = ev
 
-  private final class Impl[F[_]: Concurrent](cfg: Config) extends Aggregator[F] {
+  private final class Impl[F[_]: Concurrent](cfg: Config)(
+    builder: StreamsBuilder,
+    table: VulcanTable[Command.Key, HandlerCommand],
+    keySerde: Serde[Command.Key],
+    valueSerde: Serde[HandlerCommand]
+  ) extends Aggregator[F] {
     def run: F[compstak.kafkastreams4s.ShutdownStatus] = {
-      // TODO: REMOVE. FOR TESTING PURPOSES ONLY
-      val inputTopic  = "marketplace_handler-commands-handle_ozon_request-version_1"
-      val outputTopic = "output"
-
-      val builder = new StreamsBuilder
+      val outputTopic = "output4"
 
       val streamsConfiguration: Properties = {
         val p = new Properties()
@@ -41,47 +43,31 @@ object Aggregator {
         p
       }
 
-      val serdeConfig = Collections.singletonMap(
-        AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG,
-        cfg.schemaRegistryConfig.baseUrl
-      )
-
-      implicit val keyAvroSerde: Serde[Command.Key] = {
-        val serde = VulcanSerdes.serdeForVulcan[Command.Key]
-        serde.configure(serdeConfig, true)
-        serde
-      }
-
-      implicit val valueAvroSerde: Serde[HandlerCommand.HandleOzonRequest] = {
-        val serde = VulcanSerdes.serdeForVulcan[HandlerCommand.HandleOzonRequest]
-        serde.configure(serdeConfig, false)
-        serde
-      }
-
-      val table = VulcanTable.fromKTable(builder.table(inputTopic, Consumed.`with`(keyAvroSerde, valueAvroSerde)))
-
       val topology =
         Sync[F].delay {
           table
-            .map(cmd => cmd)
             .toKTable
             .toStream()
             .to(
               outputTopic,
-              Produced.`with`(keyAvroSerde, valueAvroSerde)
+              Produced.`with`(keySerde, valueSerde)
             )
         } >> builder.build().pure[F]
 
       topology.flatMap(topo => Platform.run[F](topo, streamsConfiguration, Duration.ofSeconds(3)))
     }
-    // TODO: REMOVE. FOR TESTING PURPOSES ONLY
   }
 
   def make[
     F[_]: Concurrent
-  ](cfg: Config): Resource[F, Aggregator[F]] =
+  ](cfg: Config)(
+    builder: StreamsBuilder,
+    table: VulcanTable[Command.Key, HandlerCommand],
+    keySerde: Serde[Command.Key],
+    valueSerde: Serde[HandlerCommand]
+  ): Resource[F, Aggregator[F]] =
     Resource.liftF {
-      val impl = new Impl[F](cfg): Aggregator[F]
+      val impl = new Impl[F](cfg)(builder, table, keySerde, valueSerde): Aggregator[F]
 
       impl.pure[F]
     }

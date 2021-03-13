@@ -27,6 +27,16 @@ object KafkaClient {
       .withBatchSize(kafkaProducerConfig.batchSize)
       .withParallelism(kafkaProducerConfig.maxBufferSize)
       .withProperty("compression.type", kafkaProducerConfig.compressionType)
+      // Setting auto.register.schemas to false disables
+      // auto-registration of the event type, so that it does not
+      // override the union as the latest schema in the subject.
+      .withProperty("auto.register.schemas", "false")
+      // Setting use.latest.version to true сauses the Avro serializer
+      // to look up the latest schema version in the subject(which
+      // will be the union) and use that for serialization. Otherwise,
+      // if set to false, the serializer will look for the event type
+      // in the subject and fail to find it.
+      .withProperty("use.latest.version", "true")
 
     KafkaProducer.resource[F, Option[K], V](producerSettings)
   }

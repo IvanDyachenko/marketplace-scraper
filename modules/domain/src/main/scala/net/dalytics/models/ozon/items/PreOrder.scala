@@ -27,7 +27,9 @@ final case class PreOrder private (
   isPersonalized: Boolean,
   isPromotedProduct: Boolean,
   freeRest: Int
-) extends Item
+) extends Item {
+  val addToCart: Item.AddToCart = Item.AddToCart.Unavailable
+}
 
 object PreOrder {
   implicit val circeDecoder: Decoder[PreOrder] = Decoder.instance[PreOrder] { (c: HCursor) =>

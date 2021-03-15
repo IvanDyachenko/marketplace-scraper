@@ -27,7 +27,9 @@ final case class OutOfStock private (
   isPersonalized: Boolean,
   isPromotedProduct: Boolean,
   freeRest: Int
-) extends Item
+) extends Item {
+  val addToCart: Item.AddToCart = Item.AddToCart.Unavailable
+}
 
 object OutOfStock {
   implicit val circeDecoder: Decoder[OutOfStock] = Decoder.instance[OutOfStock] { (c: HCursor) =>

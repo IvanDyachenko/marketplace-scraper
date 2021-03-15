@@ -27,7 +27,9 @@ final case class CannotBeShipped private (
   isPersonalized: Boolean,
   isPromotedProduct: Boolean,
   freeRest: Int
-) extends Item
+) extends Item {
+  val addToCart: Item.AddToCart = Item.AddToCart.Unavailable
+}
 
 object CannotBeShipped {
   implicit val circeDecoder: Decoder[CannotBeShipped] = Decoder.instance[CannotBeShipped] { (c: HCursor) =>

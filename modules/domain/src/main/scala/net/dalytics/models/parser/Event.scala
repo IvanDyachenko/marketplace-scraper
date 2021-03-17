@@ -49,9 +49,9 @@ object ParserEvent {
   final case class OzonCategorySearchResultsV2ItemParsed private (
     created: Timestamp,
     timestamp: Timestamp,
-    category: ozon.Category,
     page: ozon.Page,
-    item: ozon.Item
+    item: ozon.Item,
+    category: ozon.Category
   ) extends ParserEvent {
     override val key: Option[Event.Key] = Some(category.name @@@ Event.Key)
   }
@@ -60,7 +60,7 @@ object ParserEvent {
     def apply[F[_]: Monad: Clock](timestamp: Timestamp, searchResultsV2: ozon.CategorySearchResultsV2.Success): F[List[ParserEvent]] = {
       val ozon.CategorySearchResultsV2.Success(category, page, items) = searchResultsV2
       items.traverse { item =>
-        Clock[F].instantNow.map(instant => OzonCategorySearchResultsV2ItemParsed(instant @@ Timestamp, timestamp, category, page, item))
+        Clock[F].instantNow.map(instant => OzonCategorySearchResultsV2ItemParsed(instant @@ Timestamp, timestamp, page, item, category))
       }
     }
 
@@ -72,9 +72,9 @@ object ParserEvent {
         (
           field("_created", _.created),
           field("timestamp", _.timestamp),
-          ozon.Category.vulcanCodecFieldFA(field)(_.category),
           ozon.Page.vulcanCodecFieldFA(field)(_.page),
-          ozon.Item.vulcanCodecFieldFA(field)(_.item)
+          ozon.Item.vulcanCodecFieldFA(field)(_.item),
+          ozon.Category.vulcanCodecFieldFA(field)(_.category)
         ).mapN(apply)
       }
   }

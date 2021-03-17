@@ -85,8 +85,8 @@ object Scheduler {
                 searchResultsV2Option
                   .fold[Stream[F, Int]](Stream.range(1, 50)) {
                     _ match {
-                      case ozon.SearchResultsV2.Failure(error)      => Stream.empty
-                      case ozon.SearchResultsV2.Success(_, page, _) => Stream.range(1, page.total.min(278) + 1)
+                      case ozon.CategorySearchResultsV2.Failure(error)      => Stream.empty
+                      case ozon.CategorySearchResultsV2.Success(_, page, _) => Stream.range(1, page.total.min(278) + 1)
                     }
                   }
                   .parEvalMapUnordered(1000) { p =>

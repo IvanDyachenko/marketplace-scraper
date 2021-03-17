@@ -46,7 +46,7 @@ object ParserEvent {
   }
 
   @derive(loggable)
-  final case class OzonSearchResultsV2ItemParsed private (
+  final case class OzonCategorySearchResultsV2ItemParsed private (
     created: Timestamp,
     timestamp: Timestamp,
     category: ozon.Category,
@@ -56,15 +56,17 @@ object ParserEvent {
     override val key: Option[Event.Key] = Some(category.name @@@ Event.Key)
   }
 
-  object OzonSearchResultsV2ItemParsed {
-    def apply[F[_]: Monad: Clock](timestamp: Timestamp, searchResultsV2: ozon.SearchResultsV2.Success): F[List[ParserEvent]] = {
-      val ozon.SearchResultsV2.Success(category, page, items) = searchResultsV2
-      items.traverse(item => Clock[F].instantNow.map(instant => OzonSearchResultsV2ItemParsed(instant @@ Timestamp, timestamp, category, page, item)))
+  object OzonCategorySearchResultsV2ItemParsed {
+    def apply[F[_]: Monad: Clock](timestamp: Timestamp, searchResultsV2: ozon.CategorySearchResultsV2.Success): F[List[ParserEvent]] = {
+      val ozon.CategorySearchResultsV2.Success(category, page, items) = searchResultsV2
+      items.traverse { item =>
+        Clock[F].instantNow.map(instant => OzonCategorySearchResultsV2ItemParsed(instant @@ Timestamp, timestamp, category, page, item))
+      }
     }
 
-    implicit val vulcanCodec: Codec[OzonSearchResultsV2ItemParsed] =
-      Codec.record[OzonSearchResultsV2ItemParsed](
-        name = "OzonSearchResultsV2ItemParsed",
+    implicit val vulcanCodec: Codec[OzonCategorySearchResultsV2ItemParsed] =
+      Codec.record[OzonCategorySearchResultsV2ItemParsed](
+        name = "OzonCategorySearchResultsV2ItemParsed",
         namespace = "parser.events"
       ) { field =>
         (
@@ -77,5 +79,6 @@ object ParserEvent {
       }
   }
 
-  implicit val vulcanCodec: Codec[ParserEvent] = Codec.union[ParserEvent](alt => alt[OzonSellerListItemParsed] |+| alt[OzonSearchResultsV2ItemParsed])
+  implicit val vulcanCodec: Codec[ParserEvent] =
+    Codec.union[ParserEvent](alt => alt[OzonSellerListItemParsed] |+| alt[OzonCategorySearchResultsV2ItemParsed])
 }

@@ -8,7 +8,7 @@ trait Result
 object Result {
   implicit val circeDecoder: Decoder[Result] =
     List[Decoder[Result]](
-      Decoder[SearchResultsV2].widen,
+      Decoder[CategorySearchResultsV2].widen,
       Decoder[SellerList].widen
     ).reduceLeft(_ or _)
 }

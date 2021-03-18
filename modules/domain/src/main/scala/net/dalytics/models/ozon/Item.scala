@@ -1,6 +1,7 @@
 package net.dalytics.models.ozon
 
 import cats.implicits._
+import cats.Foldable
 import cats.free.FreeApplicative
 import tofu.syntax.loggable._
 import tofu.logging.{Loggable, LoggableEnum}
@@ -112,6 +113,23 @@ object Item {
           case UniversalAction(UniversalAction.Button.AddToCartWithQuantity(quantity, maxItems)) => With(quantity, maxItems)
           case MobileContainer(_, _, footer) if footer.addToCart.isDefined                       => footer.addToCart.get
         }
+    }
+
+    def aggregate[C[_]: Foldable](items: C[Item]): Sale = {
+      val listOfMaxItems = Foldable[C].toList(items).map(_.addToCart).collect { case Item.AddToCart.With(_, maxItems) =>
+        maxItems
+      }
+
+      if (listOfMaxItems.length > 1) {
+        val numberOfSoldItems =
+          listOfMaxItems.tail
+            .foldLeft((0, listOfMaxItems.head)) { case ((numberOfSoldItems, prevMaxItems), currMaxItems) =>
+              (numberOfSoldItems + 0.max(currMaxItems - prevMaxItems), currMaxItems)
+            }
+            ._1
+        Sale.Sold(numberOfSoldItems)
+      } else
+        Sale.Unknown
     }
 
     private[models] def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => AddToCart): FreeApplicative[Codec.Field[A, *], AddToCart] =

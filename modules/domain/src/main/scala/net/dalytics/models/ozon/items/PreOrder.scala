@@ -1,11 +1,9 @@
-package net.dalytics.models.ozon.items
+package net.dalytics.models.ozon
 
 import cats.implicits._
 import derevo.derive
 import tofu.logging.derivation.loggable
 import io.circe.{Decoder, DecodingFailure, HCursor}
-
-import net.dalytics.models.ozon.{Brand, Category, Delivery, Item, MarketplaceSeller, Price, Rating}
 
 @derive(loggable)
 final case class PreOrder private (

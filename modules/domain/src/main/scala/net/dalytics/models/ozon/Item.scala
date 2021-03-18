@@ -151,10 +151,10 @@ object Item {
     for {
       availability <- c.downField("cellTrackingInfo").get[Byte]("availability")
       decoder       = Availability.from(availability) match {
-                        case Availability.PreOrder        => items.PreOrder.circeDecoder
-                        case Availability.InStock         => items.InStock.circeDecoder
-                        case Availability.OutOfStock      => items.OutOfStock.circeDecoder
-                        case Availability.CannotBeShipped => items.CannotBeShipped.circeDecoder
+                        case Availability.PreOrder        => PreOrder.circeDecoder
+                        case Availability.InStock         => InStock.circeDecoder
+                        case Availability.OutOfStock      => OutOfStock.circeDecoder
+                        case Availability.CannotBeShipped => CannotBeShipped.circeDecoder
                       }
       item         <- decoder.widen[Item](c)
     } yield item
@@ -208,7 +208,7 @@ object Item {
           ) =>
         Availability.from(availability) match {
           case Availability.PreOrder        =>
-            items.PreOrder(
+            PreOrder(
               itemId,
               itemIndex,
               itemType,
@@ -229,7 +229,7 @@ object Item {
               freeRest
             )
           case Availability.InStock         =>
-            items.InStock(
+            InStock(
               itemId,
               itemIndex,
               itemType,
@@ -251,7 +251,7 @@ object Item {
               freeRest
             )
           case Availability.OutOfStock      =>
-            items.OutOfStock(
+            OutOfStock(
               itemId,
               itemIndex,
               itemType,
@@ -272,7 +272,7 @@ object Item {
               freeRest
             )
           case Availability.CannotBeShipped =>
-            items.CannotBeShipped(
+            CannotBeShipped(
               itemId,
               itemIndex,
               itemType,

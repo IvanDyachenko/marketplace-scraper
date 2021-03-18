@@ -139,9 +139,9 @@ lazy val `marketplace-scheduler` = (project in file("modules/scheduler"))
     )
   )
 
-lazy val `marketplace-aggregator` = (project in file("modules/aggregator"))
+lazy val `marketplace-enricher` = (project in file("modules/enricher"))
   .settings(
-    moduleName := "marketplace-aggregator",
+    moduleName := "marketplace-enricher",
     commonSettings,
     commonDependencies,
     compilerOptions,
@@ -152,7 +152,7 @@ lazy val `marketplace-aggregator` = (project in file("modules/aggregator"))
   .enablePlugins(AshScriptPlugin)
   .enablePlugins(JavaAppPackaging)
   .settings(
-    Docker / packageName := "marketplace-aggregator",
+    Docker / packageName := "marketplace-enricher",
     Docker / version     := sys.env.getOrElse("GITHUB_SHA", default = "latest"),
     Docker / maintainer  := "Ivan Dyachenko <vandyachen@gmail.com>",
     dockerUsername       := Some("ivandyachenko"),
@@ -177,7 +177,7 @@ lazy val `marketplace-scraper` = (project in file("."))
     `marketplace-parser`,
     `marketplace-handler`,
     `marketplace-scheduler`,
-    `marketplace-aggregator`
+    `marketplace-enricher`
   )
 
 lazy val commonSettings = Seq(
@@ -226,7 +226,6 @@ lazy val commonDependencies =
     "com.github.fd4s"       %% "fs2-kafka-vulcan"         % Versions.fs2Kafka,
     "org.apache.kafka"      %% "kafka-streams-scala"      % Versions.kafkaStreamsScala,
     "com.compstak"          %% "kafka-streams4s-core"     % Versions.kafkaStreams4s,
-    "com.compstak"          %% "kafka-streams4s-vulcan"   % Versions.kafkaStreams4s,
     "io.confluent"           % "kafka-streams-avro-serde" % Versions.kafkaStreamsAvroSerde,
     "org.http4s"            %% "http4s-dsl"               % Versions.http4s,
     "org.http4s"            %% "http4s-circe"             % Versions.http4s,

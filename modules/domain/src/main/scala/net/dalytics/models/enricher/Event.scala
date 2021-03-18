@@ -1,4 +1,4 @@
-package net.dalytics.models.aggregator
+package net.dalytics.models.enricher
 
 import cats.implicits._
 import derevo.derive

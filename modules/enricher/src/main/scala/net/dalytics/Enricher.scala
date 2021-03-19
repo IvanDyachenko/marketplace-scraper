@@ -92,7 +92,7 @@ object Enricher {
                                     },
                                     Materialized.`with`(eventKeySerde, enricherEventSerde)
                                   )
-                                  .toStream()
+                                  .toStream((key: Event.Key, event: EnricherEvent) => event.key.getOrElse(key))
                                   .to(cfg.kafkaStreamsConfig.sinkTopic, Produced.`with`[Event.Key, EnricherEvent](eventKeySerde, enricherEventSerde))
                               }
         topology            = streamsBuilder.build()

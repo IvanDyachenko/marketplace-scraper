@@ -49,7 +49,9 @@
         </appender-ref>
     </appender>
 
-    <logger name="org.apache.kafka" level="INFO" additivity="false"/>
+    <logger name="org.apache.kafka.clients">
+        <level value="WARN"/>
+    </logger>
 
     <root level="INFO">
         <appender-ref ref="STDOUT"/>

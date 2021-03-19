@@ -224,7 +224,7 @@ lazy val commonDependencies =
     "co.fs2"                %% "fs2-core"                 % Versions.fs2,
     "com.github.fd4s"       %% "fs2-kafka"                % Versions.fs2Kafka,
     "com.github.fd4s"       %% "fs2-kafka-vulcan"         % Versions.fs2Kafka,
-    "org.apache.kafka"      %% "kafka-streams-scala"      % Versions.kafkaStreamsScala,
+    ("org.apache.kafka"      % "kafka-streams"            % Versions.kafkaStreams).exclude("log4j", "log4j").exclude("org.slf4j", "slf4j-log4j12"),
     "com.compstak"          %% "kafka-streams4s-core"     % Versions.kafkaStreams4s,
     "io.confluent"           % "kafka-streams-avro-serde" % Versions.kafkaStreamsAvroSerde,
     "org.http4s"            %% "http4s-dsl"               % Versions.http4s,

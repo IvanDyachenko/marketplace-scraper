@@ -139,6 +139,34 @@ lazy val `marketplace-scheduler` = (project in file("modules/scheduler"))
     )
   )
 
+lazy val `marketplace-enricher` = (project in file("modules/enricher"))
+  .settings(
+    moduleName := "marketplace-enricher",
+    commonSettings,
+    commonDependencies,
+    compilerOptions,
+    compilerDependencies
+  )
+  .dependsOn(`marketplace-domain` % "test->test;compile->compile")
+  .enablePlugins(DockerPlugin)
+  .enablePlugins(AshScriptPlugin)
+  .enablePlugins(JavaAppPackaging)
+  .settings(
+    Docker / packageName := "marketplace-enricher",
+    Docker / version     := sys.env.getOrElse("GITHUB_SHA", default = "latest"),
+    Docker / maintainer  := "Ivan Dyachenko <vandyachen@gmail.com>",
+    dockerUsername       := Some("ivandyachenko"),
+    dockerBaseImage      := "openjdk:11"
+  )
+  .settings(
+    Universal / javaOptions ++= Seq(
+      "-Dlogback.configurationFile=/src/resources/logback.xml",
+      "-J-XX:+UseContainerSupport",
+      "-J-XX:InitialRAMPercentage=25",
+      "-J-XX:MaxRAMPercentage=75"
+    )
+  )
+
 lazy val `marketplace-scraper` = (project in file("."))
   .settings(
     moduleName      := "marketplace-scraper",
@@ -148,7 +176,8 @@ lazy val `marketplace-scraper` = (project in file("."))
     `marketplace-domain`,
     `marketplace-parser`,
     `marketplace-handler`,
-    `marketplace-scheduler`
+    `marketplace-scheduler`,
+    `marketplace-enricher`
   )
 
 lazy val commonSettings = Seq(
@@ -163,51 +192,54 @@ lazy val commonSettings = Seq(
 
 lazy val commonDependencies =
   libraryDependencies ++= List(
-    "io.monix"              %% "monix"                  % Versions.monix,
-    "tf.tofu"               %% "derevo-core"            % Versions.derevo,
-    "tf.tofu"               %% "derevo-circe"           % Versions.derevo,
-    "tf.tofu"               %% "derevo-pureconfig"      % Versions.derevo,
-    "tf.tofu"               %% "derevo-cats-tagless"    % Versions.derevo,
-    "ru.tinkoff"            %% "tofu-core"              % Versions.tofu,
-    "ru.tinkoff"            %% "tofu-core-higher-kind"  % Versions.tofu,
-    "ru.tinkoff"            %% "tofu-env"               % Versions.tofu,
-    "ru.tinkoff"            %% "tofu-derivation"        % Versions.tofu,
-    "ru.tinkoff"            %% "tofu-optics-core"       % Versions.tofu,
-    "ru.tinkoff"            %% "tofu-optics-macro"      % Versions.tofu,
-    "ru.tinkoff"            %% "tofu-enums"             % Versions.tofu,
-    "ru.tinkoff"            %% "tofu-fs2-interop"       % Versions.tofu,
-    "ru.tinkoff"            %% "tofu-doobie"            % Versions.tofu,
-    "ru.tinkoff"            %% "tofu-logging"           % Versions.tofu,
-    "com.github.pureconfig" %% "pureconfig"             % Versions.pureconfig,
-    "com.github.pureconfig" %% "pureconfig-enumeratum"  % Versions.pureconfig,
-    "com.github.pureconfig" %% "pureconfig-cats-effect" % Versions.pureconfig,
-    "org.rudogma"           %% "supertagged"            % Versions.supertagged,
-    "com.beachape"          %% "enumeratum"             % Versions.enumeratum,
-    "com.beachape"          %% "enumeratum-circe"       % Versions.enumeratum,
-    "com.beachape"          %% "enumeratum-cats"        % Versions.enumeratum,
-    "io.circe"              %% "circe-core"             % Versions.circe,
-    "io.circe"              %% "circe-parser"           % Versions.circe,
-    "io.circe"              %% "circe-generic-extras"   % Versions.circe,
-    "io.circe"              %% "circe-derivation"       % Versions.circeDerivation,
-    "com.github.fd4s"       %% "vulcan"                 % Versions.vulkan,
-    "com.github.fd4s"       %% "vulcan-generic"         % Versions.vulkan,
-    "com.github.fd4s"       %% "vulcan-enumeratum"      % Versions.vulkan,
-    "co.fs2"                %% "fs2-core"               % Versions.fs2,
-    "com.github.fd4s"       %% "fs2-kafka"              % Versions.fs2Kafka,
-    "com.github.fd4s"       %% "fs2-kafka-vulcan"       % Versions.fs2Kafka,
-    "org.http4s"            %% "http4s-dsl"             % Versions.http4s,
-    "org.http4s"            %% "http4s-circe"           % Versions.http4s,
-    "org.http4s"            %% "http4s-blaze-client"    % Versions.http4sBlazeClient,
-    "org.tpolecat"          %% "doobie-core"            % Versions.doobie,
-    "org.tpolecat"          %% "doobie-hikari"          % Versions.doobie,
-    "ru.yandex.clickhouse"   % "clickhouse-jdbc"        % Versions.clickhouseJDBC,
-    "org.slf4j"              % "slf4j-api"              % Versions.slf4j,
-    "ch.qos.logback"         % "logback-classic"        % Versions.logback,
-    "org.scalactic"         %% "scalactic"              % Versions.scalactic               % "test",
-    "org.scalatest"         %% "scalatest"              % Versions.scalatest               % "test",
-    "org.scalatest"         %% "scalatest-flatspec"     % Versions.scalatest               % "test",
-    "org.scalacheck"        %% "scalacheck"             % Versions.scalacheck              % "test",
-    "org.scalatestplus"     %% "scalacheck-1-14"        % Versions.scalatestPlusScalacheck % "test"
+    "io.monix"              %% "monix"                    % Versions.monix,
+    "tf.tofu"               %% "derevo-core"              % Versions.derevo,
+    "tf.tofu"               %% "derevo-circe"             % Versions.derevo,
+    "tf.tofu"               %% "derevo-pureconfig"        % Versions.derevo,
+    "tf.tofu"               %% "derevo-cats-tagless"      % Versions.derevo,
+    "ru.tinkoff"            %% "tofu-core"                % Versions.tofu,
+    "ru.tinkoff"            %% "tofu-core-higher-kind"    % Versions.tofu,
+    "ru.tinkoff"            %% "tofu-env"                 % Versions.tofu,
+    "ru.tinkoff"            %% "tofu-derivation"          % Versions.tofu,
+    "ru.tinkoff"            %% "tofu-optics-core"         % Versions.tofu,
+    "ru.tinkoff"            %% "tofu-optics-macro"        % Versions.tofu,
+    "ru.tinkoff"            %% "tofu-enums"               % Versions.tofu,
+    "ru.tinkoff"            %% "tofu-fs2-interop"         % Versions.tofu,
+    "ru.tinkoff"            %% "tofu-doobie"              % Versions.tofu,
+    "ru.tinkoff"            %% "tofu-logging"             % Versions.tofu,
+    "com.github.pureconfig" %% "pureconfig"               % Versions.pureconfig,
+    "com.github.pureconfig" %% "pureconfig-enumeratum"    % Versions.pureconfig,
+    "com.github.pureconfig" %% "pureconfig-cats-effect"   % Versions.pureconfig,
+    "org.rudogma"           %% "supertagged"              % Versions.supertagged,
+    "com.beachape"          %% "enumeratum"               % Versions.enumeratum,
+    "com.beachape"          %% "enumeratum-circe"         % Versions.enumeratum,
+    "com.beachape"          %% "enumeratum-cats"          % Versions.enumeratum,
+    "io.circe"              %% "circe-core"               % Versions.circe,
+    "io.circe"              %% "circe-parser"             % Versions.circe,
+    "io.circe"              %% "circe-generic-extras"     % Versions.circe,
+    "io.circe"              %% "circe-derivation"         % Versions.circeDerivation,
+    "com.github.fd4s"       %% "vulcan"                   % Versions.vulkan,
+    "com.github.fd4s"       %% "vulcan-generic"           % Versions.vulkan,
+    "com.github.fd4s"       %% "vulcan-enumeratum"        % Versions.vulkan,
+    "co.fs2"                %% "fs2-core"                 % Versions.fs2,
+    "com.github.fd4s"       %% "fs2-kafka"                % Versions.fs2Kafka,
+    "com.github.fd4s"       %% "fs2-kafka-vulcan"         % Versions.fs2Kafka,
+    ("org.apache.kafka"      % "kafka-streams"            % Versions.kafkaStreams).exclude("log4j", "log4j").exclude("org.slf4j", "slf4j-log4j12"),
+    "com.compstak"          %% "kafka-streams4s-core"     % Versions.kafkaStreams4s,
+    "io.confluent"           % "kafka-streams-avro-serde" % Versions.kafkaStreamsAvroSerde,
+    "org.http4s"            %% "http4s-dsl"               % Versions.http4s,
+    "org.http4s"            %% "http4s-circe"             % Versions.http4s,
+    "org.http4s"            %% "http4s-blaze-client"      % Versions.http4sBlazeClient,
+    "org.tpolecat"          %% "doobie-core"              % Versions.doobie,
+    "org.tpolecat"          %% "doobie-hikari"            % Versions.doobie,
+    "ru.yandex.clickhouse"   % "clickhouse-jdbc"          % Versions.clickhouseJDBC,
+    "org.slf4j"              % "slf4j-api"                % Versions.slf4j,
+    "ch.qos.logback"         % "logback-classic"          % Versions.logback,
+    "org.scalactic"         %% "scalactic"                % Versions.scalactic               % "test",
+    "org.scalatest"         %% "scalatest"                % Versions.scalatest               % "test",
+    "org.scalatest"         %% "scalatest-flatspec"       % Versions.scalatest               % "test",
+    "org.scalacheck"        %% "scalacheck"               % Versions.scalacheck              % "test",
+    "org.scalatestplus"     %% "scalacheck-1-14"          % Versions.scalatestPlusScalacheck % "test"
   )
 
 lazy val compilerDependencies =

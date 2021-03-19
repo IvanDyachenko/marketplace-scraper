@@ -55,9 +55,9 @@ object Parser {
           }
           .map { case (events, offset) =>
             val records = events.map {
-              case event: ParserEvent.OzonSellerListItemParsed      =>
+              case event: ParserEvent.OzonSellerListItemParsed              =>
                 ProducerRecord(config.kafkaProducerConfig.topic("results-ozon-seller-list-items"), event.key, event)
-              case event: ParserEvent.OzonSearchResultsV2ItemParsed =>
+              case event: ParserEvent.OzonCategorySearchResultsV2ItemParsed =>
                 ProducerRecord(config.kafkaProducerConfig.topic("results-ozon-category-search-results-v2-items"), event.key, event)
             }
 

@@ -141,7 +141,7 @@ class ItemSpec extends AnyFlatSpec with Matchers {
       """.stripMargin
 
     decode[Item](itemRawJson).isRight shouldBe true
-    decode[items.InStock](itemRawJson).isRight shouldBe true
+    decode[InStock](itemRawJson).isRight shouldBe true
   }
 
   it should "decode Item.InStock (AddToCart.With, 2) from a valid JSON" in {
@@ -288,7 +288,7 @@ class ItemSpec extends AnyFlatSpec with Matchers {
       """.stripMargin
 
     decode[Item](itemRawJson).isRight shouldBe true
-    decode[items.InStock](itemRawJson).isRight shouldBe true
+    decode[InStock](itemRawJson).isRight shouldBe true
   }
 
   it should "decode Item.InStock (AddToCart.With, 3) from a valid JSON" in {
@@ -484,7 +484,7 @@ class ItemSpec extends AnyFlatSpec with Matchers {
       """.stripMargin
 
     decode[Item](itemRawJson).isRight shouldBe true
-    decode[items.InStock](itemRawJson).isRight shouldBe true
+    decode[InStock](itemRawJson).isRight shouldBe true
   }
 
   it should "decode Item.InStock (AddToCart.Redirect, 1) from a valid JSON" in {
@@ -621,7 +621,7 @@ class ItemSpec extends AnyFlatSpec with Matchers {
       """.stripMargin
 
     decode[Item](itemRawJson).isRight shouldBe true
-    decode[items.InStock](itemRawJson).isRight shouldBe true
+    decode[InStock](itemRawJson).isRight shouldBe true
   }
 
   it should "decode Item.OutOfStockAnalogs from a valid JSON" in {
@@ -753,7 +753,7 @@ class ItemSpec extends AnyFlatSpec with Matchers {
       """.stripMargin
 
     decode[Item](itemRawJson).isRight shouldBe true
-    decode[items.OutOfStock](itemRawJson).isRight shouldBe true
+    decode[OutOfStock](itemRawJson).isRight shouldBe true
   }
 
   it should "decode Item.CannotBeShipped from a valid JSON" in {
@@ -852,7 +852,7 @@ class ItemSpec extends AnyFlatSpec with Matchers {
       """.stripMargin
 
     decode[Item](itemRawJson).isRight shouldBe true
-    decode[items.CannotBeShipped](itemRawJson).isRight shouldBe true
+    decode[CannotBeShipped](itemRawJson).isRight shouldBe true
   }
 
   it should "decode Item.Preorder from a valid JSON" in {
@@ -1027,6 +1027,6 @@ class ItemSpec extends AnyFlatSpec with Matchers {
       """.stripMargin
 
     decode[Item](itemRawJson).isRight shouldBe true
-    decode[items.PreOrder](itemRawJson).isRight shouldBe true
+    decode[PreOrder](itemRawJson).isRight shouldBe true
   }
 }

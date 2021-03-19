@@ -1,11 +1,9 @@
-package net.dalytics.models.ozon.items
+package net.dalytics.models.ozon
 
 import cats.implicits._
 import derevo.derive
 import tofu.logging.derivation.loggable
 import io.circe.{Decoder, DecodingFailure, HCursor}
-
-import net.dalytics.models.ozon.{Brand, Category, Delivery, Item, MarketplaceSeller, Price, Rating}
 
 @derive(loggable)
 final case class CannotBeShipped private (
@@ -27,7 +25,9 @@ final case class CannotBeShipped private (
   isPersonalized: Boolean,
   isPromotedProduct: Boolean,
   freeRest: Int
-) extends Item
+) extends Item {
+  val addToCart: Item.AddToCart = Item.AddToCart.Unavailable
+}
 
 object CannotBeShipped {
   implicit val circeDecoder: Decoder[CannotBeShipped] = Decoder.instance[CannotBeShipped] { (c: HCursor) =>

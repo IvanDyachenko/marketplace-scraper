@@ -5,6 +5,7 @@ import cats.effect.{Blocker, ExitCode, Resource}
 import tofu.env.Env
 import tofu.logging.Logs
 import fs2.Stream
+import fs2.kafka.vulcan.SchemaRegistryClientSettings
 import tofu.fs2Instances._
 
 import net.dalytics.config.Config
@@ -28,17 +29,16 @@ object Main extends TaskApp {
     for {
       implicit0(blocker: Blocker) <- Blocker[AppI]
       cfg                         <- Resource.liftF(Config.make[AppI])
+      schemaRegistryClient        <- Resource.liftF(SchemaRegistryClientSettings[AppI](cfg.schemaRegistryConfig.baseUrl).createSchemaRegistryClient)
       parse                       <- Parse.make[AppI, AppF]
       producerOfEvents            <- KafkaClient.makeProducer[AppI, Event.Key, ParserEvent](
                                        cfg.kafkaConfig,
-                                       cfg.schemaRegistryConfig,
                                        cfg.kafkaProducerConfig
-                                     )
+                                     )(schemaRegistryClient)
       consumerOfCommands          <- KafkaClient.makeConsumer[AppI, Command.Key, ParserCommand.ParseOzonResponse](
                                        cfg.kafkaConfig,
-                                       cfg.schemaRegistryConfig,
                                        cfg.kafkaConsumerConfig
-                                     )
+                                     )(schemaRegistryClient)
       parser                      <- Parser.make[AppI, AppF, AppS](cfg)(
                                        parse,
                                        producerOfEvents,

@@ -7,14 +7,12 @@ import tofu.syntax.embed._
 import tofu.syntax.monadic._
 import derevo.derive
 import tofu.higherKind.derived.representableK
-import tofu.WithRun
 import tofu.fs2.LiftStream
 import fs2.Stream
 import fs2.kafka.{KafkaProducer, ProducerRecord, ProducerRecords}
 import supertagged.postfix._
 
 import net.dalytics.config.{Config, SourceConfig}
-import net.dalytics.context.MessageContext
 import net.dalytics.models.{ozon, Command}
 import net.dalytics.models.handler.HandlerCommand
 import net.dalytics.api.{OzonApi, WildBerriesApi}
@@ -28,8 +26,7 @@ object Scheduler {
   def apply[F[_]](implicit ev: Scheduler[F]): ev.type = ev
 
   private final class Impl[
-    I[_]: Monad: Concurrent,
-    F[_]: WithRun[*[_], I, MessageContext]
+    I[_]: Monad: Concurrent
   ](config: Config)(
     sourcesOfCommands: List[Stream[I, HandlerCommand]],
     producerOfCommands: KafkaProducer[I, Option[Command.Key], HandlerCommand]
@@ -46,7 +43,6 @@ object Scheduler {
 
   def make[
     I[_]: Monad: Concurrent,
-    F[_]: WithRun[*[_], I, MessageContext],
     S[_]: LiftStream[*[_], I]
   ](config: Config)(
     sourcesOfCommands: List[Stream[I, HandlerCommand]],
@@ -55,7 +51,7 @@ object Scheduler {
     Resource.liftF {
       Stream
         .eval {
-          val impl: Scheduler[Stream[I, *]] = new Impl[I, F](config)(sourcesOfCommands, producerOfCommands)
+          val impl: Scheduler[Stream[I, *]] = new Impl[I](config)(sourcesOfCommands, producerOfCommands)
 
           impl.pure[I]
         }
@@ -89,8 +85,8 @@ object Scheduler {
                 searchResultsV2Option
                   .fold[Stream[F, Int]](Stream.range(1, 50)) {
                     _ match {
-                      case ozon.SearchResultsV2.Failure(error)      => Stream.empty
-                      case ozon.SearchResultsV2.Success(_, page, _) => Stream.range(1, page.total.min(278) + 1)
+                      case ozon.CategorySearchResultsV2.Failure(error)      => Stream.empty
+                      case ozon.CategorySearchResultsV2.Success(_, page, _) => Stream.range(1, page.total.min(278) + 1)
                     }
                   }
                   .parEvalMapUnordered(1000) { p =>

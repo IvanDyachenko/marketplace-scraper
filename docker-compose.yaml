@@ -3,7 +3,7 @@ version: '3.8'
 services:
 
   zookeeper:
-    image: 'docker.io/confluentinc/cp-zookeeper:6.0.0'
+    image: 'docker.io/confluentinc/cp-zookeeper:6.1.0'
     hostname: zookeeper
     container_name: zookeeper
     ports:
@@ -48,7 +48,7 @@ services:
       - zookeeper
 
   schema-registry:
-    image: 'docker.io/confluentinc/cp-schema-registry:6.0.0'
+    image: 'docker.io/confluentinc/cp-schema-registry:6.1.0'
     hostname: schema-registry
     container_name: schema-registry
     ports:
@@ -60,8 +60,73 @@ services:
     depends_on:
       - broker
 
+  # connect:
+  #   image: 'docker.io/cnfldemos/cp-server-connect-datagen:0.4.0-6.1.0'
+  #   hostname: connect
+  #   container_name: connect
+  #   ports:
+  #     - "8083:8083"
+  #   environment:
+  #     CONNECT_BOOTSTRAP_SERVERS: 'broker:29092'
+  #     CONNECT_REST_ADVERTISED_HOST_NAME: connect
+  #     CONNECT_REST_PORT: 8083
+  #     CONNECT_GROUP_ID: compose-connect-group
+  #     CONNECT_CONFIG_STORAGE_TOPIC: docker-connect-configs
+  #     CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+  #     CONNECT_OFFSET_FLUSH_INTERVAL_MS: 10000
+  #     CONNECT_OFFSET_STORAGE_TOPIC: docker-connect-offsets
+  #     CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+  #     CONNECT_STATUS_STORAGE_TOPIC: docker-connect-status
+  #     CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+  #     CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
+  #     CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
+  #     CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+  #     # CLASSPATH required due to CC-2422
+  #     CLASSPATH: /usr/share/java/monitoring-interceptors/monitoring-interceptors-6.1.0.jar
+  #     CONNECT_PRODUCER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringProducerInterceptor"
+  #     CONNECT_CONSUMER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor"
+  #     CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components"
+  #     CONNECT_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.I0Itec.zkclient=ERROR,org.reflections=ERROR
+  #   depends_on:
+  #     - broker
+  #     - schema-registry
+
+  # ksqldb-server:
+  #   image: 'docker.io/confluentinc/cp-ksqldb-server:6.1.0'
+  #   hostname: ksqldb-server
+  #   container_name: ksqldb-server
+  #   ports:
+  #     - "8088:8088"
+  #   environment:
+  #     KSQL_CONFIG_DIR: "/etc/ksql"
+  #     KSQL_BOOTSTRAP_SERVERS: "broker:29092"
+  #     KSQL_HOST_NAME: ksqldb-server
+  #     KSQL_LISTENERS: "http://0.0.0.0:8088"
+  #     KSQL_CACHE_MAX_BYTES_BUFFERING: 0
+  #     KSQL_KSQL_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+  #     KSQL_PRODUCER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringProducerInterceptor"
+  #     KSQL_CONSUMER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor"
+  #     KSQL_KSQL_CONNECT_URL: "http://connect:8083"
+  #     KSQL_KSQL_LOGGING_PROCESSING_TOPIC_REPLICATION_FACTOR: 1
+  #     KSQL_KSQL_LOGGING_PROCESSING_TOPIC_AUTO_CREATE: 'true'
+  #     KSQL_KSQL_LOGGING_PROCESSING_STREAM_AUTO_CREATE: 'true'
+  #   depends_on:
+  #     - broker
+  #     - connect
+  #     - schema-registry
+
+  # ksqldb-cli:
+  #   image: 'docker.io/confluentinc/cp-ksqldb-cli:6.1.0'
+  #   container_name: ksqldb-cli
+  #   depends_on:
+  #     - broker
+  #     - connect
+  #     - ksqldb-server
+  #   entrypoint: /bin/sh
+  #   tty: true
+
   control-center:
-    image: 'docker.io/confluentinc/cp-enterprise-control-center:6.0.0'
+    image: 'docker.io/confluentinc/cp-enterprise-control-center:6.1.0'
     hostname: control-center
     container_name: control-center
     ports:

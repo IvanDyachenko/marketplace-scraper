@@ -35,6 +35,7 @@ jobs:
         project-name: [
           marketplace-parser,
           marketplace-handler,
+          marketplace-enricher,
           marketplace-scheduler
         ]
     steps:

@@ -60,10 +60,10 @@ object Parse {
       case Command.ParseOzonResponse(created, response) => // format: off
         parse[ozon.Result](response) >>= (_.traverse { // format: on
           _ match {
-            case sellerList: ozon.SellerList.Success           => Event.OzonSellerListItemParsed(created, sellerList)
-            case ozon.SellerList.Failure(_)                    => List.empty[Event].pure[F]
-            case searchResultsV2: ozon.SearchResultsV2.Success => Event.OzonSearchResultsV2ItemParsed(created, searchResultsV2)
-            case ozon.SearchResultsV2.Failure(_)               => List.empty[Event].pure[F]
+            case sellerList: ozon.SellerList.Success          => Event.OzonSellerListItemParsed(created, sellerList)
+            case ozon.SellerList.Failure(_)                   => List.empty[Event].pure[F]
+            case result: ozon.CategorySearchResultsV2.Success => Event.OzonCategorySearchResultsV2ItemParsed(created, result)
+            case ozon.CategorySearchResultsV2.Failure(_)      => List.empty[Event].pure[F]
           }
         })
     }

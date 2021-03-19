@@ -17,8 +17,7 @@ object Sale {
   @derive(loggable)
   final case class Sold(numberOfSoldItems: Int) extends Sale
 
-  /**
-    * This method calculates number of sold items according to https://gitlab.com/dalytics/analytics/-/issues/26
+  /** This method calculates number of sold items according to https://gitlab.com/dalytics/analytics/-/issues/26
     */
   def aggregate[C[_]: Foldable](items: C[Item]): Sale = {
     val listOfAddToCarts = Foldable[C].toList(items).map(_.addToCart)

@@ -22,7 +22,7 @@ object Delivery {
 
     case object FBO         extends Schema with Uppercase // Товар продается со склада Ozon.
     case object FBS         extends Schema with Uppercase // Товар продается со склада продавца.
-    case object Retail      extends Schema
+    case object Retail      extends Schema                // Товар продает сам Ozon. Товар продается со склада Ozon.
     case object Crossborder extends Schema                // Трансграничная торговля.
 
     val values = findValues

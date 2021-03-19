@@ -1,5 +1,7 @@
 package net.dalytics.config
 
+import scala.concurrent.duration._
+
 import cats.effect.{Blocker, ContextShift, Sync}
 import derevo.derive
 import derevo.pureconfig.pureconfigReader
@@ -9,6 +11,7 @@ import pureconfig.module.catseffect.syntax._
 @derive(pureconfigReader)
 final case class KafkaStreamsConfig(
   applicationId: String,
+  closeTimeout: FiniteDuration,
   sourceTopic: String,
   sinkTopic: String,
   numberOfStreamThreads: Int,

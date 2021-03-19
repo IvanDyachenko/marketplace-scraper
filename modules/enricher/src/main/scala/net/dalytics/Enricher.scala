@@ -23,14 +23,14 @@ import net.dalytics.models.parser.ParserEvent
 import net.dalytics.models.enricher.EnricherEvent
 
 trait Enricher[F[_]] {
-  def run: F[compstak.kafkastreams4s.ShutdownStatus]
+  def run: F[Unit]
 }
 
 object Enricher {
   def apply[F[_]](implicit ev: Enricher[F]): ev.type = ev
 
   private final class Impl[F[_]: Concurrent](cfg: Config)(schemaRegistryClient: SchemaRegistryClient) extends Enricher[F] {
-    def run: F[compstak.kafkastreams4s.ShutdownStatus] = {
+    def run: F[Unit] = {
       val streamsBuilder = new StreamsBuilder
 
       val streamsConfiguration: Properties = {
@@ -48,7 +48,6 @@ object Enricher {
         p.put(StreamsConfig.producerPrefix(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG), classOf[KafkaAvroSerializer])
         p.put(StreamsConfig.producerPrefix(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG), classOf[KafkaAvroSerializer])
         //p.put(AbstractKafkaAvroSerDeConfig.AUTO_REGISTER_SCHEMAS, false)
-        //p.put(KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG, true)
         p.put(AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, cfg.schemaRegistryConfig.baseUrl)
         p
       }
@@ -61,9 +60,9 @@ object Enricher {
         eventKeySerde      <- VulcanSerde[Event.Key].using(avroSettings)(true)
         parserEventSerde   <- VulcanSerde[ParserEvent].using(avroSettings)(false)
         enricherEventSerde <- VulcanSerde[EnricherEvent].using(avroSettings)(false)
-        kStream             = streamsBuilder.stream(cfg.kafkaStreamsConfig.sourceTopic, Consumed.`with`(eventKeySerde, parserEventSerde))
+        parserEventsKStream = streamsBuilder.stream(cfg.kafkaStreamsConfig.sourceTopic, Consumed.`with`(eventKeySerde, parserEventSerde))
         _                  <- Sync[F].delay {
-                                kStream
+                                parserEventsKStream
                                   .filter { (_: Event.Key, event: ParserEvent) =>
                                     event match {
                                       case _: ParserEvent.OzonCategorySearchResultsV2ItemParsed => true
@@ -97,7 +96,7 @@ object Enricher {
                                   .to(cfg.kafkaStreamsConfig.sinkTopic, Produced.`with`[Event.Key, EnricherEvent](eventKeySerde, enricherEventSerde))
                               }
         topology            = streamsBuilder.build()
-        platform           <- Platform.run[F](topology, streamsConfiguration, Duration.ofSeconds(???))
+        platform           <- Platform.run[F](topology, streamsConfiguration, Duration.ofNanos(cfg.kafkaStreamsConfig.closeTimeout.toNanos)).void
       } yield platform
     }
   }

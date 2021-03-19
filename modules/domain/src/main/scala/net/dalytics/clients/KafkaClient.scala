@@ -16,16 +16,16 @@ object KafkaClient {
     kafkaProducerConfig: KafkaProducerConfig
   )(schemaRegistryClient: SchemaRegistryClient): Resource[F, KafkaProducer[F, Option[K], V]] = {
     val avroSettings = AvroSettings(schemaRegistryClient)
-    // Setting auto.register.schemas to false disables
-    // auto-registration of the event type, so that it does not
-    // override the union as the latest schema in the subject.
-    .withAutoRegisterSchemas(false)
-    // Setting use.latest.version to true сauses the Avro serializer
-    // to look up the latest schema version in the subject(which
-    // will be the union) and use that for serialization. Otherwise,
-    // if set to false, the serializer will look for the event type
-    // in the subject and fail to find it.
-    .withProperty("use.latest.version", "true")
+      // Setting auto.register.schemas to false disables
+      // auto-registration of the event type, so that it does not
+      // override the union as the latest schema in the subject.
+      .withAutoRegisterSchemas(false)
+      // Setting use.latest.version to true сauses the Avro serializer
+      // to look up the latest schema version in the subject(which
+      // will be the union) and use that for serialization. Otherwise,
+      // if set to false, the serializer will look for the event type
+      // in the subject and fail to find it.
+      .withProperty("use.latest.version", "true")
 
     val keySerializer: RecordSerializer[F, Option[K]] =
       RecordSerializer.const(avroSerializer[K].using(avroSettings).forKey.map(implicit ser => Serializer.option[F, K]))
@@ -48,16 +48,16 @@ object KafkaClient {
     kafkaConsumerConfig: KafkaConsumerConfig
   )(schemaRegistryClient: SchemaRegistryClient): Resource[F, KafkaConsumer[F, Option[K], V]] = {
     val avroSettings = AvroSettings(schemaRegistryClient)
-    // Setting auto.register.schemas to false disables
-    // auto-registration of the event type, so that it does not
-    // override the union as the latest schema in the subject.
-    .withAutoRegisterSchemas(false)
-    // Setting use.latest.version to true сauses the Avro serializer
-    // to look up the latest schema version in the subject(which
-    // will be the union) and use that for serialization. Otherwise,
-    // if set to false, the serializer will look for the event type
-    // in the subject and fail to find it.
-    .withProperty("use.latest.version", "true")
+      // Setting auto.register.schemas to false disables
+      // auto-registration of the event type, so that it does not
+      // override the union as the latest schema in the subject.
+      .withAutoRegisterSchemas(false)
+      // Setting use.latest.version to true сauses the Avro serializer
+      // to look up the latest schema version in the subject(which
+      // will be the union) and use that for serialization. Otherwise,
+      // if set to false, the serializer will look for the event type
+      // in the subject and fail to find it.
+      .withProperty("use.latest.version", "true")
 
     val keyDeserializer: RecordDeserializer[F, Option[K]] =
       RecordDeserializer.const(avroDeserializer[K].using(avroSettings).forKey.map(implicit der => Deserializer.option[F, K]))

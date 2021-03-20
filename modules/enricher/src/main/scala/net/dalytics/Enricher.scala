@@ -11,7 +11,7 @@ import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.streams.{StreamsBuilder, StreamsConfig}
 import org.apache.kafka.streams.kstream.{Consumed, Grouped, Materialized, Produced, ValueMapper}
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient
-import io.confluent.kafka.serializers.{AbstractKafkaAvroSerDeConfig, KafkaAvroDeserializer, KafkaAvroSerializer}
+import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig
 import fs2.kafka.vulcan.AvroSettings
 import compstak.kafkastreams4s.Platform
 
@@ -38,17 +38,15 @@ object Enricher {
         p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, cfg.kafkaConfig.bootstrapServers)
         p.put(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG, classOf[LogAndFailExceptionHandler])
         p.put(StreamsConfig.NUM_STREAM_THREADS_CONFIG, cfg.kafkaStreamsConfig.numberOfStreamThreads)
-        //p.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, classOf[ReflectionAvroSerde[_]])
-        //p.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, classOf[ReflectionAvroSerde[_]])
-        p.put(StreamsConfig.consumerPrefix(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG), "earliest")
-        p.put(StreamsConfig.consumerPrefix(ConsumerConfig.MAX_POLL_RECORDS_CONFIG), cfg.kafkaStreamsConfig.maxPollRecords)
-        p.put(StreamsConfig.consumerPrefix(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG), classOf[KafkaAvroDeserializer])
-        p.put(StreamsConfig.consumerPrefix(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG), classOf[KafkaAvroDeserializer])
-        p.put(StreamsConfig.producerPrefix(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG), classOf[KafkaAvroSerializer])
-        p.put(StreamsConfig.producerPrefix(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG), classOf[KafkaAvroSerializer])
-        p.put(StreamsConfig.producerPrefix(ProducerConfig.COMPRESSION_TYPE_CONFIG), "zstd")
+        p.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, cfg.kafkaStreamsConfig.cacheMaxBytesBuffering)
         //p.put(AbstractKafkaAvroSerDeConfig.AUTO_REGISTER_SCHEMAS, false)
         p.put(AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, cfg.schemaRegistryConfig.baseUrl)
+        p.put(StreamsConfig.consumerPrefix(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG), "earliest")
+        p.put(StreamsConfig.consumerPrefix(ConsumerConfig.MAX_POLL_RECORDS_CONFIG), cfg.kafkaStreamsConfig.maxPollRecords)
+        p.put(StreamsConfig.producerPrefix(ProducerConfig.BUFFER_MEMORY_CONFIG), cfg.kafkaStreamsConfig.bufferMemory)
+        p.put(StreamsConfig.producerPrefix(ProducerConfig.COMPRESSION_TYPE_CONFIG), cfg.kafkaStreamsConfig.compressionType)
+        p.put(StreamsConfig.producerPrefix(ProducerConfig.BATCH_SIZE_CONFIG), cfg.kafkaStreamsConfig.batchSize)
+        p.put(StreamsConfig.producerPrefix(ProducerConfig.LINGER_MS_CONFIG), cfg.kafkaStreamsConfig.linger.toMillis)
         p
       }
 

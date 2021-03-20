@@ -15,7 +15,12 @@ final case class KafkaStreamsConfig(
   sourceTopic: String,
   sinkTopic: String,
   numberOfStreamThreads: Int,
-  maxPollRecords: Int
+  cacheMaxBytesBuffering: Long,
+  maxPollRecords: Int,
+  bufferMemory: Long,
+  compressionType: String,
+  batchSize: Long,
+  linger: FiniteDuration
 )
 
 object KafkaStreamsConfig {

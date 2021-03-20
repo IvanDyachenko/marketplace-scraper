@@ -66,9 +66,9 @@ object ParserEvent {
 
     implicit val vulcanCodec: Codec[OzonCategorySearchResultsV2ItemParsed] =
       Codec.record[OzonCategorySearchResultsV2ItemParsed](
-        name = "OzonSearchResultsV2ItemParsed",
+        name = "OzonCategorySearchResultsV2ItemParsed",
         namespace = "parser.events",
-        aliases = Seq("OzonCategorySearchResultsV2ItemParsed")
+        aliases = Seq("parser.events.OzonSearchResultsV2ItemParsed")
       ) { field =>
         (
           field("_created", _.created),

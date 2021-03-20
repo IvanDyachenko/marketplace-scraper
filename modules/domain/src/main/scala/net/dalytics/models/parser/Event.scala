@@ -23,7 +23,7 @@ object ParserEvent {
     timestamp: Timestamp,
     item: ozon.MarketplaceSeller
   ) extends ParserEvent {
-    override val key: Option[Event.Key] = Some(item.title @@@ Event.Key)
+    override val key: Option[Event.Key] = Some(item.id.show @@ Event.Key)
   }
 
   object OzonSellerListItemParsed {
@@ -53,7 +53,7 @@ object ParserEvent {
     item: ozon.Item,
     category: ozon.Category
   ) extends ParserEvent {
-    override val key: Option[Event.Key] = Some(category.name @@@ Event.Key)
+    override val key: Option[Event.Key] = Some(item.id.show @@ Event.Key)
   }
 
   object OzonCategorySearchResultsV2ItemParsed {
@@ -66,9 +66,9 @@ object ParserEvent {
 
     implicit val vulcanCodec: Codec[OzonCategorySearchResultsV2ItemParsed] =
       Codec.record[OzonCategorySearchResultsV2ItemParsed](
-        name = "OzonSearchResultsV2ItemParsed",
+        name = "OzonCategorySearchResultsV2ItemParsed",
         namespace = "parser.events",
-        aliases = Seq("OzonCategorySearchResultsV2ItemParsed")
+        aliases = Seq("parser.events.OzonSearchResultsV2ItemParsed")
       ) { field =>
         (
           field("_created", _.created),

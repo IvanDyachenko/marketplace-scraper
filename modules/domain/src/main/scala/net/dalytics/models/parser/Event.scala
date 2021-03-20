@@ -23,7 +23,7 @@ object ParserEvent {
     timestamp: Timestamp,
     item: ozon.MarketplaceSeller
   ) extends ParserEvent {
-    override val key: Option[Event.Key] = Some(item.title @@@ Event.Key)
+    override val key: Option[Event.Key] = Some(item.id.show @@ Event.Key)
   }
 
   object OzonSellerListItemParsed {
@@ -53,7 +53,7 @@ object ParserEvent {
     item: ozon.Item,
     category: ozon.Category
   ) extends ParserEvent {
-    override val key: Option[Event.Key] = Some(category.name @@@ Event.Key)
+    override val key: Option[Event.Key] = Some(item.id.show @@ Event.Key)
   }
 
   object OzonCategorySearchResultsV2ItemParsed {

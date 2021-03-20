@@ -14,7 +14,6 @@ import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient
 import io.confluent.kafka.serializers.{AbstractKafkaAvroSerDeConfig, KafkaAvroDeserializer, KafkaAvroSerializer}
 import fs2.kafka.vulcan.AvroSettings
 import compstak.kafkastreams4s.Platform
-import supertagged.postfix._
 
 import net.dalytics.config.Config
 import net.dalytics.serde.{VulcanSerde}
@@ -47,6 +46,7 @@ object Enricher {
         p.put(StreamsConfig.consumerPrefix(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG), classOf[KafkaAvroDeserializer])
         p.put(StreamsConfig.producerPrefix(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG), classOf[KafkaAvroSerializer])
         p.put(StreamsConfig.producerPrefix(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG), classOf[KafkaAvroSerializer])
+        p.put(StreamsConfig.producerPrefix(ProducerConfig.COMPRESSION_TYPE_CONFIG), "zstd")
         //p.put(AbstractKafkaAvroSerDeConfig.AUTO_REGISTER_SCHEMAS, false)
         p.put(AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, cfg.schemaRegistryConfig.baseUrl)
         p
@@ -73,14 +73,7 @@ object Enricher {
                                     val ParserEvent.OzonCategorySearchResultsV2ItemParsed(created, timestamp, page, item, category) = event
                                     EnricherEvent.OzonCategorySearchResultsV2ItemEnriched(created, timestamp, page, item, ozon.Sale.Unknown, category)
                                   }: ValueMapper[ParserEvent, EnricherEvent])
-                                  .groupBy(
-                                    (key: Event.Key, event: EnricherEvent) =>
-                                      event match {
-                                        case event: EnricherEvent.OzonCategorySearchResultsV2ItemEnriched => event.item.id.toString @@@ Event.Key
-                                        case _                                                            => key @@@ Event.Key
-                                      },
-                                    Grouped.`with`(eventKeySerde, enricherEventSerde)
-                                  )
+                                  .groupByKey(Grouped.`with`(eventKeySerde, enricherEventSerde))
                                   .reduce(
                                     (prevEvent: EnricherEvent, currEvent: EnricherEvent) => {
                                       val EnricherEvent.OzonCategorySearchResultsV2ItemEnriched(_, _, _, prevItem, _, _)                         = prevEvent

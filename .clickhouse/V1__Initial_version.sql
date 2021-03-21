@@ -87,7 +87,7 @@ ON CLUSTER cluster
     is_personalized         UInt8,
     is_promoted_product     UInt8,
     free_rest               Int32
-) ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{database}/{table}', '{replica}', time)
+) ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{database}/{table}/{uuid}', '{replica}', time)
            ORDER     BY (category_id, brand_id, item_id, time)
            PARTITION BY toYYYYMM(timestamp);
 

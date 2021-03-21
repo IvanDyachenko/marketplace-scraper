@@ -19,7 +19,6 @@ final case class KafkaStreamsConfig(
   maxPollRecords: Int,
   bufferMemory: Long,
   compressionType: String,
-  batchSize: Long,
   linger: FiniteDuration
 )
 

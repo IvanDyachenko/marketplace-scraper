@@ -87,8 +87,8 @@ ON CLUSTER cluster
     is_personalized         UInt8,
     is_promoted_product     UInt8,
     free_rest               Int32
-) ENGINE = ReplicatedMergeTree('/clickhouse/tables/{database}/{table}', '{replica}')
-           ORDER     BY (toYYYYMMDD(timestamp), category_id, item_id)
+) ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{database}/{table}', '{replica}', timestamp)
+           ORDER     BY (category_id, item_id, timestamp)
            PARTITION BY toYYYYMM(timestamp);
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS dalytics.ozon_category_search_results_v2_items_consumer

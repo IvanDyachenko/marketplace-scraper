@@ -42,6 +42,7 @@ object Template {
       case object Price              extends Id
       case object PricePerUnit       extends Id
       case object Redirect           extends Id
+      case object NotDelivered       extends Id
       case object PremiumPriority    extends Id
       case object UniversalAction    extends Id
       case object AddToCartWithCount extends Id
@@ -109,6 +110,11 @@ object Template {
     }
 
     object TextSmall {
+      @derive(loggable, decoder)
+      final object NotDelivered extends TextSmall {
+        val id: State.Id = State.Id.NotDelivered
+      }
+
       @derive(loggable, decoder)
       final object PremiumPriority extends TextSmall {
         val id: State.Id = State.Id.PremiumPriority

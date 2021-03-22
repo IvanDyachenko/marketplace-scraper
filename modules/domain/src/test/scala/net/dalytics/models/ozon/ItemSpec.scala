@@ -624,7 +624,384 @@ class ItemSpec extends AnyFlatSpec with Matchers {
     decode[InStock](itemRawJson).isRight shouldBe true
   }
 
-  it should "decode Item.OutOfStockAnalogs from a valid JSON" in {
+  it should "decode Item.InStock (AddToCart.PremiumOnly, 1) from a valid JSON" in {
+    val itemRawJson =
+      """
+        |{
+        |  "type": "tile_builder",
+        |  "images": [
+        |    "https://cdn1.ozone.ru/s3/multimedia-z/6023338079.jpg",
+        |    "https://cdn1.ozone.ru/s3/multimedia-7/6023338087.jpg"
+        |  ],
+        |  "isGrey": false,
+        |  "isAdult": false,
+        |  "isAlcohol": false,
+        |  "link": "/product/la-roche-posay-lipikar-balzam-ap-m-400-ml-174260511/",
+        |  "deepLink": "ozon://products/174260511/",
+        |  "cellTrackingInfo": {
+        |    "index": 6,
+        |    "type": "sku",
+        |    "id": 174260511,
+        |    "title": "La Roche-Posay Lipikar Бальзам АП+М, 400 мл",
+        |    "availability": 1,
+        |    "price": 1840,
+        |    "finalPrice": 1472,
+        |    "deliverySchema": "Retail",
+        |    "marketplaceSellerId": 0,
+        |    "category": "Красота и здоровье/Уход за телом/Увлажнение и питание/Концентраты и бальзамы/La Roche-Posay",
+        |    "brand": "La Roche-Posay",
+        |    "brandId": 32092844,
+        |    "availableInDays": 0,
+        |    "freeRest": 5,
+        |    "stockCount": 5,
+        |    "discount": 20,
+        |    "marketingActionIds": [
+        |      11286569889210,
+        |      11050497706160
+        |    ],
+        |    "isPersonalized": false,
+        |    "deliveryTimeDiffDays": 3,
+        |    "isSupermarket": false,
+        |    "isPromotedProduct": false,
+        |    "rating": 4.854369163513184,
+        |    "countItems": 309,
+        |    "customDimension4": "Доставит Ozon",
+        |    "availableDeliverySchema": [
+        |      111
+        |    ],
+        |    "credit_product_type": "credit,6",
+        |    "credit_product_price": 263
+        |  },
+        |  "template": "search",
+        |  "templateState": [
+        |    {
+        |      "type": "action",
+        |      "id": "favorite",
+        |      "components": null,
+        |      "title": "",
+        |      "activeTitle": "",
+        |      "align": "topRight",
+        |      "isActive": false,
+        |      "isSubscribed": false
+        |    },
+        |    {
+        |      "type": "atom",
+        |      "id": "atom",
+        |      "atom": {
+        |        "type": "price",
+        |        "price": {
+        |          "price": "1 472 ₽",
+        |          "priceColor": "ozAccentAlert",
+        |          "originalPrice": "1 840 ₽",
+        |          "originalPriceColor": "ozTextPrimary",
+        |          "theme": "STYLE_TYPE_MEDIUM"
+        |        }
+        |      }
+        |    },
+        |    {
+        |      "type": "label",
+        |      "id": "label",
+        |      "components": null,
+        |      "items": [
+        |        {
+        |          "title": "Бестселлер",
+        |          "isSelected": false,
+        |          "color": null,
+        |          "textColor": "ozOrange"
+        |        }
+        |      ]
+        |    },
+        |    {
+        |      "type": "title",
+        |      "id": "name",
+        |      "components": null,
+        |      "items": null,
+        |      "text": "La Roche-Posay Lipikar Бальзам АП+М, 400 мл",
+        |      "textColor": "ozTextPrimary",
+        |      "markupType": "",
+        |      "maxLines": 0
+        |    },
+        |    {
+        |      "type": "atom",
+        |      "id": "atom",
+        |      "atom": {
+        |        "type": "multilineBadge",
+        |        "multilineBadge": {
+        |          "text": "Доставит Ozon",
+        |          "backgroundColor": "ozBGPrimary",
+        |          "maxLines": 3
+        |        }
+        |      }
+        |    },
+        |    {
+        |      "type": "rating",
+        |      "id": "rating",
+        |      "components": null,
+        |      "rating": 4.854369163513184,
+        |      "commentsCount": 309,
+        |      "title": "309 отзывов"
+        |    },
+        |    {
+        |      "type": "variantsText",
+        |      "id": "",
+        |      "items": [
+        |        {
+        |          "title": "400",
+        |          "isSelected": true,
+        |          "color": []
+        |        },
+        |        {
+        |          "title": "100",
+        |          "isSelected": false,
+        |          "color": []
+        |        },
+        |        {
+        |          "title": "200",
+        |          "isSelected": false,
+        |          "color": []
+        |        }
+        |      ]
+        |    },
+        |    {
+        |      "type": "textSmall",
+        |      "id": "premiumPriority",
+        |      "components": null,
+        |      "items": null,
+        |      "text": "Только для <b><font color='ozTextPrimary'>Premium</font></b>-подписчиков",
+        |      "textColor": "ozTextSecondary",
+        |      "markupType": "html",
+        |      "maxLines": 2
+        |    },
+        |    {
+        |      "type": "textSmall",
+        |      "id": "deliveryInfo",
+        |      "components": null,
+        |      "items": null,
+        |      "text": "<font color='ozTextSecondary'>Продавец</font> <font color='ozTextPrimary'>Ozon</font>",
+        |      "textColor": "ozGray60",
+        |      "markupType": "html",
+        |      "maxLines": 3
+        |    }
+        |  ],
+        |  "badges": [
+        |    {
+        |      "type": "text",
+        |      "coordinates": {
+        |        "x": 1,
+        |        "y": 5
+        |      },
+        |      "text": "−20%",
+        |      "backgroundColor": "ozAccentAlert",
+        |      "textColor": "ozWhite1",
+        |      "isBold": true
+        |    }
+        |  ],
+        |  "isInFavorites": false,
+        |  "isInCompare": false,
+        |  "outerCols": 0,
+        |  "innerCols": 0
+        |}
+      """.stripMargin
+
+    decode[Item](itemRawJson).isRight shouldBe true
+    decode[InStock](itemRawJson).isRight shouldBe true
+  }
+
+  it should "decode Item.InStock (AddToCart.PremiumOnly, 2) from a valid JSON" in {
+    val itemRawJson =
+      """
+        |{
+        |  "type": "tile_builder",
+        |  "images": [
+        |    "https://cdn1.ozone.ru/multimedia/1024266018.jpg"
+        |  ],
+        |  "isAdult": false,
+        |  "isAlcohol": false,
+        |  "link": "/product/statsionarnyy-blender-kitfort-kt-1344-seryy-metallik-147090458/",
+        |  "deepLink": "ozon://products/147090458/",
+        |  "cellTrackingInfo": {
+        |    "index": 6,
+        |    "type": "sku",
+        |    "id": 147090458,
+        |    "title": "Стационарный блендер Kitfort КТ-1344, серый металлик",
+        |    "availability": 1,
+        |    "price": 4290,
+        |    "finalPrice": 4290,
+        |    "deliverySchema": "Retail",
+        |    "marketplaceSellerId": 0,
+        |    "category": "Бытовая техника/Техника для кухни/Миксеры, блендеры и измельчители/Блендеры/Стационарные/Kitfort",
+        |    "brand": "Kitfort",
+        |    "brandId": 28657369,
+        |    "availableInDays": 0,
+        |    "freeRest": 5,
+        |    "stockCount": 5,
+        |    "discount": 0,
+        |    "marketingActionIds": [
+        |      11050497706160
+        |    ],
+        |    "isPersonalized": false,
+        |    "deliveryTimeDiffDays": 1,
+        |    "isSupermarket": false,
+        |    "isPromotedProduct": false,
+        |    "status": "цена с Premium;Есть дешевле внутри, от 3 690 ₽",
+        |    "rating": 4.738100051879883,
+        |    "countItems": 630,
+        |    "availableDeliverySchema": [
+        |      111
+        |    ],
+        |    "credit_product_type": "credit,6",
+        |    "credit_product_price": 766
+        |  },
+        |  "template": "search",
+        |  "templateState": [
+        |    {
+        |      "type": "mobileContainer",
+        |      "leftContainer": [
+        |        {
+        |          "type": "tileImage",
+        |          "id": "tileImage",
+        |          "components": null,
+        |          "images": [
+        |            "https://cdn1.ozone.ru/multimedia/1024266018.jpg"
+        |          ],
+        |          "imageRatio": "1:1.4",
+        |          "badges": [
+        |            {
+        |              "type": "text",
+        |              "coordinates": {
+        |                "x": 1,
+        |                "y": 1
+        |              },
+        |              "text": "-10% для Premium",
+        |              "backgroundColor": "#7D36AA",
+        |              "textColor": "#ffffff"
+        |            }
+        |          ]
+        |        },
+        |        {
+        |          "type": "rating",
+        |          "id": "rating",
+        |          "components": null,
+        |          "rating": 4.738100051879883,
+        |          "commentsCount": 630,
+        |          "title": "630 отзывов"
+        |        }
+        |      ],
+        |      "contentContainer": [
+        |        {
+        |          "type": "atom",
+        |          "id": "atom",
+        |          "atom": {
+        |            "type": "price",
+        |            "price": {
+        |              "price": "4 290 ₽",
+        |              "priceColor": "ozTextPrimary",
+        |              "theme": "STYLE_TYPE_MEDIUM"
+        |            }
+        |          }
+        |        },
+        |        {
+        |          "type": "bigLabel",
+        |          "id": "premiumPrice",
+        |          "components": null,
+        |          "items": [
+        |            {
+        |              "title": "3 411 ₽ с Premium",
+        |              "isSelected": false,
+        |              "color": null,
+        |              "textColor": "ozTextPrimary"
+        |            }
+        |          ]
+        |        },
+        |        {
+        |          "type": "textSmall",
+        |          "id": "",
+        |          "components": null,
+        |          "items": null,
+        |          "text": "Есть дешевле внутри, от 3 690 ₽",
+        |          "textColor": "ozAccentPrimary",
+        |          "markupType": "plain",
+        |          "maxLines": 2
+        |        },
+        |        {
+        |          "type": "title",
+        |          "id": "name",
+        |          "components": null,
+        |          "items": null,
+        |          "text": "Стационарный блендер Kitfort КТ-1344, серый металлик",
+        |          "textColor": "ozTextPrimary",
+        |          "markupType": "",
+        |          "maxLines": 0
+        |        },
+        |        {
+        |          "type": "textSmall",
+        |          "id": "topAttributes",
+        |          "components": null,
+        |          "items": null,
+        |          "text": "Мощность, Вт: <font color='ozTextPrimary'>800</font>",
+        |          "textColor": "ozTextSecondary",
+        |          "markupType": "html",
+        |          "maxLines": 100
+        |        },
+        |        {
+        |          "type": "action",
+        |          "id": "favorite",
+        |          "components": null,
+        |          "title": "",
+        |          "activeTitle": "",
+        |          "align": "topRight",
+        |          "isActive": false,
+        |          "isSubscribed": false
+        |        }
+        |      ],
+        |      "footerContainer": [
+        |        {
+        |          "type": "textSmall",
+        |          "id": "notDelivered",
+        |          "components": null,
+        |          "items": null,
+        |          "text": "Только для <b><font color='ozTextPrimary'>Premium</font></b>-подписчиков",
+        |          "textColor": "ozGray60",
+        |          "markupType": "html",
+        |          "maxLines": 2
+        |        },
+        |        {
+        |          "type": "textSmall",
+        |          "id": "deliveryInfo",
+        |          "components": null,
+        |          "items": null,
+        |          "text": "<font color='ozTextPrimary'>OZON</font>",
+        |          "textColor": "ozGray60",
+        |          "markupType": "html",
+        |          "maxLines": 3
+        |        },
+        |        {
+        |          "type": "textSmall",
+        |          "id": "offers",
+        |          "components": null,
+        |          "items": null,
+        |          "text": "2 предложения",
+        |          "textColor": "ozTextPrimary",
+        |          "markupType": "plain",
+        |          "maxLines": 2
+        |        }
+        |      ],
+        |      "leftCols": 0,
+        |      "rightCols": 0
+        |    }
+        |  ],
+        |  "isInFavorites": false,
+        |  "isInCompare": false,
+        |  "outerCols": 12,
+        |  "innerCols": 12
+        |}
+      """.stripMargin
+
+    decode[Item](itemRawJson).isRight shouldBe true
+    decode[InStock](itemRawJson).isRight shouldBe true
+  }
+
+  it should "decode Item.OutOfStock from a valid JSON" in {
     val itemRawJson =
       """
         |{

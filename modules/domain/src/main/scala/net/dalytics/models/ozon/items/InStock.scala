@@ -41,11 +41,12 @@ object InStock {
                         }(Item.Availability.from(_) == Item.Availability.InStock)
       addToCart    <- c.as[Item.AddToCart]
                         .ensure {
-                          val message = s"'templateState' doesn't contain an object which describes 'add to cart', nor 'redirect' actions."
+                          val message =
+                            s"'templateState' doesn't contain an object which describes 'add to cart', nor 'redirect', nor 'premium only' actions."
                           DecodingFailure(message, c.history)
                         }(_ match {
-                          case Item.AddToCart.With(_, _) | Item.AddToCart.Redirect => true
-                          case _                                                   => false
+                          case Item.AddToCart.With(_, _) | Item.AddToCart.Redirect | Item.AddToCart.PremiumOnly => true
+                          case _                                                                                => false
                         })
       item         <- (
                         i.get[Item.Id]("id"),

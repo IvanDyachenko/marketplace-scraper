@@ -30,6 +30,7 @@ object Template {
 
       case object Action          extends Type
       case object Unknown         extends Type
+      case object TextSmall       extends Type
       case object MobileContainer extends Type
     }
 
@@ -41,6 +42,7 @@ object Template {
       case object Price              extends Id
       case object PricePerUnit       extends Id
       case object Redirect           extends Id
+      case object PremiumPriority    extends Id
       case object UniversalAction    extends Id
       case object AddToCartWithCount extends Id
     }
@@ -101,6 +103,22 @@ object Template {
     }
 
     @derive(loggable)
+    sealed trait TextSmall extends State {
+      def id: State.Id
+      val `type`: State.Type = State.Type.TextSmall
+    }
+
+    object TextSmall {
+      @derive(loggable, decoder)
+      final object PremiumPriority extends TextSmall {
+        val id: State.Id = State.Id.PremiumPriority
+      }
+
+      implicit val circeDecoderConfig: Configuration = Configuration(Predef.identity, _.decapitalize, false, Some("id"))
+      implicit val circeDecoder: Decoder[TextSmall]  = deriveConfiguredDecoder[TextSmall].widen
+    }
+
+    @derive(loggable)
     final case class MobileContainer(left: Template, content: Template, footer: Template) extends State {
       val `type`: State.Type = State.Type.Action
     }
@@ -114,6 +132,7 @@ object Template {
         stateType   <- c.get[State.Type]("type").fold(_ => State.Type.Unknown.asRight, Right(_))
         stateDecoder = stateType match {
                          case State.Type.Action          => Action.circeDecoder
+                         case State.Type.TextSmall       => TextSmall.circeDecoder
                          case State.Type.MobileContainer => MobileContainer.circeDecoder
                          case State.Type.Unknown         => Decoder[Json].map(_ => State.Unknown)
                        }

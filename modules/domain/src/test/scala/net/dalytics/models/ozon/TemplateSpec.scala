@@ -27,4 +27,23 @@ class TemplateSpec extends AnyFlatSpec with Matchers {
     decode[Template.State.Action](templateRawJson).isRight shouldBe true
     decode[Template.State.Action.Redirect.type](templateRawJson).isRight shouldBe true
   }
+
+  it should "decode Template.State.TextSmall.PremiumPriority from a valid JSON" in {
+    val templateRawJson =
+      """
+        |{
+        |  "type": "textSmall",
+        |  "id": "premiumPriority",
+        |  "components": null,
+        |  "items": null,
+        |  "text": "Только для <b><font color='ozTextPrimary'>Premium</font></b>-подписчиков",
+        |  "textColor": "ozTextSecondary",
+        |  "markupType": "html",
+        |  "maxLines": 2
+        |}
+      """.stripMargin
+
+    decode[Template.State.TextSmall](templateRawJson).isRight shouldBe true
+    decode[Template.State.TextSmall.PremiumPriority.type](templateRawJson).isRight shouldBe true
+  }
 }

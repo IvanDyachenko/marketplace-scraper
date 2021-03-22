@@ -68,32 +68,20 @@ object Item {
       }
   }
 
-  sealed trait AddToCart {
-    def isRedirect: Boolean
-  }
+  sealed trait AddToCart
 
   object AddToCart {
-    final object Redirect extends AddToCart {
-      val isRedirect: Boolean = true
-    }
-
-    final object Unavailable extends AddToCart {
-      val isRedirect: Boolean = false
-    }
-
-    final case class With(minItems: Int, maxItems: Int) extends AddToCart {
-      val isRedirect: Boolean = false
-    }
+    final object Redirect                               extends AddToCart
+    final object PremiumOnly                            extends AddToCart
+    final object Unavailable                            extends AddToCart
+    final case class With(minItems: Int, maxItems: Int) extends AddToCart
 
     implicit val circeDecoder: Decoder[AddToCart] = Decoder.instance[AddToCart] { (c: HCursor) =>
       for {
         templateJson <- c.get[Json]("templateState")
         template     <- templateJson.as[Template]
         addToCart    <- template.addToCart.fold[Decoder.Result[AddToCart]] {
-                          val message = List(
-                            s"'templateState' doesn't contain an object which describes 'add to cart', nor 'redirect' actions.",
-                            s"Decoded value of ${templateJson.noSpacesSortKeys} is ${template.logShow}."
-                          ).mkString(" ")
+                          val message = s"Decoded value of ${templateJson.noSpacesSortKeys} is ${template.logShow}."
                           Left(DecodingFailure(message, c.history))
                         }(Right(_))
       } yield addToCart
@@ -102,12 +90,13 @@ object Item {
     implicit val loggable: Loggable[AddToCart] = Loggable.empty
 
     implicit final class TemplateOps(private val template: Template) extends AnyVal {
-      import net.dalytics.models.ozon.Template.State.{Action, MobileContainer}
+      import net.dalytics.models.ozon.Template.State.{Action, MobileContainer, TextSmall}
       import net.dalytics.models.ozon.Template.State.Action.{AddToCartWithCount, UniversalAction}
 
       def addToCart: Option[AddToCart] =
         template.states.collectFirst {
           case Action.Redirect                                                                   => Redirect
+          case TextSmall.PremiumPriority | TextSmall.NotDelivered                                => PremiumOnly
           case AddToCartWithCount(minItems, maxItems)                                            => With(minItems, maxItems)
           case UniversalAction(UniversalAction.Button.AddToCartWithQuantity(quantity, maxItems)) => With(quantity, maxItems)
           case MobileContainer(_, _, footer) if footer.addToCart.isDefined                       => footer.addToCart.get
@@ -119,9 +108,17 @@ object Item {
         field(
           "addToCartIsRedirect",
           f(_) match {
-            case Unavailable => None
-            case Redirect    => Some(true)
-            case With(_, _)  => Some(false)
+            case Redirect                 => Some(true)
+            case With(_, _) | PremiumOnly => Some(false)
+            case Unavailable              => None
+          }
+        ),
+        field(
+          "addToCartIsPremiumOnly",
+          f(_) match {
+            case PremiumOnly           => Some(true)
+            case With(_, _) | Redirect => Some(false)
+            case Unavailable           => None
           }
         ),
         field(
@@ -139,9 +136,10 @@ object Item {
           }
         )
       ).mapN {
-        case (Some(true), None, None)                      => Redirect
-        case (Some(false), Some(minItems), Some(maxItems)) => With(minItems, maxItems)
-        case _                                             => Unavailable
+        case (Some(true), Some(false), None, None)                      => Redirect
+        case (Some(false), Some(true), None, None)                      => PremiumOnly
+        case (Some(false), Some(false), Some(minItems), Some(maxItems)) => With(minItems, maxItems)
+        case _                                                          => Unavailable
       }
   }
 

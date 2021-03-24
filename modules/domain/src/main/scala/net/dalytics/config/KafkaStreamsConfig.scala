@@ -15,6 +15,7 @@ final case class KafkaStreamsConfig(
   sourceTopic: String,
   sinkTopic: String,
   numberOfStreamThreads: Int,
+  commitInterval: FiniteDuration,
   cacheMaxBytesBuffering: Long,
   maxPollRecords: Int,
   bufferMemory: Long,

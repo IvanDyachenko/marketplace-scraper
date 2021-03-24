@@ -38,6 +38,7 @@ object Enricher {
         p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, cfg.kafkaConfig.bootstrapServers)
         p.put(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG, classOf[LogAndFailExceptionHandler])
         p.put(StreamsConfig.NUM_STREAM_THREADS_CONFIG, cfg.kafkaStreamsConfig.numberOfStreamThreads)
+        p.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, cfg.kafkaStreamsConfig.commitInterval.toMillis)
         p.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, cfg.kafkaStreamsConfig.cacheMaxBytesBuffering)
         //p.put(AbstractKafkaAvroSerDeConfig.AUTO_REGISTER_SCHEMAS, false)
         p.put(AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, cfg.schemaRegistryConfig.baseUrl)

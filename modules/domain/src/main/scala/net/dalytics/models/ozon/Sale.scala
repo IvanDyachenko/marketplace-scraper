@@ -30,7 +30,7 @@ object Sale {
               case Sale.Unknown                 => 0
               case Sale.Sold(numberOfSoldItems) => numberOfSoldItems
             }
-            (Sale.Sold(numberOfSoldItems + 0.max(prevMaxItems - currMaxItems)), addToCart)
+            (Sale.Sold(numberOfSoldItems + prevMaxItems - currMaxItems), addToCart)
           case ((sale, _), addToCart)                                                                           =>
             (sale, addToCart)
         }

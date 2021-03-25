@@ -79,6 +79,12 @@ object Enricher {
 
                                       val sale = ozon.Sale.aggregate(List(prevItem, currItem))
 
+                                      println("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - -")
+                                      println(s"Previous event: ${prevEvent}")
+                                      println(s"Current  event: ${currEvent}")
+                                      println(s"Sale: ${sale}")
+                                      println("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - -")
+
                                       EnricherEvent.OzonCategorySearchResultsV2ItemEnriched(created, timestamp, page, currItem, sale, category)
                                     },
                                     Materialized.`with`(eventKeySerde, enricherEventSerde)

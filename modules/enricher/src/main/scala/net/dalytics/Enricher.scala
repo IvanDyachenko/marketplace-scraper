@@ -5,11 +5,13 @@ import java.util.Properties
 
 import tofu.syntax.monadic._
 import cats.effect.{Concurrent, Resource, Sync}
+import org.apache.kafka.common.utils.Bytes
 import org.apache.kafka.streams.errors.LogAndFailExceptionHandler
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.streams.{StreamsBuilder, StreamsConfig}
-import org.apache.kafka.streams.kstream.{Consumed, Grouped, Materialized, Produced, ValueMapper}
+import org.apache.kafka.streams.state.WindowStore
+import org.apache.kafka.streams.kstream.{Consumed, Grouped, Materialized, Produced, SlidingWindows, Suppressed, ValueMapper, Windowed}
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient
 import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig
 import fs2.kafka.vulcan.AvroSettings
@@ -72,8 +74,15 @@ object Enricher {
                                     EnricherEvent.OzonCategorySearchResultsV2ItemEnriched(created, timestamp, page, item, ozon.Sale.Unknown, category)
                                   }: ValueMapper[ParserEvent, EnricherEvent])
                                   .groupByKey(Grouped.`with`(eventKeySerde, enricherEventSerde))
+                                  .windowedBy(
+                                    SlidingWindows.withTimeDifferenceAndGrace(
+                                      Duration.ofNanos(cfg.slidingWindowsConfig.maxTimeDifference.toNanos),
+                                      Duration.ofNanos(cfg.slidingWindowsConfig.gracePeriod.toNanos)
+                                    )
+                                  )
                                   .reduce(
                                     (prevEvent: EnricherEvent, currEvent: EnricherEvent) => {
+                                      // ToDo: Take into account timestamp of events
                                       val EnricherEvent.OzonCategorySearchResultsV2ItemEnriched(_, _, _, prevItem, _, _)                         = prevEvent
                                       val EnricherEvent.OzonCategorySearchResultsV2ItemEnriched(created, timestamp, page, currItem, _, category) = currEvent
 
@@ -81,9 +90,12 @@ object Enricher {
 
                                       EnricherEvent.OzonCategorySearchResultsV2ItemEnriched(created, timestamp, page, currItem, sale, category)
                                     },
-                                    Materialized.`with`(eventKeySerde, enricherEventSerde)
+                                    Materialized
+                                      .`with`[Event.Key, EnricherEvent, WindowStore[Bytes, Array[Byte]]](eventKeySerde, enricherEventSerde)
+                                    //.withCachingDisabled
                                   )
-                                  .toStream((key: Event.Key, event: EnricherEvent) => event.key.getOrElse(key))
+                                  .suppress(Suppressed.untilWindowCloses(Suppressed.BufferConfig.unbounded))
+                                  .toStream((windowedKey: Windowed[Event.Key], event: EnricherEvent) => event.key.getOrElse(windowedKey.key))
                                   .to(cfg.kafkaStreamsConfig.sinkTopic, Produced.`with`[Event.Key, EnricherEvent](eventKeySerde, enricherEventSerde))
                               }
         topology            = streamsBuilder.build()

@@ -11,7 +11,7 @@ import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.streams.{StreamsBuilder, StreamsConfig}
 import org.apache.kafka.streams.state.WindowStore
-import org.apache.kafka.streams.kstream.{Consumed, Grouped, Materialized, Produced, SlidingWindows, Suppressed, ValueMapper, Windowed}
+import org.apache.kafka.streams.kstream.{Consumed, Grouped, Materialized, Produced, SlidingWindows, ValueMapper, Windowed}
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient
 import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig
 import fs2.kafka.vulcan.AvroSettings
@@ -92,9 +92,8 @@ object Enricher {
                                     },
                                     Materialized
                                       .`with`[Event.Key, EnricherEvent, WindowStore[Bytes, Array[Byte]]](eventKeySerde, enricherEventSerde)
-                                    //.withCachingDisabled
+                                      .withCachingDisabled
                                   )
-                                  .suppress(Suppressed.untilWindowCloses(Suppressed.BufferConfig.unbounded))
                                   .toStream((windowedKey: Windowed[Event.Key], event: EnricherEvent) => event.key.getOrElse(windowedKey.key))
                                   .to(cfg.kafkaStreamsConfig.sinkTopic, Produced.`with`[Event.Key, EnricherEvent](eventKeySerde, enricherEventSerde))
                               }

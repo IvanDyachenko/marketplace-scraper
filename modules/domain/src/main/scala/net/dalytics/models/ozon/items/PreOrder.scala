@@ -26,7 +26,7 @@ final case class PreOrder private (
   isPromotedProduct: Boolean,
   freeRest: Int
 ) extends Item {
-  val addToCart: Item.AddToCart = Item.AddToCart.Unavailable
+  val addToCart: AddToCart = AddToCart.Unavailable
 }
 
 object PreOrder {

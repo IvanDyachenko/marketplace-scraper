@@ -26,7 +26,7 @@ final case class OutOfStock private (
   isPromotedProduct: Boolean,
   freeRest: Int
 ) extends Item {
-  val addToCart: Item.AddToCart = Item.AddToCart.With(0, 0)
+  val addToCart: AddToCart = AddToCart.With(0, 0)
 }
 
 object OutOfStock {

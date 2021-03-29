@@ -19,7 +19,7 @@ final case class InStock private (
   availability: Short,
   availableInDays: Short,
   marketplaceSellerId: MarketplaceSeller.Id,
-  addToCart: Item.AddToCart,
+  addToCart: AddToCart,
   isAdult: Boolean,
   isAlcohol: Boolean,
   isSupermarket: Boolean,
@@ -39,14 +39,14 @@ object InStock {
                           val message = s"'cellTrackingInfo.availability' isn't equal to '${Item.Availability.InStock}'"
                           DecodingFailure(message, c.history)
                         }(Item.Availability.from(_) == Item.Availability.InStock)
-      addToCart    <- c.as[Item.AddToCart]
+      addToCart    <- c.as[AddToCart]
                         .ensure {
                           val message =
                             s"'templateState' doesn't contain an object which describes 'add to cart', nor 'redirect', nor 'premium only' actions."
                           DecodingFailure(message, c.history)
                         }(_ match {
-                          case Item.AddToCart.With(_, _) | Item.AddToCart.Redirect | Item.AddToCart.PremiumOnly => true
-                          case _                                                                                => false
+                          case AddToCart.With(_, _) | AddToCart.Redirect | AddToCart.PremiumOnly => true
+                          case _                                                                 => false
                         })
       item         <- (
                         i.get[Item.Id]("id"),

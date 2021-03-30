@@ -35,13 +35,11 @@ object Parse {
     type Handling[F[_]] = Handle[F, ParsingError]
 
     @derive(loggable)
-    case class DecodingError(message: String) extends ParsingError
-
+    case class DecodingError(message: String)    extends ParsingError
     @derive(loggable)
     case class UnexpectedResult(message: String) extends ParsingError
 
-    def decodingError(message: String): ParsingError = DecodingError(message)
-
+    def decodingError(message: String): ParsingError    = DecodingError(message)
     def unexpectedResult(message: String): ParsingError = UnexpectedResult(message)
   }
 
@@ -58,13 +56,17 @@ object Parse {
   private final class Impl[F[_]: Monad: Clock] extends Parse[F] {
     def handle(command: Command): F[Result] = command match {
       case Command.ParseOzonResponse(created, response) => // format: off
-        parse[ozon.Result](response) >>= (_.traverse { // format: on
-          _ match {
-            case sellerList: ozon.SellerList.Success          => Event.OzonSellerListItemParsed(created, sellerList)
-            case ozon.SellerList.Failure(_)                   => List.empty[Event].pure[F]
-            case result: ozon.CategorySearchResultsV2.Success => Event.OzonCategorySearchResultsV2ItemParsed(created, result)
-            case ozon.CategorySearchResultsV2.Failure(_)      => List.empty[Event].pure[F]
-          }
+        parse[ozon.Result](response) >>= (_.traverse { result => // format: on
+          for {
+            sellerListItemParsedEvents              <-
+              result.sellerList.fold(List.empty[Event].pure[F]) { sellerList =>
+                Event.OzonSellerListItemParsed(created, sellerList)
+              }
+            categorySearchResultsV2ItemParsedEvents <-
+              result.searchResultsV2.fold(List.empty[Event].pure[F]) { searchResultsV2 =>
+                Event.OzonCategorySearchResultsV2ItemParsed(created, result.page.get, result.category.get, searchResultsV2)
+              }
+          } yield List(sellerListItemParsedEvents, categorySearchResultsV2ItemParsedEvents).flatten
         })
     }
 

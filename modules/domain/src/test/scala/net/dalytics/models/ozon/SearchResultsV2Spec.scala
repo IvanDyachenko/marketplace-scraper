@@ -33,7 +33,7 @@ class SearchResultsV2Spec extends AnyFlatSpec with Matchers {
         |}
       """.stripMargin
 
-    decode[CategorySearchResultsV2](searchResultsV2RawJson).isRight shouldBe true
+    decode[SearchResultsV2](searchResultsV2RawJson).isRight shouldBe true
     //decode[SearchResultsV2.Success](searchResultsV2RawJson).isRight shouldBe true
   }
 
@@ -45,7 +45,7 @@ class SearchResultsV2Spec extends AnyFlatSpec with Matchers {
         |}
       """.stripMargin
 
-    decode[CategorySearchResultsV2](failureSearchResultsV2RawJson).isRight shouldBe true
-    decode[CategorySearchResultsV2.Failure](failureSearchResultsV2RawJson).isRight shouldBe true
+    decode[SearchResultsV2](failureSearchResultsV2RawJson).isRight shouldBe true
+    decode[SearchResultsV2.Failure](failureSearchResultsV2RawJson).isRight shouldBe true
   }
 }

@@ -106,9 +106,8 @@ object Item {
     } yield item
   }
 
-  // Fix me:( It looks terrible!
   private[models] def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => Item): FreeApplicative[Codec.Field[A, *], Item] =
-    (
+    field("isAvailable", f(_).isAvailable) *> (
       field("itemId", f(_).id),
       field("itemIndex", f(_).index),
       field("itemType", f(_).`type`),
@@ -124,54 +123,9 @@ object Item {
       AddToCart.vulcanCodecFieldFA(field)(f(_).addToCart),
       field("isAdult", f(_).isAdult),
       field("isAlcohol", f(_).isAlcohol),
-      field("isAvailable", f(_).isAvailable),
       field("isSupermarket", f(_).isSupermarket),
       field("isPersonalized", f(_).isPersonalized),
       field("isPromotedProduct", f(_).isPromotedProduct),
       field("freeRest", f(_).freeRest)
-    ).mapN {
-      case (
-            itemId,
-            itemIndex,
-            itemType,
-            itemTitle,
-            brand,
-            price,
-            rating,
-            categoryPath,
-            delivery,
-            availability,
-            availableInDays,
-            marketplaceSellerId,
-            addToCart,
-            isAdult,
-            isAlcohol,
-            _,
-            isSupermarket,
-            isPersonalized,
-            isPromotedProduct,
-            freeRest
-          ) =>
-        Item(
-          itemId,
-          itemIndex,
-          itemType,
-          itemTitle,
-          brand,
-          price,
-          rating,
-          categoryPath,
-          delivery,
-          availability,
-          availableInDays,
-          marketplaceSellerId,
-          addToCart,
-          isAdult,
-          isAlcohol,
-          isSupermarket,
-          isPersonalized,
-          isPromotedProduct,
-          freeRest
-        )
-    }
+    ).mapN(apply)
 }

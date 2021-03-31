@@ -31,20 +31,13 @@ object OzonApi {
 
     def getCategory(id: Category.Id): F[Option[Category]] = getCategoryMenu(id).map(_ >>= (_.category(id)))
 
-    def getCategoryMenu(id: Category.Id): F[Option[CategoryMenu]] = {
-      val request = Request.GetCategoryMenu(id)
+    def getCategoryMenu(id: Category.Id): F[Option[CategoryMenu]] = getResult(Request.GetCategoryMenu(id)).map(_ >>= (_.categoryMenu))
 
-      getResult(request).map(_ >>= (_.categoryMenu))
-    }
-
-    def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): F[Option[(Page, Category, SearchResultsV2)]] = {
-      val request = Request.GetCategorySearchResultsV2(id, page = page)
-
-      getResult(request).map(_ >>= {
+    def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): F[Option[(Page, Category, SearchResultsV2)]] =
+      getResult(Request.GetCategorySearchResultsV2(id, page = page)).map(_ >>= {
         case Result(_, Some(Catalog(page, category, _, Some(searchResultsV2)))) => Some((page, category, searchResultsV2))
         case _                                                                  => None
       })
-    }
 
     def getCategories(rootId: Category.Id)(p: Category => Boolean): Stream[F, Category] = {
       def go(tree: Category.Tree[Stream[F, *]]): Stream[F, Category] =

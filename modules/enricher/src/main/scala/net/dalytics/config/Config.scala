@@ -8,7 +8,8 @@ import tofu.optics.macros.ClassyOptics
 final case class Config(
   schemaRegistryConfig: SchemaRegistryConfig,
   kafkaConfig: KafkaConfig,
-  kafkaStreamsConfig: KafkaStreamsConfig
+  kafkaStreamsConfig: KafkaStreamsConfig,
+  slidingWindowsConfig: SlidingWindowsConfig
 )
 
 object Config {
@@ -16,6 +17,7 @@ object Config {
     (
       SchemaRegistryConfig.loadF[F],
       KafkaConfig.loadF[F],
-      KafkaStreamsConfig.loadF[F]
+      KafkaStreamsConfig.loadF[F],
+      SlidingWindowsConfig.loadF[F]
     ).mapN(Config.apply)
 }

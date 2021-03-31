@@ -63,8 +63,8 @@ object Parse {
                 Event.OzonSellerListItemParsed(created, sellerList)
               }
             categorySearchResultsV2ItemParsedEvents <-
-              result.searchResultsV2.fold(List.empty[Event].pure[F]) { searchResultsV2 =>
-                Event.OzonCategorySearchResultsV2ItemParsed(created, result.page.get, result.category.get, searchResultsV2)
+              result.categorySearchResultsV2.fold(List.empty[Event].pure[F]) { case (page, category, searchResultsV2) =>
+                Event.OzonCategorySearchResultsV2ItemParsed(created, page, category, searchResultsV2)
               }
           } yield List(sellerListItemParsedEvents, categorySearchResultsV2ItemParsedEvents).flatten
         })

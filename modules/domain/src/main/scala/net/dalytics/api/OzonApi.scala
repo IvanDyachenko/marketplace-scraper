@@ -34,28 +34,16 @@ object OzonApi {
     def getCategoryMenu(id: Category.Id): F[Option[CategoryMenu]] = {
       val request = Request.GetCategoryMenu(id)
 
-      HttpClient[F]
-        .send[Result](request)
-        .recoverWith[HttpClientError] { case error: HttpClientError =>
-          error"Error was thrown while attempting to execute ${request}. ${error}" *> error.raise[F, Result]
-        }
-        .restore
-        .map(_ >>= (_.categoryMenu))
+      getResult(request).map(_ >>= (_.categoryMenu))
     }
 
     def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): F[Option[(Page, Category, SearchResultsV2)]] = {
       val request = Request.GetCategorySearchResultsV2(id, page = page)
 
-      HttpClient[F]
-        .send[Result](request)
-        .recoverWith[HttpClientError] { case error: HttpClientError =>
-          error"Error was thrown while attempting to execute ${request}. ${error}" *> error.raise[F, Result]
-        }
-        .restore
-        .map(_ >>= {
-          case Result(_, Some(Catalog(page, category, _, Some(searchResultsV2)))) => Some((page, category, searchResultsV2))
-          case _                                                                  => None
-        })
+      getResult(request).map(_ >>= {
+        case Result(_, Some(Catalog(page, category, _, Some(searchResultsV2)))) => Some((page, category, searchResultsV2))
+        case _                                                                  => None
+      })
     }
 
     def getCategories(rootId: Category.Id)(p: Category => Boolean): Stream[F, Category] = {
@@ -77,6 +65,14 @@ object OzonApi {
           }
           .pure[F]
       ))
+
+    private def getResult(request: Request): F[Option[Result]] =
+      HttpClient[F]
+        .send[Result](request)
+        .recoverWith[HttpClientError] { case error: HttpClientError =>
+          error"Error was thrown while attempting to execute ${request}. ${error}" *> error.raise[F, Result]
+        }
+        .restore
   }
 
   def make[

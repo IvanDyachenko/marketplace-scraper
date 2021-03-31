@@ -23,7 +23,7 @@ object EnricherEvent {
     sale: ozon.Sale,
     category: ozon.Category
   ) extends EnricherEvent {
-    override val key: Option[Event.Key] = Some(category.name @@@ Event.Key)
+    override val key: Option[Event.Key] = Some(category.id.show @@@ Event.Key)
   }
 
   object OzonCategorySearchResultsV2ItemEnriched {

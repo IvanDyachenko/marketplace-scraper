@@ -227,6 +227,7 @@ lazy val commonDependencies =
     ("org.apache.kafka"      % "kafka-streams"            % Versions.kafkaStreams).exclude("log4j", "log4j").exclude("org.slf4j", "slf4j-log4j12"),
     "com.compstak"          %% "kafka-streams4s-core"     % Versions.kafkaStreams4s,
     "io.confluent"           % "kafka-streams-avro-serde" % Versions.kafkaStreamsAvroSerde,
+    "io.confluent"           % "monitoring-interceptors"  % Versions.monitoringInterceptors,
     "org.http4s"            %% "http4s-dsl"               % Versions.http4s,
     "org.http4s"            %% "http4s-circe"             % Versions.http4s,
     "org.http4s"            %% "http4s-blaze-client"      % Versions.http4sBlazeClient,

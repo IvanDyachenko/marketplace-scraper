@@ -117,7 +117,7 @@ object Enricher {
   def make[
     F[_]: Concurrent
   ](cfg: Config)(schemaRegistryClient: SchemaRegistryClient): Resource[F, Enricher[F]] =
-    Resource.liftF {
+    Resource.eval {
       val impl = new Impl[F](cfg)(schemaRegistryClient): Enricher[F]
 
       impl.pure[F]

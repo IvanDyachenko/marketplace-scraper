@@ -78,7 +78,7 @@ object Parse {
     I[_]: Monad,
     F[_]: Monad: Clock
   ](implicit logs: Logs[I, F]): Resource[I, Parse[F]] =
-    Resource.liftF {
+    Resource.eval {
       logs
         .forService[Parse[F]]
         .map { implicit l =>

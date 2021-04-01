@@ -73,7 +73,7 @@ object OzonApi {
     F[_]: Concurrent: HttpClient: HttpClient.Handling,
     S[_]: LiftStream[*[_], F]
   ](implicit logs: Logs[I, F]): Resource[I, OzonApi[F, S]] =
-    Resource.liftF {
+    Resource.eval {
       logs
         .forService[OzonApi[F, S]]
         .map(implicit l => bifunctorK.bimapK(new Impl[F])(Lift.liftIdentity[F].liftF)(LiftStream[S, F].liftF))

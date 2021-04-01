@@ -77,13 +77,23 @@ object KafkaClient {
         .withProperty("confluent.monitoring.interceptor.bootstrap.servers", kafkaConfig.bootstrapServers)
         .withProperty(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, "io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor")
 
-    val consumerSettingWithCommitTimeout =
+    val consumerSettingsWithFetchMaxBytes =
+      kafkaConsumerConfig.fetchMaxBytes
+        .fold(consumerSettingsBase)(fetchMaxBytes => consumerSettingsBase.withProperty(ConsumerConfig.FETCH_MAX_BYTES_CONFIG, fetchMaxBytes.toString))
+
+    val consumerSettingsWithMaxPartitionFetchBytes =
+      kafkaConsumerConfig.maxPartitionFetchBytes
+        .fold(consumerSettingsWithFetchMaxBytes)(maxPartitionFetchBytes =>
+          consumerSettingsWithFetchMaxBytes.withProperty(ConsumerConfig.MAX_PARTITION_FETCH_BYTES_CONFIG, maxPartitionFetchBytes.toString)
+        )
+
+    val consumerSettingsWithCommitTimeout =
       kafkaConsumerConfig.commitTimeout
-        .fold(consumerSettingsBase)(consumerSettingsBase.withCommitTimeout)
+        .fold(consumerSettingsWithMaxPartitionFetchBytes)(consumerSettingsWithMaxPartitionFetchBytes.withCommitTimeout)
 
     val consumerSettingsWithMaxPollRecords =
       kafkaConsumerConfig.maxPollRecords
-        .fold(consumerSettingWithCommitTimeout)(consumerSettingWithCommitTimeout.withMaxPollRecords)
+        .fold(consumerSettingsWithCommitTimeout)(consumerSettingsWithCommitTimeout.withMaxPollRecords)
 
     val consumerSettingsWithMaxPollInterval =
       kafkaConsumerConfig.maxPollInterval

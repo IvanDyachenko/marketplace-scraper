@@ -1,11 +1,12 @@
 package net.dalytics.models.ozon
 
+import org.scalatest.{EitherValues, OptionValues}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import io.circe.parser.decode
 
-class CategoryMenuSpec extends AnyFlatSpec with Matchers {
+class CategoryMenuSpec extends AnyFlatSpec with Matchers with EitherValues with OptionValues {
 
   it should "decode CategoryMenu from a valid JSON" in {
     val categoryMenuRawJson =
@@ -181,6 +182,8 @@ class CategoryMenuSpec extends AnyFlatSpec with Matchers {
         |}
       """.stripMargin
 
-    decode[CategoryMenu](categoryMenuRawJson).isRight shouldBe true
+    val decodedResult = decode[Result](categoryMenuRawJson)
+
+    decodedResult.value.categoryMenu.value shouldBe a[CategoryMenu]
   }
 }

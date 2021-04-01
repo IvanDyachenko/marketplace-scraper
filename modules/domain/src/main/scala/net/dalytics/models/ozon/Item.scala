@@ -2,38 +2,41 @@ package net.dalytics.models.ozon
 
 import cats.implicits._
 import cats.free.FreeApplicative
-import tofu.syntax.loggable._
-import tofu.logging.{Loggable, LoggableEnum}
+import derevo.derive
+import tofu.logging.derivation.loggable
+import tofu.logging.LoggableEnum
 import vulcan.Codec
 import vulcan.generic.AvroNamespace
-import io.circe.{Decoder, DecodingFailure, HCursor, Json}
+import io.circe.{Decoder, DecodingFailure, HCursor}
 import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry, VulcanEnum}
 import enumeratum.EnumEntry.Lowercase
 import supertagged.TaggedType
 
 import net.dalytics.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcanCodec}
 
-trait Item {
-  def id: Item.Id
-  def index: Int
-  def `type`: Item.Type
-  def title: String
-  def brand: Brand
-  def price: Price
-  def rating: Rating
-  def categoryPath: Category.Path
-  def delivery: Delivery
-  def availability: Short
-  def availableInDays: Short
-  def marketplaceSellerId: MarketplaceSeller.Id
-  def addToCart: Item.AddToCart
-  def isAdult: Boolean
-  def isAlcohol: Boolean
+@derive(loggable)
+final case class Item(
+  id: Item.Id,
+  index: Int,
+  `type`: Item.Type,
+  title: String,
+  brand: Brand,
+  price: Price,
+  rating: Rating,
+  categoryPath: Category.Path,
+  delivery: Delivery,
+  availability: Short,
+  availableInDays: Short,
+  marketplaceSellerId: MarketplaceSeller.Id,
+  addToCart: AddToCart,
+  isAdult: Boolean,
+  isAlcohol: Boolean,
+  isSupermarket: Boolean,
+  isPersonalized: Boolean,
+  isPromotedProduct: Boolean,
+  freeRest: Int
+) {
   def isAvailable: Boolean = Item.Availability.from(availability) == Item.Availability.InStock
-  def isSupermarket: Boolean
-  def isPersonalized: Boolean
-  def isPromotedProduct: Boolean
-  def freeRest: Int
 }
 
 object Item {
@@ -68,99 +71,43 @@ object Item {
       }
   }
 
-  sealed trait AddToCart
-
-  object AddToCart {
-    final object Redirect                               extends AddToCart
-    final object PremiumOnly                            extends AddToCart
-    final object Unavailable                            extends AddToCart
-    final case class With(minItems: Int, maxItems: Int) extends AddToCart
-
-    implicit val circeDecoder: Decoder[AddToCart] = Decoder.instance[AddToCart] { (c: HCursor) =>
-      for {
-        templateJson <- c.get[Json]("templateState")
-        template     <- templateJson.as[Template]
-        addToCart    <- template.addToCart.fold[Decoder.Result[AddToCart]] {
-                          val message = s"Decoded value of ${templateJson.noSpacesSortKeys} is ${template.logShow}."
-                          Left(DecodingFailure(message, c.history))
-                        }(Right(_))
-      } yield addToCart
-    }
-
-    implicit val loggable: Loggable[AddToCart] = Loggable.empty
-
-    implicit final class TemplateOps(private val template: Template) extends AnyVal {
-      import net.dalytics.models.ozon.Template.State.{Action, MobileContainer, TextSmall}
-      import net.dalytics.models.ozon.Template.State.Action.{AddToCartWithCount, UniversalAction}
-
-      def addToCart: Option[AddToCart] =
-        template.states.collectFirst {
-          case Action.Redirect                                                                   => Redirect
-          case TextSmall.PremiumPriority | TextSmall.NotDelivered                                => PremiumOnly
-          case AddToCartWithCount(minItems, maxItems)                                            => With(minItems, maxItems)
-          case UniversalAction(UniversalAction.Button.AddToCartWithQuantity(quantity, maxItems)) => With(quantity, maxItems)
-          case MobileContainer(_, _, footer) if footer.addToCart.isDefined                       => footer.addToCart.get
-        }
-    }
-
-    private[models] def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => AddToCart): FreeApplicative[Codec.Field[A, *], AddToCart] =
-      (
-        field(
-          "addToCartIsRedirect",
-          f(_) match {
-            case Redirect                 => Some(true)
-            case With(_, _) | PremiumOnly => Some(false)
-            case Unavailable              => None
-          }
-        ),
-        field(
-          "addToCartIsPremiumOnly",
-          f(_) match {
-            case PremiumOnly           => Some(true)
-            case With(_, _) | Redirect => Some(false)
-            case Unavailable           => None
-          }
-        ),
-        field(
-          "addToCartMinItems",
-          f(_) match {
-            case With(minItems, _) => Some(minItems)
-            case _                 => None
-          }
-        ),
-        field(
-          "addToCartMaxItems",
-          f(_) match {
-            case With(_, maxItems) => Some(maxItems)
-            case _                 => None
-          }
-        )
-      ).mapN {
-        case (Some(true), Some(false), None, None)                      => Redirect
-        case (Some(false), Some(true), None, None)                      => PremiumOnly
-        case (Some(false), Some(false), Some(minItems), Some(maxItems)) => With(minItems, maxItems)
-        case _                                                          => Unavailable
-      }
-  }
-
-  implicit val loggable: Loggable[Item] = Loggable.empty
-
   implicit val circeDecoder: Decoder[Item] = Decoder.instance[Item] { (c: HCursor) =>
+    lazy val i = c.downField("cellTrackingInfo")
+
     for {
-      availability <- c.downField("cellTrackingInfo").get[Byte]("availability")
-      decoder       = Availability.from(availability) match {
-                        case Availability.PreOrder        => PreOrder.circeDecoder
-                        case Availability.InStock         => InStock.circeDecoder
-                        case Availability.OutOfStock      => OutOfStock.circeDecoder
-                        case Availability.CannotBeShipped => CannotBeShipped.circeDecoder
+      availability <- i.get[Short]("availability")
+      addToCart    <- Availability.from(availability) match {
+                        case Availability.PreOrder        => AddToCart.Unavailable.asRight[DecodingFailure]
+                        case Availability.InStock         => c.as[AddToCart]
+                        case Availability.OutOfStock      => AddToCart.With(0, 0).asRight[DecodingFailure]
+                        case Availability.CannotBeShipped => AddToCart.Unavailable.asRight[DecodingFailure]
                       }
-      item         <- decoder.widen[Item](c)
+      item         <- (
+                        i.get[Item.Id]("id"),
+                        i.get[Int]("index"),
+                        i.get[Item.Type]("type"),
+                        i.get[String]("title"),
+                        i.as[Brand],
+                        i.as[Price],
+                        i.as[Rating],
+                        i.get[Category.Path]("category"),
+                        i.as[Delivery],
+                        Right(availability),
+                        i.get[Short]("availableInDays"),
+                        i.get[MarketplaceSeller.Id]("marketplaceSellerId"),
+                        Right(addToCart),
+                        c.get[Boolean]("isAdult"),
+                        c.get[Boolean]("isAlcohol"),
+                        i.get[Boolean]("isSupermarket"),
+                        i.get[Boolean]("isPersonalized"),
+                        i.get[Boolean]("isPromotedProduct"),
+                        i.get[Int]("freeRest")
+                      ).mapN(apply)
     } yield item
   }
 
-  // Fix me:( It looks terrible!
   private[models] def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => Item): FreeApplicative[Codec.Field[A, *], Item] =
-    (
+    field("isAvailable", f(_).isAvailable) *> (
       field("itemId", f(_).id),
       field("itemIndex", f(_).index),
       field("itemType", f(_).`type`),
@@ -176,120 +123,9 @@ object Item {
       AddToCart.vulcanCodecFieldFA(field)(f(_).addToCart),
       field("isAdult", f(_).isAdult),
       field("isAlcohol", f(_).isAlcohol),
-      field("isAvailable", f(_).isAvailable),
       field("isSupermarket", f(_).isSupermarket),
       field("isPersonalized", f(_).isPersonalized),
       field("isPromotedProduct", f(_).isPromotedProduct),
       field("freeRest", f(_).freeRest)
-    ).mapN {
-      case (
-            itemId,
-            itemIndex,
-            itemType,
-            itemTitle,
-            brand,
-            price,
-            rating,
-            categoryPath,
-            delivery,
-            availability,
-            availableInDays,
-            marketplaceSellerId,
-            addToCart,
-            isAdult,
-            isAlcohol,
-            _,
-            isSupermarket,
-            isPersonalized,
-            isPromotedProduct,
-            freeRest
-          ) =>
-        Availability.from(availability) match {
-          case Availability.PreOrder        =>
-            PreOrder(
-              itemId,
-              itemIndex,
-              itemType,
-              itemTitle,
-              brand,
-              price,
-              rating,
-              categoryPath,
-              delivery,
-              availability,
-              availableInDays,
-              marketplaceSellerId,
-              isAdult,
-              isAlcohol,
-              isSupermarket,
-              isPersonalized,
-              isPromotedProduct,
-              freeRest
-            )
-          case Availability.InStock         =>
-            InStock(
-              itemId,
-              itemIndex,
-              itemType,
-              itemTitle,
-              brand,
-              price,
-              rating,
-              categoryPath,
-              delivery,
-              availability,
-              availableInDays,
-              marketplaceSellerId,
-              addToCart,
-              isAdult,
-              isAlcohol,
-              isSupermarket,
-              isPersonalized,
-              isPromotedProduct,
-              freeRest
-            )
-          case Availability.OutOfStock      =>
-            OutOfStock(
-              itemId,
-              itemIndex,
-              itemType,
-              itemTitle,
-              brand,
-              price,
-              rating,
-              categoryPath,
-              delivery,
-              availability,
-              availableInDays,
-              marketplaceSellerId,
-              isAdult,
-              isAlcohol,
-              isSupermarket,
-              isPersonalized,
-              isPromotedProduct,
-              freeRest
-            )
-          case Availability.CannotBeShipped =>
-            CannotBeShipped(
-              itemId,
-              itemIndex,
-              itemType,
-              itemTitle,
-              brand,
-              price,
-              rating,
-              categoryPath,
-              delivery,
-              availability,
-              availableInDays,
-              marketplaceSellerId,
-              isAdult,
-              isAlcohol,
-              isSupermarket,
-              isPersonalized,
-              isPromotedProduct,
-              freeRest
-            )
-        }
-    }
+    ).mapN(apply)
 }

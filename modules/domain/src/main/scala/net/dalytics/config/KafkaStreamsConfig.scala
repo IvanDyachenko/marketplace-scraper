@@ -13,7 +13,7 @@ final case class KafkaStreamsConfig(
   applicationId: String,
   closeTimeout: FiniteDuration,
   sourceTopic: String,
-  sinkTopic: String,              // The number of threads to execute stream processing.
+  sinkTopic: String,
   numberOfStreamThreads: Int,     // The number of threads to execute stream processing.
   commitInterval: FiniteDuration, // The frequency in milliseconds with which to save the position of the processor.
   cacheMaxBytesBuffering: Long,   // Maximum number of memory bytes to be used for buffering across all threads.

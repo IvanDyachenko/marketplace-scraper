@@ -14,7 +14,7 @@ object doobieLogging {
   def makeEmbeddableLogHandler[I[_]: Monad, F[_]: Functor: UnliftIO, DB[_]: Lift[F, *[_]]](
     name: String
   )(implicit logs: Logs[I, F]): Resource[I, EmbeddableLogHandler[DB]] =
-    Resource.liftF {
+    Resource.eval {
       logs.byName(name).map { implicit log =>
         val lhf = LogHandlerF(logDoobieEvent)
         EmbeddableLogHandler.async(lhf).lift[DB]

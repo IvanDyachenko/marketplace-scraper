@@ -48,7 +48,7 @@ object Scheduler {
     sourcesOfCommands: List[Stream[I, HandlerCommand]],
     producerOfCommands: KafkaProducer[I, Option[Command.Key], HandlerCommand]
   ): Resource[I, Scheduler[S]] =
-    Resource.liftF {
+    Resource.eval {
       Stream
         .eval {
           val impl: Scheduler[Stream[I, *]] = new Impl[I](config)(sourcesOfCommands, producerOfCommands)

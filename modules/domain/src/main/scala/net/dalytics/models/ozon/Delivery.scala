@@ -28,7 +28,10 @@ object Delivery {
     val values = findValues
   }
 
-  implicit val circeDecoder: Decoder[Delivery] = Decoder.forProduct2("deliverySchema", "deliveryTimeDiffDays")(apply)
+  implicit val circeDecoder: Decoder[Delivery] = Decoder.forProduct2[Delivery, Schema, Option[Short]]("deliverySchema", "deliveryTimeDiffDays") {
+    case (schema, Some(timeDiffDays)) => Delivery(schema, timeDiffDays)
+    case (schema, _)                  => Delivery(schema, 0)
+  }
 
   private[models] def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => Delivery): FreeApplicative[Codec.Field[A, *], Delivery] =
     (field("deliverySchema", f(_).schema), field("deliveryTimeDiffDays", f(_).timeDiffDays)).mapN(apply)

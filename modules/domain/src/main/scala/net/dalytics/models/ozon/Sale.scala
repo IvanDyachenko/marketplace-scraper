@@ -24,14 +24,14 @@ object Sale {
 
     if (listOfAddToCarts.length > 1)
       listOfAddToCarts.tail
-        .foldLeft[(Sale, Item.AddToCart)]((Sale.Unknown, listOfAddToCarts.head)) {
-          case ((sale, Item.AddToCart.With(_, prevMaxItems)), addToCart @ Item.AddToCart.With(_, currMaxItems)) =>
+        .foldLeft[(Sale, AddToCart)]((Sale.Unknown, listOfAddToCarts.head)) {
+          case ((sale, AddToCart.With(_, prevMaxItems)), addToCart @ AddToCart.With(_, currMaxItems)) =>
             val numberOfSoldItems = sale match {
               case Sale.Unknown                 => 0
               case Sale.Sold(numberOfSoldItems) => numberOfSoldItems
             }
             (Sale.Sold(numberOfSoldItems + 0.max(prevMaxItems - currMaxItems)), addToCart)
-          case ((sale, _), addToCart)                                                                           =>
+          case ((sale, _), addToCart)                                                                 =>
             (sale, addToCart)
         }
         ._1

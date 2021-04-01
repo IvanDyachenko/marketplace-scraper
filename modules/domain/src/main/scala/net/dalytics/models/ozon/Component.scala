@@ -19,8 +19,8 @@ object Component {
   object StateId extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec
   type StateId = StateId.Type
 
-  @derive(loggable)
-  final case class UWidgetSKU(stateId: Component.StateId) extends Component
+  //@derive(loggable)
+  //final case class UWidgetSKU(stateId: Component.StateId) extends Component
 
   @derive(loggable)
   final case class SellerList(stateId: Component.StateId) extends Component

@@ -1,11 +1,12 @@
 package net.dalytics.models.ozon
 
+import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import io.circe.parser.decode
 
-class ItemSpec extends AnyFlatSpec with Matchers {
+class ItemSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   it should "decode Item.InStock (AddToCart.With, 1) from a valid JSON" in {
     val itemRawJson =
@@ -140,8 +141,9 @@ class ItemSpec extends AnyFlatSpec with Matchers {
         |}
       """.stripMargin
 
-    decode[Item](itemRawJson).isRight shouldBe true
-    decode[InStock](itemRawJson).isRight shouldBe true
+    val decodedItem = decode[Item](itemRawJson)
+
+    decodedItem.value.addToCart should be(AddToCart.With(1, 700))
   }
 
   it should "decode Item.InStock (AddToCart.With, 2) from a valid JSON" in {
@@ -287,8 +289,9 @@ class ItemSpec extends AnyFlatSpec with Matchers {
         |}
       """.stripMargin
 
-    decode[Item](itemRawJson).isRight shouldBe true
-    decode[InStock](itemRawJson).isRight shouldBe true
+    val decodedItem = decode[Item](itemRawJson)
+
+    decodedItem.value.addToCart should be(AddToCart.With(1, 51))
   }
 
   it should "decode Item.InStock (AddToCart.With, 3) from a valid JSON" in {
@@ -483,8 +486,9 @@ class ItemSpec extends AnyFlatSpec with Matchers {
         |}
       """.stripMargin
 
-    decode[Item](itemRawJson).isRight shouldBe true
-    decode[InStock](itemRawJson).isRight shouldBe true
+    val decodedItem = decode[Item](itemRawJson)
+
+    decodedItem.value.addToCart should be(AddToCart.With(1, 3))
   }
 
   it should "decode Item.InStock (AddToCart.Redirect, 1) from a valid JSON" in {
@@ -620,8 +624,9 @@ class ItemSpec extends AnyFlatSpec with Matchers {
         |}
       """.stripMargin
 
-    decode[Item](itemRawJson).isRight shouldBe true
-    decode[InStock](itemRawJson).isRight shouldBe true
+    val decodedItem = decode[Item](itemRawJson)
+
+    decodedItem.value.addToCart should be(AddToCart.Redirect)
   }
 
   it should "decode Item.InStock (AddToCart.PremiumOnly, 1) from a valid JSON" in {
@@ -803,8 +808,9 @@ class ItemSpec extends AnyFlatSpec with Matchers {
         |}
       """.stripMargin
 
-    decode[Item](itemRawJson).isRight shouldBe true
-    decode[InStock](itemRawJson).isRight shouldBe true
+    val decodedItem = decode[Item](itemRawJson)
+
+    decodedItem.value.addToCart should be(AddToCart.PremiumOnly)
   }
 
   it should "decode Item.InStock (AddToCart.PremiumOnly, 2) from a valid JSON" in {
@@ -997,8 +1003,9 @@ class ItemSpec extends AnyFlatSpec with Matchers {
         |}
       """.stripMargin
 
-    decode[Item](itemRawJson).isRight shouldBe true
-    decode[InStock](itemRawJson).isRight shouldBe true
+    val decodedItem = decode[Item](itemRawJson)
+
+    decodedItem.value.addToCart should be(AddToCart.PremiumOnly)
   }
 
   it should "decode Item.OutOfStock from a valid JSON" in {
@@ -1129,8 +1136,9 @@ class ItemSpec extends AnyFlatSpec with Matchers {
         |}
       """.stripMargin
 
-    decode[Item](itemRawJson).isRight shouldBe true
-    decode[OutOfStock](itemRawJson).isRight shouldBe true
+    val decodedItem = decode[Item](itemRawJson)
+
+    decodedItem.value.addToCart should be(AddToCart.With(0, 0))
   }
 
   it should "decode Item.CannotBeShipped from a valid JSON" in {
@@ -1228,8 +1236,9 @@ class ItemSpec extends AnyFlatSpec with Matchers {
         |}
       """.stripMargin
 
-    decode[Item](itemRawJson).isRight shouldBe true
-    decode[CannotBeShipped](itemRawJson).isRight shouldBe true
+    val decodedItem = decode[Item](itemRawJson)
+
+    decodedItem.value.addToCart should be(AddToCart.Unavailable)
   }
 
   it should "decode Item.Preorder from a valid JSON" in {
@@ -1403,7 +1412,8 @@ class ItemSpec extends AnyFlatSpec with Matchers {
         |}
       """.stripMargin
 
-    decode[Item](itemRawJson).isRight shouldBe true
-    decode[PreOrder](itemRawJson).isRight shouldBe true
+    val decodedItem = decode[Item](itemRawJson)
+
+    decodedItem.value.addToCart should be(AddToCart.Unavailable)
   }
 }

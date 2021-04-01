@@ -86,7 +86,7 @@ object Handler {
     producerOfEvents: KafkaProducer[I, Option[Event.Key], HandlerEvent],
     consumerOfCommands: KafkaConsumer[I, Option[Command.Key], HandlerCommand]
   ): Resource[I, Handler[S]] =
-    Resource.liftF {
+    Resource.eval {
       Stream
         .eval {
           val impl: Handler[Stream[I, *]] = new Impl[I, F](config)(handle, producerOfEvents, consumerOfCommands)

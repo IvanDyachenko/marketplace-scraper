@@ -48,7 +48,7 @@ object Scheduler {
     sourcesOfCommands: List[Stream[I, HandlerCommand]],
     producerOfCommands: KafkaProducer[I, Option[Command.Key], HandlerCommand]
   ): Resource[I, Scheduler[S]] =
-    Resource.liftF {
+    Resource.eval {
       Stream
         .eval {
           val impl: Scheduler[Stream[I, *]] = new Impl[I](config)(sourcesOfCommands, producerOfCommands)
@@ -70,8 +70,8 @@ object Scheduler {
         Stream
           .awakeEvery[F](every)
           .flatMap { _ =>
-            Stream.range(1, 450).parEvalMapUnordered[F, HandlerCommand](1000) { p =>
-              HandlerCommand.handleOzonRequest[F](ozon.Request.GetSellerList(p @@ ozon.Url.Page))
+            Stream.range(1, 450).parEvalMapUnordered[F, HandlerCommand](1000) { page =>
+              HandlerCommand.handleOzonRequest[F](ozon.Request.GetSellerList(page @@ ozon.Url.Page))
             }
           }
       case SourceConfig.OzonCategory(rootCategoryId, every) =>
@@ -83,21 +83,19 @@ object Scheduler {
               .parEvalMapUnordered(256) { category =>
                 if (category.isLeaf)
                   ozonApi
-                    .getCategorySearchResultsV2(category.id, 1 @@ ozon.Url.Page)
-                    .map(category -> _.fold[Int](10) {
-                      _ match {
-                        case ozon.CategorySearchResultsV2.Failure(error)      => 10
-                        case ozon.CategorySearchResultsV2.Success(_, page, _) => page.total.min(278)
-                      }
-                    })
+                    .getCategorySearchResultsV2(category.id, 1 @@ ozon.Url.Page) // ToDo: .getCategoryPage
+                    .map {
+                      case Some((page, _, _)) => category -> page.total.min(278)
+                      case _                  => category -> 10
+                    }
                 else
                   (category, 1).pure[F]
               }
-              .flatMap { case (category: ozon.Category, page: Int) =>
+              .flatMap { case (category: ozon.Category, totalPages: Int) =>
                 Stream
-                  .range(1, page + 1)
-                  .parEvalMapUnordered[F, HandlerCommand](1000) { p =>
-                    HandlerCommand.handleOzonRequest[F](ozon.Request.GetCategorySearchResultsV2(category.id, category.name, p @@ ozon.Url.Page))
+                  .range(1, totalPages + 1)
+                  .parEvalMapUnordered[F, HandlerCommand](1000) { page =>
+                    HandlerCommand.handleOzonRequest[F](ozon.Request.GetCategorySearchResultsV2(category.id, category.name, page @@ ozon.Url.Page))
                   }
               }
           }

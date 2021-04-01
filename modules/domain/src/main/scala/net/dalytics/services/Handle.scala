@@ -43,7 +43,7 @@ object Handle {
     I[_]: Monad,
     F[_]: Monad: Clock: HttpClient: HttpClient.Handling
   ](implicit logs: Logs[I, F]): Resource[I, Handle[F]] =
-    Resource.liftF {
+    Resource.eval {
       logs
         .forService[Handle[F]]
         .map { implicit l =>

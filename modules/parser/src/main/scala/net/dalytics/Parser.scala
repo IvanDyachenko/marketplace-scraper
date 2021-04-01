@@ -79,7 +79,7 @@ object Parser {
     producerOfEvents: KafkaProducer[I, Option[Event.Key], ParserEvent],
     consumerOfCommands: KafkaConsumer[I, Option[Command.Key], ParserCommand.ParseOzonResponse]
   ): Resource[I, Parser[S]] =
-    Resource.liftF {
+    Resource.eval {
       Stream
         .eval {
           val impl: Parser[Stream[I, *]] = new Impl[I, F](config)(parse, producerOfEvents, consumerOfCommands)

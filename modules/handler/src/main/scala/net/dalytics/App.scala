@@ -30,9 +30,9 @@ object Main extends TaskApp {
   private def init: Resource[Task, Handler[AppS]] =
     for {
       implicit0(blocker: Blocker)              <- Blocker[AppI]
-      cfg                                      <- Resource.liftF(Config.make[AppI])
+      cfg                                      <- Resource.eval(Config.make[AppI])
       implicit0(httpClientF: HttpClient[AppF]) <- HttpClient.make[AppI, AppF](cfg.httpConfig)
-      schemaRegistryClient                     <- Resource.liftF(SchemaRegistryClientSettings[AppI](cfg.schemaRegistryConfig.baseUrl).createSchemaRegistryClient)
+      schemaRegistryClient                     <- Resource.eval(SchemaRegistryClientSettings[AppI](cfg.schemaRegistryConfig.baseUrl).createSchemaRegistryClient)
       handle                                   <- Handle.make[AppI, AppF]
       producerOfEvents                         <- KafkaClient.makeProducer[AppI, Event.Key, HandlerEvent](
                                                     cfg.kafkaConfig,

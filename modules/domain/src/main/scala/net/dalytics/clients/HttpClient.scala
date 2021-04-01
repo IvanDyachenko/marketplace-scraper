@@ -115,7 +115,7 @@ object HttpClient extends ContextEmbed[HttpClient] {
                           val retryPolicy = recklesslyRetryPolicy[I](httpConfig.requestMaxDelayBetweenAttempts, httpConfig.requestMaxTotalAttempts)
                           Retry(retryPolicy)(http4sClient)
                         }
-      httpClient   <- Resource.liftF(logs.forService[HttpClient[F]].map(_ => new Impl[F](translateHttp4sClient[I, F](http4sClient))))
+      httpClient   <- Resource.eval(logs.forService[HttpClient[F]].map(_ => new Impl[F](translateHttp4sClient[I, F](http4sClient))))
     } yield httpClient
 
   // https://scastie.scala-lang.org/Odomontois/F29lLrY2RReZrcUJ1zIEEg/25
@@ -156,7 +156,7 @@ object HttpClient extends ContextEmbed[HttpClient] {
   //   }
 
   private def buildHttp4sClient[F[_]: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] =
-    Resource.liftF(Execute[F].executionContext) >>= (
+    Resource.eval(Execute[F].executionContext) >>= (
       BlazeClientBuilder[F](_)
         .withTcpNoDelay(true) // Disable Nagle's algorithm.
         .withCheckEndpointAuthentication(false)

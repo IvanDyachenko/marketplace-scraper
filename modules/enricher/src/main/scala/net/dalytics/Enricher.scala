@@ -22,6 +22,7 @@ import net.dalytics.serde.{VulcanSerde}
 import net.dalytics.models.{ozon, Event}
 import net.dalytics.models.parser.ParserEvent
 import net.dalytics.models.enricher.EnricherEvent
+import net.dalytics.extractors.EventTimestampExtractor
 
 trait Enricher[F[_]] {
   def run: F[Unit]
@@ -45,10 +46,11 @@ object Enricher {
         p.put(StreamsConfig.NUM_STREAM_THREADS_CONFIG, cfg.kafkaStreamsConfig.numberOfStreamThreads)
         p.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, cfg.kafkaStreamsConfig.commitInterval.toMillis)
         p.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, cfg.kafkaStreamsConfig.cacheMaxBytesBuffering)
-        p.put(StreamsConfig.mainConsumerPrefix(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG), "earliest")
-        p.put(StreamsConfig.mainConsumerPrefix(ConsumerConfig.FETCH_MAX_BYTES_CONFIG), cfg.kafkaStreamsConfig.fetchMaxBytes)
-        p.put(StreamsConfig.mainConsumerPrefix(ConsumerConfig.MAX_PARTITION_FETCH_BYTES_CONFIG), cfg.kafkaStreamsConfig.maxPartitionFetchBytes)
-        p.put(StreamsConfig.mainConsumerPrefix(ConsumerConfig.MAX_POLL_RECORDS_CONFIG), cfg.kafkaStreamsConfig.maxPollRecords)
+        p.put(StreamsConfig.DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG, classOf[EventTimestampExtractor])
+        p.put(StreamsConfig.consumerPrefix(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG), "earliest")
+        //p.put(StreamsConfig.consumerPrefix(ConsumerConfig.FETCH_MAX_BYTES_CONFIG), cfg.kafkaStreamsConfig.fetchMaxBytes)
+        //p.put(StreamsConfig.consumerPrefix(ConsumerConfig.MAX_PARTITION_FETCH_BYTES_CONFIG), cfg.kafkaStreamsConfig.maxPartitionFetchBytes)
+        p.put(StreamsConfig.consumerPrefix(ConsumerConfig.MAX_POLL_RECORDS_CONFIG), cfg.kafkaStreamsConfig.maxPollRecords)
         p.put(
           StreamsConfig.mainConsumerPrefix(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG),
           "io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor"
@@ -93,7 +95,6 @@ object Enricher {
                                   )
                                   .reduce(
                                     (prevEvent: EnricherEvent, currEvent: EnricherEvent) => {
-                                      // ToDo: Take into account timestamp of events
                                       val EnricherEvent.OzonCategorySearchResultsV2ItemEnriched(_, _, _, prevItem, _, _)                         = prevEvent
                                       val EnricherEvent.OzonCategorySearchResultsV2ItemEnriched(created, timestamp, page, currItem, _, category) = currEvent
 

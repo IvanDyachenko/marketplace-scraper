@@ -1,7 +1,7 @@
 package net.dalytics
 
 import monix.eval.{Task, TaskApp}
-import cats.effect.{Blocker, ExitCode, Resource}
+import cats.effect.{ExitCode, Resource}
 import fs2.kafka.vulcan.SchemaRegistryClientSettings
 
 import net.dalytics.config.Config
@@ -14,7 +14,7 @@ object Main extends TaskApp {
 
   private def init: Resource[Task, Enricher[AppI]] =
     for {
-      implicit0(blocker: Blocker) <- Blocker[AppI]
+      implicit0(blocker: Blocker) <- Resource.unit[AppI]
       cfg                         <- Resource.eval(Config.make[AppI])
       schemaRegistryClient        <- Resource.eval(SchemaRegistryClientSettings[AppI](cfg.schemaRegistryConfig.baseUrl).createSchemaRegistryClient)
       aggregator                  <- Enricher.make[AppI](cfg)(schemaRegistryClient)

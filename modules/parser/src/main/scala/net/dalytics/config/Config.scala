@@ -1,7 +1,7 @@
 package net.dalytics.config
 
 import cats.syntax.apply._
-import cats.effect.{Blocker, ContextShift, Sync}
+import cats.effect.Sync
 import tofu.optics.macros.ClassyOptics
 
 @ClassyOptics("contains_")
@@ -13,6 +13,6 @@ final case class Config(
 )
 
 object Config {
-  def make[F[_]: Sync: ContextShift](implicit blocker: Blocker): F[Config] =
+  def make[F[_]: Sync: ContextShift]: F[Config] =
     (SchemaRegistryConfig.loadF[F], KafkaConfig.loadF[F], KafkaConsumerConfig.loadF[F], KafkaProducerConfig.loadF[F]).mapN(Config.apply)
 }

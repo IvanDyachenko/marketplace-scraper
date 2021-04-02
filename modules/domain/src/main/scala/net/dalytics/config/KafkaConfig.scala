@@ -1,6 +1,6 @@
 package net.dalytics.config
 
-import cats.effect.{Blocker, ContextShift, Sync}
+import cats.effect.Sync
 import derevo.derive
 import derevo.pureconfig.pureconfigReader
 import pureconfig.ConfigSource
@@ -12,6 +12,6 @@ final case class KafkaConfig(bootstrapServers: String)
 object KafkaConfig {
   lazy val load: KafkaConfig = ConfigSource.default.at("kafka").loadOrThrow[KafkaConfig]
 
-  def loadF[F[_]: Sync: ContextShift](implicit blocker: Blocker): F[KafkaConfig] =
+  def loadF[F[_]: Sync: ContextShift]: F[KafkaConfig] =
     ConfigSource.default.at("kafka").loadF[F, KafkaConfig](blocker)
 }

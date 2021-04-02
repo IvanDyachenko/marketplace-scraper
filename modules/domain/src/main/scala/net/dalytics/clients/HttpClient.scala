@@ -13,7 +13,7 @@ import tofu.syntax.monadic._
 import derevo.derive
 import tofu.logging.derivation.loggable
 import cats.FlatMap
-import cats.effect.{ConcurrentEffect, Resource, Sync, Timer}
+import cats.effect.{ConcurrentEffect, Resource, Sync}
 import tofu.{Execute, Handle, Raise}
 import tofu.lift.Unlift
 import tofu.higherKind.Embed
@@ -28,6 +28,7 @@ import org.http4s.client.blaze.BlazeClientBuilder
 import org.http4s.client.middleware.{GZip, Retry, RetryPolicy}
 
 import net.dalytics.config.HttpConfig
+import cats.effect.Temporal
 
 trait HttpClient[F[_]] {
   def send[Res: Decoder](request: Http4sRequest[F]): F[Res]
@@ -105,7 +106,7 @@ object HttpClient extends ContextEmbed[HttpClient] {
   def apply[F[_]](implicit ev: HttpClient[F]): ev.type = ev
 
   def make[
-    I[_]: Execute: ConcurrentEffect: Timer: Unlift[*[_], F],
+    I[_]: Execute: ConcurrentEffect: Temporal: Unlift[*[_], F],
     F[_]: Sync
   ](httpConfig: HttpConfig)(implicit logs: Logs[I, F]): Resource[I, HttpClient[F]] =
     for {

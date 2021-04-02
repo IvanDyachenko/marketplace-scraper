@@ -1,7 +1,7 @@
 package net.dalytics
 
 import monix.eval.{Task, TaskApp}
-import cats.effect.{Blocker, ExitCode, Resource}
+import cats.effect.{ExitCode, Resource}
 import tofu.logging.Logs
 import fs2.Stream
 import fs2.kafka.vulcan.SchemaRegistryClientSettings
@@ -26,7 +26,7 @@ object Main extends TaskApp {
 
   private def init: Resource[Task, Scheduler[AppS]] =
     for {
-      implicit0(blocker: Blocker)              <- Blocker[AppI]
+      implicit0(blocker: Blocker)              <- Resource.unit[AppI]
       cfg                                      <- Resource.eval(Config.make[AppI])
       implicit0(httpClientI: HttpClient[AppI]) <- HttpClient.make[AppI, AppI](cfg.httpConfig)
       schemaRegistryClient                     <- Resource.eval(SchemaRegistryClientSettings[AppI](cfg.schemaRegistryConfig.baseUrl).createSchemaRegistryClient)

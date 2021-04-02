@@ -1,7 +1,7 @@
 package net.dalytics.clients
 
 import tofu.syntax.monadic._
-import cats.effect.{ConcurrentEffect, ContextShift, Resource, Timer}
+import cats.effect.{ConcurrentEffect, Resource}
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient
@@ -10,6 +10,7 @@ import fs2.kafka.vulcan.{avroDeserializer, avroSerializer, AvroSettings}
 import vulcan.{Codec => VulcanCodec}
 
 import net.dalytics.config.{KafkaConfig, KafkaConsumerConfig, KafkaProducerConfig}
+import cats.effect.Temporal
 
 object KafkaClient {
 
@@ -47,7 +48,7 @@ object KafkaClient {
     KafkaProducer.resource[F, Option[K], V](producerSettings)
   }
 
-  def makeConsumer[F[_]: ContextShift: ConcurrentEffect: Timer, K: VulcanCodec, V: VulcanCodec](
+  def makeConsumer[F[_]: ContextShift: ConcurrentEffect: Temporal, K: VulcanCodec, V: VulcanCodec](
     kafkaConfig: KafkaConfig,
     kafkaConsumerConfig: KafkaConsumerConfig
   )(schemaRegistryClient: SchemaRegistryClient): Resource[F, KafkaConsumer[F, Option[K], V]] = {

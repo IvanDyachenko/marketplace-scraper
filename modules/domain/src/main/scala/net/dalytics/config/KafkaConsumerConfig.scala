@@ -2,7 +2,7 @@ package net.dalytics.config
 
 import scala.concurrent.duration._
 
-import cats.effect.{Blocker, ContextShift, Sync}
+import cats.effect.Sync
 import derevo.derive
 import derevo.pureconfig.pureconfigReader
 import pureconfig.ConfigSource
@@ -26,6 +26,6 @@ final case class KafkaConsumerConfig(
 object KafkaConsumerConfig {
   lazy val load: KafkaConsumerConfig = ConfigSource.default.at("kafka-consumer").loadOrThrow[KafkaConsumerConfig]
 
-  def loadF[F[_]: Sync: ContextShift](implicit blocker: Blocker): F[KafkaConsumerConfig] =
+  def loadF[F[_]: Sync: ContextShift]: F[KafkaConsumerConfig] =
     ConfigSource.default.at("kafka-consumer").loadF[F, KafkaConsumerConfig](blocker)
 }

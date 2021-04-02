@@ -2,7 +2,7 @@ package net.dalytics
 
 import cats.tagless.syntax.functorK._
 import cats.Monad
-import cats.effect.{Concurrent, Resource, Timer}
+import cats.effect.{Concurrent, Resource}
 import tofu.syntax.embed._
 import tofu.syntax.monadic._
 import tofu.syntax.context._
@@ -18,6 +18,7 @@ import net.dalytics.context.MessageContext
 import net.dalytics.services.Handle
 import net.dalytics.models.{Command, Event}
 import net.dalytics.models.handler.{HandlerCommand, HandlerEvent}
+import cats.effect.Temporal
 
 @derive(representableK)
 trait Handler[S[_]] {
@@ -28,7 +29,7 @@ object Handler {
   def apply[F[_]](implicit ev: Handler[F]): ev.type = ev
 
   private final class Impl[
-    I[_]: Monad: Timer: Concurrent,
+    I[_]: Monad: Temporal: Concurrent,
     F[_]: WithRun[*[_], I, MessageContext]
   ](config: Config)(
     handle: Handle[F],
@@ -78,7 +79,7 @@ object Handler {
   }
 
   def make[
-    I[_]: Monad: Concurrent: Timer,
+    I[_]: Monad: Concurrent: Temporal,
     F[_]: WithRun[*[_], I, MessageContext],
     S[_]: LiftStream[*[_], I]
   ](config: Config)(

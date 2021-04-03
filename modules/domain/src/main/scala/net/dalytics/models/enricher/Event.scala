@@ -24,6 +24,10 @@ object EnricherEvent {
     category: ozon.Category
   ) extends EnricherEvent {
     override val key: Option[Event.Key] = Some(category.id.show @@@ Event.Key)
+
+    def aggregate(that: OzonCategorySearchResultsV2ItemEnriched): OzonCategorySearchResultsV2ItemEnriched =
+      if (timestamp.isBefore(that.timestamp)) that.aggregate(this)
+      else OzonCategorySearchResultsV2ItemEnriched(created, timestamp, page, item, ozon.Sale.from(List(that.item, item)), category)
   }
 
   object OzonCategorySearchResultsV2ItemEnriched {

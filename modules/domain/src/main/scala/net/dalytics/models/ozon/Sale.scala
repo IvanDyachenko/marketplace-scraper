@@ -15,27 +15,27 @@ object Sale {
   final object Unknown extends Sale
 
   @derive(loggable)
-  final case class Sold(numberOfSoldItems: Int) extends Sale
+  final case class Sold private (count: Int) extends Sale
 
   /** This method calculates number of sold items according to https://gitlab.com/dalytics/analytics/-/issues/26
     */
-  def aggregate[C[_]: Foldable](items: C[Item]): Sale = {
-    val listOfAddToCarts = Foldable[C].toList(items).map(_.addToCart)
+  def from[C[_]: Foldable](changelog: C[Item]): Sale = {
+    val log = Foldable[C].toList(changelog).map(_.addToCart)
 
-    if (listOfAddToCarts.length > 1)
-      listOfAddToCarts.tail
-        .foldLeft[(Sale, AddToCart)]((Sale.Unknown, listOfAddToCarts.head)) {
+    if (log.length > 1) {
+      log.tail
+        .foldLeft[(Sale, AddToCart)]((Sale.Unknown, log.head)) {
           case ((sale, AddToCart.With(_, prevMaxItems)), addToCart @ AddToCart.With(_, currMaxItems)) =>
-            val numberOfSoldItems = sale match {
-              case Sale.Unknown                 => 0
-              case Sale.Sold(numberOfSoldItems) => numberOfSoldItems
+            val count = sale match {
+              case Sale.Unknown     => 0
+              case Sale.Sold(count) => count
             }
-            (Sale.Sold(numberOfSoldItems + 0.max(prevMaxItems - currMaxItems)), addToCart)
+            (Sale.Sold(count + 0.max(prevMaxItems - currMaxItems)), addToCart)
           case ((sale, _), addToCart)                                                                 =>
             (sale, addToCart)
         }
         ._1
-    else
+    } else
       Sale.Unknown
   }
 
@@ -43,11 +43,11 @@ object Sale {
     field(
       "numberOfSoldItems",
       f(_) match {
-        case Unknown                 => None
-        case Sold(numberOfSoldItems) => Some(numberOfSoldItems)
+        case Unknown     => None
+        case Sold(count) => Some(count)
       }
     ).map(_ match {
-      case None                    => Unknown
-      case Some(numberOfSoldItems) => Sold(numberOfSoldItems)
+      case None        => Unknown
+      case Some(count) => Sold(count)
     })
 }

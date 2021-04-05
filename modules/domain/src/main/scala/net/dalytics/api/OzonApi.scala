@@ -63,7 +63,7 @@ object OzonApi {
       HttpClient[F]
         .send[Result](request)
         .recoverWith[HttpClientError] { case error: HttpClientError =>
-          error"Error was thrown while attempting to execute ${request}. ${error}" *> error.raise[F, Result]
+          error"${error} was thrown while attempting to execute ${request}" *> error.raise[F, Result]
         }
         .restore
   }

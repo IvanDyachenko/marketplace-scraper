@@ -66,11 +66,11 @@ object Scheduler {
   ): Stream[F, HandlerCommand] =
     sourceConfig match {
       case SourceConfig.WbCatalog(_, _)                     => ???
-      case SourceConfig.OzonSeller(every)                   =>
+      case SourceConfig.OzonSeller(pageLimit, every)        =>
         Stream
           .awakeEvery[F](every)
           .flatMap { _ =>
-            Stream.range(1, 450).parEvalMapUnordered[F, HandlerCommand](1000) { page =>
+            Stream.range(1, pageLimit + 1).parEvalMapUnordered[F, HandlerCommand](pageLimit) { page =>
               HandlerCommand.handleOzonRequest[F](ozon.Request.GetSellerList(page @@ ozon.Url.Page))
             }
           }
@@ -83,18 +83,18 @@ object Scheduler {
               .parEvalMapUnordered(256) { category =>
                 if (category.isLeaf)
                   ozonApi
-                    .getCategorySearchResultsV2(category.id, 1 @@ ozon.Url.Page) // ToDo: .getCategoryPage
+                    .getCategorySearchResultsV2(category.id, 1 @@ ozon.Url.Page)
                     .map {
-                      case Some((page, _, _)) => category -> page.total.min(278)
-                      case _                  => category -> 10
+                      case Some((page, _, _)) => category -> page.total.min(ozon.Page.MaxTotal)
+                      case _                  => category -> ozon.Page.Top10
                     }
                 else
-                  (category, 1).pure[F]
+                  (category, ozon.Page.Top1).pure[F]
               }
               .flatMap { case (category: ozon.Category, totalPages: Int) =>
                 Stream
                   .range(1, totalPages + 1)
-                  .parEvalMapUnordered[F, HandlerCommand](1000) { page =>
+                  .parEvalMapUnordered[F, HandlerCommand](ozon.Page.MaxTotal) { page =>
                     HandlerCommand.handleOzonRequest[F](ozon.Request.GetCategorySearchResultsV2(category.id, category.name, page @@ ozon.Url.Page))
                   }
               }

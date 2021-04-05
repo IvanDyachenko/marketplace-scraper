@@ -11,6 +11,10 @@ import io.circe.Decoder
 final case class Page(current: Int, total: Int, totalItems: Int)
 
 object Page {
+  val Top1     = 1
+  val Top10    = 10
+  val MaxTotal = 278
+
   implicit final val circeDecoder: Decoder[Page] =
     Decoder.forProduct3("currentPage", "totalPages", "totalFound")(apply)
 

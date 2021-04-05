@@ -36,7 +36,7 @@ object SourceConfig {
   final case class WbCatalog(id: wb.Catalog.Id, every: FiniteDuration) extends SourceConfig
 
   @derive(pureconfigReader)
-  final case class OzonSeller(every: FiniteDuration) extends SourceConfig
+  final case class OzonSeller(pageLimit: Int, every: FiniteDuration) extends SourceConfig
 
   @derive(pureconfigReader)
   final case class OzonCategory(id: ozon.Category.Id, every: FiniteDuration) extends SourceConfig

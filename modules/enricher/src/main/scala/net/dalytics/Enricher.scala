@@ -5,13 +5,9 @@ import java.util.Properties
 
 import tofu.syntax.monadic._
 import cats.effect.{Concurrent, Resource, Sync}
-import org.apache.kafka.streams.errors.LogAndFailExceptionHandler
-import org.apache.kafka.clients.consumer.ConsumerConfig
-import org.apache.kafka.clients.producer.ProducerConfig
-import org.apache.kafka.streams.{StreamsBuilder, StreamsConfig}
+import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.kstream.{Consumed, Grouped, Materialized, Produced, ValueMapper}
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient
-import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig
 import fs2.kafka.vulcan.AvroSettings
 import compstak.kafkastreams4s.Platform
 
@@ -20,6 +16,7 @@ import net.dalytics.serde.{VulcanSerde}
 import net.dalytics.models.{ozon, Event}
 import net.dalytics.models.parser.ParserEvent
 import net.dalytics.models.enricher.EnricherEvent
+import net.dalytics.clients.KafkaClient
 import net.dalytics.extractors.EventTimestampExtractor
 
 trait Enricher[F[_]] {
@@ -31,41 +28,13 @@ object Enricher {
 
   private final class Impl[F[_]: Concurrent](cfg: Config)(schemaRegistryClient: SchemaRegistryClient) extends Enricher[F] {
     def run: F[Unit] = {
-      val streamsBuilder = new StreamsBuilder
-
-      val streamsConfiguration: Properties = {
-        val p = new Properties()
-        //p.put(AbstractKafkaAvroSerDeConfig.AUTO_REGISTER_SCHEMAS, false)
-        p.put(AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, cfg.schemaRegistryConfig.baseUrl)
-        p.put(StreamsConfig.APPLICATION_ID_CONFIG, cfg.kafkaStreamsConfig.applicationId)
-        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, cfg.kafkaConfig.bootstrapServers)
-        p.put("confluent.monitoring.interceptor.bootstrap.servers", cfg.kafkaConfig.bootstrapServers)
-        p.put(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG, classOf[LogAndFailExceptionHandler])
-        p.put(StreamsConfig.NUM_STREAM_THREADS_CONFIG, cfg.kafkaStreamsConfig.numberOfStreamThreads)
-        p.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, cfg.kafkaStreamsConfig.commitInterval.toMillis)
-        p.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, cfg.kafkaStreamsConfig.cacheMaxBytesBuffering)
-        p.put(StreamsConfig.DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG, classOf[EventTimestampExtractor])
-        p.put(StreamsConfig.consumerPrefix(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG), "earliest")
-        p.put(StreamsConfig.consumerPrefix(ConsumerConfig.FETCH_MAX_BYTES_CONFIG), cfg.kafkaStreamsConfig.fetchMaxBytes)
-        p.put(StreamsConfig.consumerPrefix(ConsumerConfig.MAX_PARTITION_FETCH_BYTES_CONFIG), cfg.kafkaStreamsConfig.maxPartitionFetchBytes)
-        p.put(StreamsConfig.consumerPrefix(ConsumerConfig.MAX_POLL_RECORDS_CONFIG), cfg.kafkaStreamsConfig.maxPollRecords)
-        p.put(
-          StreamsConfig.mainConsumerPrefix(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG),
-          "io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor"
-        )
-        p.put(StreamsConfig.producerPrefix(ProducerConfig.BUFFER_MEMORY_CONFIG), cfg.kafkaStreamsConfig.bufferMemory)
-        p.put(StreamsConfig.producerPrefix(ProducerConfig.COMPRESSION_TYPE_CONFIG), cfg.kafkaStreamsConfig.compressionType)
-        p.put(StreamsConfig.producerPrefix(ProducerConfig.LINGER_MS_CONFIG), cfg.kafkaStreamsConfig.linger.toMillis)
-        p.put(
-          StreamsConfig.producerPrefix(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG),
-          "io.confluent.monitoring.clients.interceptor.MonitoringProducerInterceptor"
-        )
-        p
-      }
-
-      val avroSettings = AvroSettings(schemaRegistryClient)
-      //  .withAutoRegisterSchemas(false)
-      //  .withProperty("use.latest.version", "true")
+      val avroSettings: AvroSettings[F]    = KafkaClient.makeAvroSettings[F](schemaRegistryClient)
+      val streamsBuilder: StreamsBuilder   = new StreamsBuilder
+      val streamsConfiguration: Properties = KafkaClient.makeKafkaStreamsConfiguration[EventTimestampExtractor](
+        cfg.kafkaConfig,
+        cfg.schemaRegistryConfig,
+        cfg.kafkaStreamsConfig
+      )
 
       for {
         eventKeySerde      <- VulcanSerde[Event.Key].using(avroSettings)(true)

@@ -66,7 +66,7 @@ object Parser {
             ProducerRecords(records, offset)
           }
           .evalMap(producerOfEvents.produce)
-          .parEvalMap(config.kafkaProducerConfig.maxBufferSize)(identity)
+          .parEvalMap(config.kafkaProducerConfig.parallelism)(identity)
           .map(_.passthrough)
           .through(commitBatchWithin(config.kafkaConsumerConfig.commitEveryNOffsets, config.kafkaConsumerConfig.commitTimeWindow))
       }.parJoinUnbounded

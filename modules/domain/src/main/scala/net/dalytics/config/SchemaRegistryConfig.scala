@@ -7,7 +7,9 @@ import pureconfig.ConfigSource
 import pureconfig.module.catseffect.syntax._
 
 @derive(pureconfigReader)
-final case class SchemaRegistryConfig(baseUrl: String)
+final case class SchemaRegistryConfig(
+  url: String // Comma-separated list of URLs for schema registry instances that can be used to register or look up schemas.
+)
 
 object SchemaRegistryConfig {
   lazy val load: SchemaRegistryConfig = ConfigSource.default.at("schema-registry").loadOrThrow[SchemaRegistryConfig]

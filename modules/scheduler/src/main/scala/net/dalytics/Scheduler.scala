@@ -37,7 +37,7 @@ object Scheduler {
         .parJoinUnbounded
         .map(command => ProducerRecord(config.kafkaProducerConfig.topic("commands"), command.key, command))
         .evalMap(record => producerOfCommands.produce(ProducerRecords.one(record)))
-        .parEvalMap(config.kafkaProducerConfig.maxBufferSize)(identity)
+        .parEvalMap(config.kafkaProducerConfig.parallelism)(identity)
         .map(_.passthrough)
   }
 

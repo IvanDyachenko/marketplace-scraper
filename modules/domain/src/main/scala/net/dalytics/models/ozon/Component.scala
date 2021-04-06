@@ -31,6 +31,9 @@ object Component {
   @derive(loggable)
   final case class SearchResultsV2(stateId: Component.StateId) extends Component
 
+  @derive(loggable)
+  final case class SoldOutResultsV2(stateId: Component.StateId) extends Component
+
   implicit val circeDecoderConfig: Configuration = Configuration(Predef.identity, _.decapitalize, false, Some("component"))
   implicit val circeDecoder: Decoder[Component]  = deriveConfiguredDecoder[Component]
 }

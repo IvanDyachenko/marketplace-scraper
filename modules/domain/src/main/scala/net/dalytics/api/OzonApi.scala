@@ -35,8 +35,8 @@ object OzonApi {
 
     def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): F[Option[(Page, Category, SearchResultsV2)]] =
       getResult(Request.GetCategorySearchResultsV2(id, page = page)).map(_ >>= {
-        case Result(_, Some(Catalog(page, category, _, Some(searchResultsV2)))) => Some((page, category, searchResultsV2))
-        case _                                                                  => None
+        case Result(_, Some(Catalog(page, category, _, Some(searchResultsV2), _))) => Some((page, category, searchResultsV2))
+        case _                                                                     => None
       })
 
     def getCategories(rootId: Category.Id)(p: Category => Boolean): Stream[F, Category] = {

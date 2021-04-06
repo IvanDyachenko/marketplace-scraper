@@ -49,16 +49,18 @@ object Parser {
               metadata = offset.offsetAndMetadata.metadata
             )
 
-            runContext(parse.handle(command))(context).map { eventsE =>
-              eventsE.toOption.fold[(List[ParserEvent], CommittableOffset[I])](List.empty -> offset)(_ -> offset)
-            }
+            runContext(parse.handle(command))(context).map(
+              _.toOption.fold[(List[ParserEvent], CommittableOffset[I])](List.empty -> offset)(_ -> offset)
+            )
           }
           .map { case (events, offset) =>
             val records = events.map {
-              case event: ParserEvent.OzonSellerListItemParsed              =>
+              case event: ParserEvent.OzonSellerListItemParsed               =>
                 ProducerRecord(config.kafkaProducerConfig.topic("results-ozon-seller-list-items"), event.key, event)
-              case event: ParserEvent.OzonCategorySearchResultsV2ItemParsed =>
+              case event: ParserEvent.OzonCategorySearchResultsV2ItemParsed  =>
                 ProducerRecord(config.kafkaProducerConfig.topic("results-ozon-category-search-results-v2-items"), event.key, event)
+              case event: ParserEvent.OzonCategorySoldOutResultsV2ItemParsed =>
+                ProducerRecord(config.kafkaProducerConfig.topic("results-ozon-category-sold-out-results-v2-items"), event.key, event)
             }
 
             ProducerRecords(records, offset)

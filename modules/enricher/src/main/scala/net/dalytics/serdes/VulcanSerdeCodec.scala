@@ -1,4 +1,4 @@
-package net.dalytics.serde
+package net.dalytics.serdes
 
 import compstak.kafkastreams4s.{Codec => KafkaStreams4sCodec}
 import org.apache.kafka.common.serialization.Serde

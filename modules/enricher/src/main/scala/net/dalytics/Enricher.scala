@@ -12,11 +12,11 @@ import fs2.kafka.vulcan.AvroSettings
 import compstak.kafkastreams4s.Platform
 
 import net.dalytics.config.Config
-import net.dalytics.serde.{VulcanSerde}
 import net.dalytics.models.{ozon, Event}
 import net.dalytics.models.parser.ParserEvent
 import net.dalytics.models.enricher.EnricherEvent
 import net.dalytics.clients.KafkaClient
+import net.dalytics.serdes.VulcanSerde
 import net.dalytics.extractors.EventTimestampExtractor
 
 trait Enricher[F[_]] {
@@ -29,12 +29,12 @@ object Enricher {
   private final class Impl[F[_]: Concurrent](cfg: Config)(schemaRegistryClient: SchemaRegistryClient) extends Enricher[F] {
     def run: F[Unit] = {
       val avroSettings: AvroSettings[F]    = KafkaClient.makeAvroSettings[F](schemaRegistryClient)
-      val streamsBuilder: StreamsBuilder   = new StreamsBuilder
       val streamsConfiguration: Properties = KafkaClient.makeKafkaStreamsConfiguration[EventTimestampExtractor](
         cfg.kafkaConfig,
         cfg.schemaRegistryConfig,
         cfg.kafkaStreamsConfig
       )
+      val streamsBuilder: StreamsBuilder   = new StreamsBuilder
 
       for {
         eventKeySerde      <- VulcanSerde[Event.Key].using(avroSettings)(true)

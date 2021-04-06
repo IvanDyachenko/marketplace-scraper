@@ -49,6 +49,31 @@ object Request {
   }
 
   @derive(loggable)
+  final case class GetCategorySearchResultsV2 private (
+    categoryId: Category.Id,
+    categoryName: Option[Category.Name] = None,
+    page: Url.Page
+  ) extends Request {
+    private val layoutContainer: Url.LayoutContainer = Url.LayoutContainer.Default
+    private val layoutPageIndex: Url.LayoutPageIndex = page.self @@ Url.LayoutPageIndex
+
+    val url = Url(s"/category/${categoryId.show}/", Some(page), None, Some(layoutContainer), Some(layoutPageIndex))
+  }
+
+  object GetCategorySearchResultsV2 {
+    def apply(id: Category.Id, name: Category.Name, page: Url.Page): GetCategorySearchResultsV2 = GetCategorySearchResultsV2(id, Some(name), page)
+
+    implicit val vulcanCodec: Codec[GetCategorySearchResultsV2] =
+      Codec.record[GetCategorySearchResultsV2](
+        name = "GetCategorySearchResultsV2",
+        namespace = "ozon.models"
+      ) { field =>
+        field("host", _.host) *> field("path", _.path) *>
+          (field("categoryId", _.categoryId), field("categoryName", _.categoryName), field("page", _.page)).mapN(apply)
+      }
+  }
+
+  @derive(loggable)
   final case class GetCategorySoldOutResultsV2 private (
     categoryId: Category.Id,
     categoryName: Option[Category.Name] = None,
@@ -79,31 +104,7 @@ object Request {
       }
   }
 
-  @derive(loggable)
-  final case class GetCategorySearchResultsV2 private (
-    categoryId: Category.Id,
-    categoryName: Option[Category.Name] = None,
-    page: Url.Page
-  ) extends Request {
-    private val layoutContainer: Url.LayoutContainer = Url.LayoutContainer.Default
-    private val layoutPageIndex: Url.LayoutPageIndex = page.self @@ Url.LayoutPageIndex
-
-    val url = Url(s"/category/${categoryId.show}/", Some(page), None, Some(layoutContainer), Some(layoutPageIndex))
+  implicit val vulcanCodec: Codec[Request] = Codec.union[Request] { alt =>
+    alt[GetSellerList] |+| alt[GetCategoryMenu] |+| alt[GetCategorySearchResultsV2] |+| alt[GetCategorySoldOutResultsV2]
   }
-
-  object GetCategorySearchResultsV2 {
-    def apply(id: Category.Id, name: Category.Name, page: Url.Page): GetCategorySearchResultsV2 = GetCategorySearchResultsV2(id, Some(name), page)
-
-    implicit val vulcanCodec: Codec[GetCategorySearchResultsV2] =
-      Codec.record[GetCategorySearchResultsV2](
-        name = "GetCategorySearchResultsV2",
-        namespace = "ozon.models"
-      ) { field =>
-        field("host", _.host) *> field("path", _.path) *>
-          (field("categoryId", _.categoryId), field("categoryName", _.categoryName), field("page", _.page)).mapN(apply)
-      }
-  }
-
-  implicit val vulcanCodec: Codec[Request] =
-    Codec.union[Request](alt => alt[GetSellerList] |+| alt[GetCategoryMenu] |+| alt[GetCategorySoldOutResultsV2] |+| alt[GetCategorySearchResultsV2])
 }

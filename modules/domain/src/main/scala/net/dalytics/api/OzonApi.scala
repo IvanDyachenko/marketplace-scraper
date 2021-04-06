@@ -16,7 +16,6 @@ import tofu.fs2.LiftStream
 import net.dalytics.marshalling._
 import net.dalytics.clients.{HttpClient, HttpClientError}
 import net.dalytics.models.ozon.{Category, CategoryMenu, Page, Request, Result, SearchResultsV2, SoldOutResultsV2, Url}
-import net.dalytics.models.ozon.Catalog
 
 trait OzonApi[F[_], S[_]] {
   def getCategory(id: Category.Id): F[Option[Category]]
@@ -35,16 +34,10 @@ object OzonApi {
     def getCategoryMenu(id: Category.Id): F[Option[CategoryMenu]] = getResult(Request.GetCategoryMenu(id)).map(_ >>= (_.categoryMenu))
 
     def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): F[Option[(Page, Category, SearchResultsV2)]] =
-      getResult(Request.GetCategorySearchResultsV2(id, page = page)).map(_ >>= {
-        case Result(_, Some(Catalog(page, category, _, Some(searchResultsV2), _))) => Some((page, category, searchResultsV2))
-        case _                                                                     => None
-      })
+      getResult(Request.GetCategorySearchResultsV2(id, page = page)).map(_ >>= (_.categorySearchResultsV2))
 
     def getCategorySoldOutResultsV2(id: Category.Id, soldOutPage: Url.SoldOutPage): F[Option[(Page, Category, SoldOutResultsV2)]] =
-      getResult(Request.GetCategorySoldOutResultsV2(id, soldOutPage = soldOutPage)).map(_ >>= {
-        case Result(_, Some(Catalog(page, category, _, _, Some(soldOutResultsV2)))) => Some((page, category, soldOutResultsV2))
-        case _                                                                      => None
-      })
+      getResult(Request.GetCategorySoldOutResultsV2(id, soldOutPage = soldOutPage)).map(_ >>= (_.categorySoldOutResultsV2))
 
     def getCategories(rootId: Category.Id)(p: Category => Boolean): Stream[F, Category] = {
       def go(tree: Category.Tree[Stream[F, *]]): Stream[F, Category] =

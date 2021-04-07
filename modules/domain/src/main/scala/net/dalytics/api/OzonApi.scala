@@ -15,13 +15,13 @@ import tofu.fs2.LiftStream
 
 import net.dalytics.marshalling._
 import net.dalytics.clients.{HttpClient, HttpClientError}
-import net.dalytics.models.ozon.{Category, CategoryMenu, Page, Request, Result, SearchResultsV2, Url}
-import net.dalytics.models.ozon.Catalog
+import net.dalytics.models.ozon.{Category, CategoryMenu, Page, Request, Result, SearchResultsV2, SoldOutResultsV2, Url}
 
 trait OzonApi[F[_], S[_]] {
   def getCategory(id: Category.Id): F[Option[Category]]
   def getCategoryMenu(id: Category.Id): F[Option[CategoryMenu]]
   def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): F[Option[(Page, Category, SearchResultsV2)]]
+  def getCategorySoldOutResultsV2(id: Category.Id, soldOutPage: Url.SoldOutPage): F[Option[(Page, Category, SoldOutResultsV2)]]
   def getCategories(rootId: Category.Id)(p: Category => Boolean): S[Category]
 }
 
@@ -34,10 +34,10 @@ object OzonApi {
     def getCategoryMenu(id: Category.Id): F[Option[CategoryMenu]] = getResult(Request.GetCategoryMenu(id)).map(_ >>= (_.categoryMenu))
 
     def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): F[Option[(Page, Category, SearchResultsV2)]] =
-      getResult(Request.GetCategorySearchResultsV2(id, page = page)).map(_ >>= {
-        case Result(_, Some(Catalog(page, category, _, Some(searchResultsV2)))) => Some((page, category, searchResultsV2))
-        case _                                                                  => None
-      })
+      getResult(Request.GetCategorySearchResultsV2(id, page = page)).map(_ >>= (_.categorySearchResultsV2))
+
+    def getCategorySoldOutResultsV2(id: Category.Id, soldOutPage: Url.SoldOutPage): F[Option[(Page, Category, SoldOutResultsV2)]] =
+      getResult(Request.GetCategorySoldOutResultsV2(id, soldOutPage = soldOutPage)).map(_ >>= (_.categorySoldOutResultsV2))
 
     def getCategories(rootId: Category.Id)(p: Category => Boolean): Stream[F, Category] = {
       def go(tree: Category.Tree[Stream[F, *]]): Stream[F, Category] =
@@ -63,7 +63,7 @@ object OzonApi {
       HttpClient[F]
         .send[Result](request)
         .recoverWith[HttpClientError] { case error: HttpClientError =>
-          error"Error was thrown while attempting to execute ${request}. ${error}" *> error.raise[F, Result]
+          error"${error} was thrown while attempting to execute ${request}" *> error.raise[F, Result]
         }
         .restore
   }
@@ -83,11 +83,13 @@ object OzonApi {
     new BifunctorK[OzonApi] {
       def bimapK[F[_]: Functor, G[_]: Functor, W[_], Q[_]](ufg: OzonApi[F, G])(fw: F ~> W)(gq: G ~> Q): OzonApi[W, Q] =
         new OzonApi[W, Q] {
-          def getCategory(id: Category.Id): W[Option[Category]]                                                         = fw(ufg.getCategory(id))
-          def getCategoryMenu(id: Category.Id): W[Option[CategoryMenu]]                                                 = fw(ufg.getCategoryMenu(id))
-          def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): W[Option[(Page, Category, SearchResultsV2)]] =
+          def getCategory(id: Category.Id): W[Option[Category]]                                                                         = fw(ufg.getCategory(id))
+          def getCategoryMenu(id: Category.Id): W[Option[CategoryMenu]]                                                                 = fw(ufg.getCategoryMenu(id))
+          def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): W[Option[(Page, Category, SearchResultsV2)]]                 =
             fw(ufg.getCategorySearchResultsV2(id, page))
-          def getCategories(rootId: Category.Id)(p: Category => Boolean): Q[Category]                                   = gq(ufg.getCategories(rootId)(p))
+          def getCategorySoldOutResultsV2(id: Category.Id, soldOutPage: Url.SoldOutPage): W[Option[(Page, Category, SoldOutResultsV2)]] =
+            fw(ufg.getCategorySoldOutResultsV2(id, soldOutPage))
+          def getCategories(rootId: Category.Id)(p: Category => Boolean): Q[Category]                                                   = gq(ufg.getCategories(rootId)(p))
         }
     }
 }

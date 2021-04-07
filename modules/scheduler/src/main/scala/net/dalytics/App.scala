@@ -29,7 +29,7 @@ object Main extends TaskApp {
       implicit0(blocker: Blocker)              <- Resource.unit[AppI]
       cfg                                      <- Resource.eval(Config.make[AppI])
       implicit0(httpClientI: HttpClient[AppI]) <- HttpClient.make[AppI, AppI](cfg.httpConfig)
-      schemaRegistryClient                     <- Resource.eval(SchemaRegistryClientSettings[AppI](cfg.schemaRegistryConfig.baseUrl).createSchemaRegistryClient)
+      schemaRegistryClient                     <- Resource.eval(SchemaRegistryClientSettings[AppI](cfg.schemaRegistryConfig.url).createSchemaRegistryClient)
       wbApi                                    <- WildBerriesApi.make[AppI, AppI, AppS]
       ozonApi                                  <- OzonApi.make[AppI, AppI, AppS]
       sourcesOfCommands                         = cfg.sourcesConfig.sources.map(Scheduler.makeCommandsSource[AppI](_)(wbApi, ozonApi))

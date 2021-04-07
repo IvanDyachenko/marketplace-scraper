@@ -10,9 +10,9 @@ import pureconfig.module.catseffect.syntax._
 
 @derive(pureconfigReader)
 final case class KafkaConsumerConfig(
-  groupId: String,
-  topic: String,
-  enableAutoCommit: Option[Boolean],
+  groupId: String,                         // A unique string that identifies the consumer group this consumer belongs to.
+  topic: String,                           // The topics to which the consumer should subscribe.
+  enableAutoCommit: Option[Boolean],       // If true the consumer's offset will be periodically committed in the background.
   fetchMaxBytes: Option[Long],             // The maximum amount of data the server should return for a fetch request.
   maxPartitionFetchBytes: Option[Long],    // The maximum amount of data per-partition the server will return.
   maxPollRecords: Option[Int],             // The maximum number of records returned in a single call to poll().

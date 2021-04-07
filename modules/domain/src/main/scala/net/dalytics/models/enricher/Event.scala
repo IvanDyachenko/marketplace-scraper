@@ -34,8 +34,7 @@ object EnricherEvent {
     implicit val vulcanCodec: Codec[OzonCategoryResultsV2ItemEnriched] =
       Codec.record[OzonCategoryResultsV2ItemEnriched](
         name = "OzonCategoryResultsV2ItemEnriched",
-        namespace = "enricher.events",
-        aliases = Seq("OzonCategorySearchResultsV2ItemEnriched", "OzonCategorySoldOutResultsV2ItemEnriched")
+        namespace = "enricher.events"
       ) { field =>
         (
           field("_created", _.created),

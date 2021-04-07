@@ -1,4 +1,4 @@
-package net.dalytics.serde
+package net.dalytics.serdes
 
 import java.nio.ByteBuffer
 

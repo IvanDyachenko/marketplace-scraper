@@ -3,7 +3,7 @@ package net.dalytics
 import compstak.kafkastreams4s.STable
 import org.apache.kafka.streams.kstream.KTable
 
-package object serde {
+package object serdes {
   type VulcanTable[K, V] = STable[VulcanSerdeCodec, K, VulcanSerdeCodec, V]
 
   object VulcanTable {

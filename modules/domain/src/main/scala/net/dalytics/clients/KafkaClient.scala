@@ -31,7 +31,7 @@ object KafkaClient {
   // will be the union) and use that for serialization. Otherwise,
   // if set to false, the serializer will look for the event type
   // in the subject and fail to find it.
-  //.withProperty("use.latest.version", "true")
+  //.withProperty(KafkaAvroSerializerConfig.USE_LATEST_VERSION, "true")
 
   def makeProducer[F[_]: ContextShift: ConcurrentEffect, K: VulcanCodec, V: VulcanCodec](
     kafkaConfig: KafkaConfig,

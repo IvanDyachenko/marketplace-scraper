@@ -17,6 +17,6 @@ object Main extends TaskApp {
       implicit0(blocker: Blocker) <- Blocker[AppI]
       cfg                         <- Resource.eval(Config.make[AppI])
       schemaRegistryClient        <- Resource.eval(SchemaRegistryClientSettings[AppI](cfg.schemaRegistryConfig.url).createSchemaRegistryClient)
-      aggregator                  <- Enricher.make[AppI](cfg)(schemaRegistryClient)
-    } yield aggregator
+      enricher                    <- Enricher.make[AppI](cfg)(schemaRegistryClient)
+    } yield enricher
 }

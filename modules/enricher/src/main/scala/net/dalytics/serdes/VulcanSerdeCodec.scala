@@ -1,10 +1,10 @@
 package net.dalytics.serdes
 
-import compstak.kafkastreams4s.{Codec => KafkaStreams4sCodec}
 import org.apache.kafka.common.serialization.Serde
-import vulcan.{Codec => VulcanCodec}
 import org.apache.kafka.common.serialization.Serializer
 import org.apache.kafka.common.serialization.Deserializer
+import compstak.kafkastreams4s.{Codec => KafkaStreams4sCodec}
+import vulcan.{Codec => VulcanCodec}
 
 trait VulcanSerdeCodec[A] {
   def serde: Serde[A]
@@ -12,6 +12,13 @@ trait VulcanSerdeCodec[A] {
 }
 
 object VulcanSerdeCodec {
+  def apply[A: VulcanSerdeCodec]: VulcanSerdeCodec[A] = implicitly
+
+  implicit def vulcanSerdeCodec[A](implicit s: Serde[A], vc: VulcanCodec[A]): VulcanSerdeCodec[A] =
+    new VulcanSerdeCodec[A] {
+      def serde: Serde[A]             = s
+      def vulcanCodec: VulcanCodec[A] = vc
+    }
 
   implicit val kafkaStreams4sCodec: KafkaStreams4sCodec[VulcanSerdeCodec] =
     new KafkaStreams4sCodec[VulcanSerdeCodec] { self =>
@@ -38,11 +45,5 @@ object VulcanSerdeCodec {
 
           def vulcanCodec: VulcanCodec[Option[A]] = VulcanCodec.option[A](vulcanSerdeCodec.vulcanCodec)
         }
-    }
-
-  implicit def vulcanSerdeCodec[A](implicit _serde: Serde[A], _vulcanCodec: VulcanCodec[A]): VulcanSerdeCodec[A] =
-    new VulcanSerdeCodec[A] {
-      def serde: Serde[A]             = _serde
-      def vulcanCodec: VulcanCodec[A] = _vulcanCodec
     }
 }

@@ -74,7 +74,7 @@ object Url {
   implicit val queryParam = new QueryParam[Url] with QueryParamEncoder[Url] {
     val key                                   = QueryParameterKey("url")
     def encode(url: Url): QueryParameterValue = QueryParameterValue(
-      Uri(path = url.path).+??(url.page).+??(url.layoutContainer).+??(url.layoutPageIndex).show
+      Uri(path = url.path).+??(url.layoutContainer).+??(url.layoutPageIndex).+??(url.page).+??(url.soldOutPage).show
     )
   }
 

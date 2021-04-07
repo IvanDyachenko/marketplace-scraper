@@ -46,7 +46,7 @@ object Enricher {
           VulcanSerde[EnricherEvent.OzonCategoryResultsV2ItemEnriched].using(avroSettings)(false)
 
         _ <- Sync[F].delay {
-               KStream4sVulcan[Event.Key, ParserEvent](streamsBuilder, cfg.kafkaStreamsConfig.sourceTopic)
+               KStream4sVulcan[Event.Key, ParserEvent](streamsBuilder, cfg.kafkaStreamsConfig.sourceTopics)
                  .collect {
                    case ParserEvent.OzonCategorySearchResultsV2ItemParsed(created, timestamp, page, item, category)  =>
                      EnricherEvent.OzonCategoryResultsV2ItemEnriched(created, timestamp, page, item, category)

@@ -65,7 +65,7 @@ object Handler {
                 ProducerRecords(records, offset)
               }
               .evalMap(producerOfEvents.produce)
-              .parEvalMap(config.kafkaProducerConfig.maxBufferSize)(identity)
+              .parEvalMap(config.kafkaProducerConfig.parallelism)(identity)
               .void
           //  .map(_.passthrough)
           //  .through(commitBatchWithin(config.kafkaConsumerConfig.commitEveryNOffsets, config.kafkaConsumerConfig.commitTimeWindow))
@@ -86,7 +86,7 @@ object Handler {
     producerOfEvents: KafkaProducer[I, Option[Event.Key], HandlerEvent],
     consumerOfCommands: KafkaConsumer[I, Option[Command.Key], HandlerCommand]
   ): Resource[I, Handler[S]] =
-    Resource.liftF {
+    Resource.eval {
       Stream
         .eval {
           val impl: Handler[Stream[I, *]] = new Impl[I, F](config)(handle, producerOfEvents, consumerOfCommands)

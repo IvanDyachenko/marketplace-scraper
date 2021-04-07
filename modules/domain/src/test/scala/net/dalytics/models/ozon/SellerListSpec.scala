@@ -1,11 +1,12 @@
 package net.dalytics.models.ozon
 
+import org.scalatest.{EitherValues, OptionValues}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import io.circe.parser.decode
 
-class SellerListSpec extends AnyFlatSpec with Matchers {
+class SellerListSpec extends AnyFlatSpec with Matchers with EitherValues with OptionValues {
 
   it should "decode SellerList.Failure from a valid JSON" in {
     val sellerListRawJson =
@@ -71,7 +72,9 @@ class SellerListSpec extends AnyFlatSpec with Matchers {
         |}
       """.stripMargin
 
-    decode[SellerList](sellerListRawJson).isRight shouldBe true
+    val decodedResult = decode[Result](sellerListRawJson)
+
+    decodedResult.value.sellerList.value shouldBe a[SellerList]
   }
 
   it should "decode SellerList.Success from a valid JSON" in {
@@ -154,6 +157,8 @@ class SellerListSpec extends AnyFlatSpec with Matchers {
         |}
       """.stripMargin
 
-    decode[SellerList](sellerListRawJson).isRight shouldBe true
+    val decodedResult = decode[Result](sellerListRawJson)
+
+    decodedResult.value.sellerList.value shouldBe a[SellerList]
   }
 }

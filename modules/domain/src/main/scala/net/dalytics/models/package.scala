@@ -12,7 +12,7 @@ import supertagged.TaggedType
 
 package object models {
 
-  object Timestamp extends TaggedType[Instant] with LiftedCats with LiftedLoggable with LiftedVulcanCodec
+  object Timestamp extends TaggedType[Instant] with LiftedOrdered with LiftedCats with LiftedLoggable with LiftedVulcanCodec
   type Timestamp = Timestamp.Type
 
   trait Command {
@@ -33,6 +33,13 @@ package object models {
   object Event {
     object Key extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedVulcanCodec
     type Key = Key.Type
+  }
+
+  trait LiftedOrdered {
+    type Raw
+    type Type
+
+    implicit def ordered(implicit raw: Ordered[Raw]): Ordered[Type] = raw.asInstanceOf[Ordered[Type]]
   }
 
   trait LiftedCats {

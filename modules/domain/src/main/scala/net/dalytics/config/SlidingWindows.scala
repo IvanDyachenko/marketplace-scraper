@@ -10,8 +10,8 @@ import pureconfig.module.catseffect.syntax._
 
 @derive(pureconfigReader)
 final case class SlidingWindowsConfig(
-  maxTimeDifference: FiniteDuration,
-  gracePeriod: FiniteDuration
+  maxTimeDifference: FiniteDuration, // The max time difference (inclusive) between two records in a window.
+  gracePeriod: FiniteDuration        // The grace period to admit out-of-order events to a window.
 )
 
 object SlidingWindowsConfig {

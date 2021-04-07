@@ -15,8 +15,8 @@ object Main extends TaskApp {
   private def init: Resource[Task, Enricher[AppI]] =
     for {
       implicit0(blocker: Blocker) <- Blocker[AppI]
-      cfg                         <- Resource.liftF(Config.make[AppI])
-      schemaRegistryClient        <- Resource.liftF(SchemaRegistryClientSettings[AppI](cfg.schemaRegistryConfig.baseUrl).createSchemaRegistryClient)
+      cfg                         <- Resource.eval(Config.make[AppI])
+      schemaRegistryClient        <- Resource.eval(SchemaRegistryClientSettings[AppI](cfg.schemaRegistryConfig.url).createSchemaRegistryClient)
       aggregator                  <- Enricher.make[AppI](cfg)(schemaRegistryClient)
     } yield aggregator
 }

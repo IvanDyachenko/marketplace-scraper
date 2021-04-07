@@ -19,8 +19,8 @@ object Component {
   object StateId extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec
   type StateId = StateId.Type
 
-  @derive(loggable)
-  final case class UWidgetSKU(stateId: Component.StateId) extends Component
+  //@derive(loggable)
+  //final case class UWidgetSKU(stateId: Component.StateId) extends Component
 
   @derive(loggable)
   final case class SellerList(stateId: Component.StateId) extends Component
@@ -30,6 +30,9 @@ object Component {
 
   @derive(loggable)
   final case class SearchResultsV2(stateId: Component.StateId) extends Component
+
+  @derive(loggable)
+  final case class SoldOutResultsV2(stateId: Component.StateId) extends Component
 
   implicit val circeDecoderConfig: Configuration = Configuration(Predef.identity, _.decapitalize, false, Some("component"))
   implicit val circeDecoder: Decoder[Component]  = deriveConfiguredDecoder[Component]

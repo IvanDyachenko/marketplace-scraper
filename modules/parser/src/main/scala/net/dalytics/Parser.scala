@@ -49,22 +49,24 @@ object Parser {
               metadata = offset.offsetAndMetadata.metadata
             )
 
-            runContext(parse.handle(command))(context).map { eventsE =>
-              eventsE.toOption.fold[(List[ParserEvent], CommittableOffset[I])](List.empty -> offset)(_ -> offset)
-            }
+            runContext(parse.handle(command))(context).map(
+              _.toOption.fold[(List[ParserEvent], CommittableOffset[I])](List.empty -> offset)(_ -> offset)
+            )
           }
           .map { case (events, offset) =>
             val records = events.map {
-              case event: ParserEvent.OzonSellerListItemParsed              =>
+              case event: ParserEvent.OzonSellerListItemParsed               =>
                 ProducerRecord(config.kafkaProducerConfig.topic("results-ozon-seller-list-items"), event.key, event)
-              case event: ParserEvent.OzonCategorySearchResultsV2ItemParsed =>
+              case event: ParserEvent.OzonCategorySearchResultsV2ItemParsed  =>
                 ProducerRecord(config.kafkaProducerConfig.topic("results-ozon-category-search-results-v2-items"), event.key, event)
+              case event: ParserEvent.OzonCategorySoldOutResultsV2ItemParsed =>
+                ProducerRecord(config.kafkaProducerConfig.topic("results-ozon-category-sold-out-results-v2-items"), event.key, event)
             }
 
             ProducerRecords(records, offset)
           }
           .evalMap(producerOfEvents.produce)
-          .parEvalMap(config.kafkaProducerConfig.maxBufferSize)(identity)
+          .parEvalMap(config.kafkaProducerConfig.parallelism)(identity)
           .map(_.passthrough)
           .through(commitBatchWithin(config.kafkaConsumerConfig.commitEveryNOffsets, config.kafkaConsumerConfig.commitTimeWindow))
       }.parJoinUnbounded
@@ -79,7 +81,7 @@ object Parser {
     producerOfEvents: KafkaProducer[I, Option[Event.Key], ParserEvent],
     consumerOfCommands: KafkaConsumer[I, Option[Command.Key], ParserCommand.ParseOzonResponse]
   ): Resource[I, Parser[S]] =
-    Resource.liftF {
+    Resource.eval {
       Stream
         .eval {
           val impl: Parser[Stream[I, *]] = new Impl[I, F](config)(parse, producerOfEvents, consumerOfCommands)

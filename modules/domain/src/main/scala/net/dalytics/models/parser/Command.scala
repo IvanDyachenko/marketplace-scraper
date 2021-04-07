@@ -6,7 +6,7 @@ import tofu.logging.derivation.{loggable, masked, MaskMode}
 import io.circe.Json
 import vulcan.Codec
 
-import net.dalytics.models._
+import net.dalytics.models.{jsonLoggable, jsonVulcanCodec, Command, Timestamp}
 
 @derive(loggable)
 sealed trait ParserCommand extends Command

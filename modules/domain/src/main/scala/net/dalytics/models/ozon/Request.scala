@@ -110,10 +110,9 @@ object Request {
     def categoryId: Category.Id
   }
 
-  object GetCategorySearchFilterValues {
-    final case class GetCategorySearchFilterBrands(categoryId: Category.Id) extends GetCategorySearchFilterValues {
-      override val url: Url = Url(s"/modal/filters/category/${categoryId.show}", searchFilterKey = Some(SearchFilter.Key.Brand))
-    }
+  @derive(loggable)
+  final case class GetCategorySearchFilterBrands(categoryId: Category.Id) extends GetCategorySearchFilterValues {
+    override val url: Url = Url(s"/modal/filters/category/${categoryId.show}", searchFilterKey = Some(SearchFilter.Key.Brand))
   }
 
   implicit val vulcanCodec: Codec[Request] = Codec.union[Request] { alt =>

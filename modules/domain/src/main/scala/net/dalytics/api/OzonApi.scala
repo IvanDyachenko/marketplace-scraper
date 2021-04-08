@@ -12,16 +12,18 @@ import tofu.logging.{Logging, Logs}
 import fs2.Stream
 import tofu.lift.Lift
 import tofu.fs2.LiftStream
+import io.circe.Decoder
 
 import net.dalytics.marshalling._
 import net.dalytics.clients.{HttpClient, HttpClientError}
-import net.dalytics.models.ozon.{Category, CategoryMenu, Page, Request, Result, SearchResultsV2, SoldOutResultsV2, Url}
+import net.dalytics.models.ozon.{Category, CategoryMenu, Page, Request, Result, SearchFilter, SearchResultsV2, SoldOutResultsV2, Url}
 
 trait OzonApi[F[_], S[_]] {
   def getCategory(id: Category.Id): F[Option[Category]]
   def getCategoryMenu(id: Category.Id): F[Option[CategoryMenu]]
   def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): F[Option[(Page, Category, SearchResultsV2)]]
   def getCategorySoldOutResultsV2(id: Category.Id, soldOutPage: Url.SoldOutPage): F[Option[(Page, Category, SoldOutResultsV2)]]
+  def getCategorySearchFilterBrands(id: Category.Id): F[Option[SearchFilter.Brands]]
   def getCategories(rootId: Category.Id)(p: Category => Boolean): S[Category]
 }
 
@@ -31,13 +33,16 @@ object OzonApi {
 
     def getCategory(id: Category.Id): F[Option[Category]] = getCategoryMenu(id).map(_ >>= (_.category(id)))
 
-    def getCategoryMenu(id: Category.Id): F[Option[CategoryMenu]] = getResult(Request.GetCategoryMenu(id)).map(_ >>= (_.categoryMenu))
+    def getCategoryMenu(id: Category.Id): F[Option[CategoryMenu]] = getResult[Result](Request.GetCategoryMenu(id)).map(_ >>= (_.categoryMenu))
 
     def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): F[Option[(Page, Category, SearchResultsV2)]] =
-      getResult(Request.GetCategorySearchResultsV2(id, page = page)).map(_ >>= (_.categorySearchResultsV2))
+      getResult[Result](Request.GetCategorySearchResultsV2(id, page = page)).map(_ >>= (_.categorySearchResultsV2))
 
     def getCategorySoldOutResultsV2(id: Category.Id, soldOutPage: Url.SoldOutPage): F[Option[(Page, Category, SoldOutResultsV2)]] =
-      getResult(Request.GetCategorySoldOutResultsV2(id, soldOutPage = soldOutPage)).map(_ >>= (_.categorySoldOutResultsV2))
+      getResult[Result](Request.GetCategorySoldOutResultsV2(id, soldOutPage = soldOutPage)).map(_ >>= (_.categorySoldOutResultsV2))
+
+    def getCategorySearchFilterBrands(id: Category.Id): F[Option[SearchFilter.Brands]] =
+      getResult[SearchFilter.Brands](Request.GetCategorySearchFilterBrands(id))
 
     def getCategories(rootId: Category.Id)(p: Category => Boolean): Stream[F, Category] = {
       def go(tree: Category.Tree[Stream[F, *]]): Stream[F, Category] =
@@ -59,11 +64,11 @@ object OzonApi {
           .pure[F]
       ))
 
-    private def getResult(request: Request): F[Option[Result]] =
+    private def getResult[R: Decoder](request: Request): F[Option[R]] =
       HttpClient[F]
-        .send[Result](request)
+        .send[R](request)
         .recoverWith[HttpClientError] { case error: HttpClientError =>
-          error"${error} was thrown while attempting to execute ${request}" *> error.raise[F, Result]
+          error"${error} was thrown while attempting to execute ${request}" *> error.raise[F, R]
         }
         .restore
   }
@@ -89,6 +94,8 @@ object OzonApi {
             fw(ufg.getCategorySearchResultsV2(id, page))
           def getCategorySoldOutResultsV2(id: Category.Id, soldOutPage: Url.SoldOutPage): W[Option[(Page, Category, SoldOutResultsV2)]] =
             fw(ufg.getCategorySoldOutResultsV2(id, soldOutPage))
+          def getCategorySearchFilterBrands(id: Category.Id): W[Option[SearchFilter.Brands]]                                            =
+            fw(ufg.getCategorySearchFilterBrands(id))
           def getCategories(rootId: Category.Id)(p: Category => Boolean): Q[Category]                                                   = gq(ufg.getCategories(rootId)(p))
         }
     }

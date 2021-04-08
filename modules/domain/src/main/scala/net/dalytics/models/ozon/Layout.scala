@@ -6,9 +6,10 @@ import io.circe.{Decoder, Json}
 
 @derive(loggable)
 final case class Layout(components: List[Component]) {
-  def sellerList: Option[Component.SellerList]           = components.collectFirst { case c @ Component.SellerList(_) => c }
-  def categoryMenu: Option[Component.CategoryMenu]       = components.collectFirst { case c @ Component.CategoryMenu(_) => c }
-  def searchResultsV2: Option[Component.SearchResultsV2] = components.collectFirst { case c @ Component.SearchResultsV2(_) => c }
+  def sellerList: Option[Component.SellerList]             = components.collectFirst { case c @ Component.SellerList(_) => c }
+  def categoryMenu: Option[Component.CategoryMenu]         = components.collectFirst { case c @ Component.CategoryMenu(_) => c }
+  def searchResultsV2: Option[Component.SearchResultsV2]   = components.collectFirst { case c @ Component.SearchResultsV2(_) => c }
+  def soldOutResultsV2: Option[Component.SoldOutResultsV2] = components.collectFirst { case c @ Component.SoldOutResultsV2(_) => c }
 }
 
 object Layout {

@@ -29,7 +29,7 @@ object Main extends TaskApp {
     for {
       implicit0(blocker: Blocker) <- Blocker[AppI]
       cfg                         <- Resource.eval(Config.make[AppI])
-      schemaRegistryClient        <- Resource.eval(SchemaRegistryClientSettings[AppI](cfg.schemaRegistryConfig.baseUrl).createSchemaRegistryClient)
+      schemaRegistryClient        <- Resource.eval(SchemaRegistryClientSettings[AppI](cfg.schemaRegistryConfig.url).createSchemaRegistryClient)
       parse                       <- Parse.make[AppI, AppF]
       producerOfEvents            <- KafkaClient.makeProducer[AppI, Event.Key, ParserEvent](
                                        cfg.kafkaConfig,

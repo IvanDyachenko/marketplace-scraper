@@ -18,6 +18,7 @@ import net.dalytics.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulca
 case class Url(
   path: String,
   page: Option[Url.Page] = None,
+  soldOutPage: Option[Url.SoldOutPage] = None,
   layoutContainer: Option[Url.LayoutContainer] = None,
   layoutPageIndex: Option[Url.LayoutPageIndex] = None
 )
@@ -30,6 +31,14 @@ object Url {
     }
   }
   type Page = Page.Type
+
+  object SoldOutPage extends TaggedType[Int] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec {
+    implicit val queryParam = new QueryParam[Type] with QueryParamEncoder[Type] {
+      val key                                      = QueryParameterKey("sold_out_page")
+      def encode(value: Type): QueryParameterValue = QueryParameterValue(value.show)
+    }
+  }
+  type SoldOutPage = SoldOutPage.Type
 
   @derive(loggable)
   @AvroNamespace("ozon.models.url")
@@ -65,7 +74,7 @@ object Url {
   implicit val queryParam = new QueryParam[Url] with QueryParamEncoder[Url] {
     val key                                   = QueryParameterKey("url")
     def encode(url: Url): QueryParameterValue = QueryParameterValue(
-      Uri(path = url.path).+??(url.page).+??(url.layoutContainer).+??(url.layoutPageIndex).show
+      Uri(path = url.path).+??(url.layoutContainer).+??(url.layoutPageIndex).+??(url.page).+??(url.soldOutPage).show
     )
   }
 

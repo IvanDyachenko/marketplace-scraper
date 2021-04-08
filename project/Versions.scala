@@ -9,8 +9,8 @@ object Versions {
   lazy val circe                  = "0.13.0"
   lazy val circeDerivation        = "0.13.0-M5"
   lazy val vulkan                 = "1.3.0"
-  lazy val fs2                    = "3.0.1"
-  lazy val fs2Kafka               = "1.4.2"
+  lazy val fs2                    = "2.5.4"
+  lazy val fs2Kafka               = "1.5.0"
   lazy val kafkaStreams           = "6.1.1-ce"
   lazy val kafkaStreams4s         = "0.15.0"
   lazy val kafkaStreamsAvroSerde  = "6.1.1"
@@ -27,8 +27,8 @@ object Versions {
   lazy val betterMonadicFor = "0.3.1"
   lazy val kindProjector    = "0.11.3"
 
-  lazy val scalactic               = "3.2.6"
-  lazy val scalatest               = "3.2.6"
+  lazy val scalactic               = "3.2.7"
+  lazy val scalatest               = "3.2.7"
   lazy val scalacheck              = "1.15.3"
   lazy val scalatestPlusScalacheck = "3.2.2.0"
 }

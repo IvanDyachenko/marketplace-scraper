@@ -8,8 +8,7 @@ import tofu.logging.derivation.{loggable, unembed}
 import vulcan.Codec
 import supertagged.postfix._
 
-import net.dalytics.models.{Command, Timestamp}
-import net.dalytics.models.ozon.{Request => OzonRequest}
+import net.dalytics.models.{ozon, Command, Timestamp}
 
 @derive(loggable)
 sealed trait HandlerCommand extends Command
@@ -17,14 +16,9 @@ sealed trait HandlerCommand extends Command
 object HandlerCommand {
 
   @derive(loggable)
-  final case class HandleOzonRequest private (created: Timestamp, @unembed request: OzonRequest) extends HandlerCommand {
+  final case class HandleOzonRequest private (created: Timestamp, @unembed request: ozon.Request) extends HandlerCommand {
     override val key: Option[Command.Key] = Some(request.url.path @@ Command.Key)
   }
-
-  def handleOzonRequest[F[_]: FlatMap: Clock](request: OzonRequest): F[HandlerCommand] =
-    for {
-      instant <- Clock[F].instantNow
-    } yield HandleOzonRequest(instant @@ Timestamp, request)
 
   object HandleOzonRequest {
     implicit val vulcanCodec: Codec[HandleOzonRequest] =
@@ -33,6 +27,11 @@ object HandlerCommand {
         namespace = "handler.commands"
       )(field => (field("_created", _.created), field("request", _.request)).mapN(apply))
   }
+
+  def handleOzonRequest[F[_]: FlatMap: Clock](request: ozon.Request): F[HandlerCommand] =
+    for {
+      instant <- Clock[F].instantNow
+    } yield HandleOzonRequest(instant @@ Timestamp, request)
 
   implicit val vulcanCodec: Codec[HandlerCommand] = Codec.union[HandlerCommand](alt => alt[HandleOzonRequest])
 }

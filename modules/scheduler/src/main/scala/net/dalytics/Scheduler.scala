@@ -37,7 +37,7 @@ object Scheduler {
         .parJoinUnbounded
         .map(command => ProducerRecord(config.kafkaProducerConfig.topic("commands"), command.key, command))
         .evalMap(record => producerOfCommands.produce(ProducerRecords.one(record)))
-        .parEvalMap(config.kafkaProducerConfig.maxBufferSize)(identity)
+        .parEvalMap(config.kafkaProducerConfig.parallelism)(identity)
         .map(_.passthrough)
   }
 
@@ -66,11 +66,11 @@ object Scheduler {
   ): Stream[F, HandlerCommand] =
     sourceConfig match {
       case SourceConfig.WbCatalog(_, _)                     => ???
-      case SourceConfig.OzonSeller(every)                   =>
+      case SourceConfig.OzonSeller(pageLimit, every)        =>
         Stream
           .awakeEvery[F](every)
           .flatMap { _ =>
-            Stream.range(1, 450).parEvalMapUnordered[F, HandlerCommand](1000) { page =>
+            Stream.range(1, pageLimit + 1).parEvalMapUnordered[F, HandlerCommand](pageLimit) { page =>
               HandlerCommand.handleOzonRequest[F](ozon.Request.GetSellerList(page @@ ozon.Url.Page))
             }
           }
@@ -82,21 +82,41 @@ object Scheduler {
               .getCategories(rootCategoryId)(_ => true)
               .parEvalMapUnordered(256) { category =>
                 if (category.isLeaf)
-                  ozonApi
-                    .getCategorySearchResultsV2(category.id, 1 @@ ozon.Url.Page) // ToDo: .getCategoryPage
-                    .map {
-                      case Some((page, _, _)) => category -> page.total.min(278)
-                      case _                  => category -> 10
-                    }
+                  for {
+                    totalPages        <- ozonApi
+                                           .getCategorySearchResultsV2(category.id, 1 @@ ozon.Url.Page)
+                                           .map {
+                                             case Some((page, _, _)) => page.total.min(ozon.Page.MaxTotal)
+                                             case _                  => ozon.Page.Top10
+                                           }
+                    totalSoldOutPages <- ozonApi
+                                           .getCategorySoldOutResultsV2(category.id, 1 @@ ozon.Url.SoldOutPage)
+                                           .map {
+                                             case Some((page, _, _)) => page.total.min(ozon.Page.MaxTotal)
+                                             case _                  => 0
+                                           }
+                  } yield (category, totalPages, totalSoldOutPages)
                 else
-                  (category, 1).pure[F]
+                  (category, ozon.Page.Top1, 0).pure[F]
               }
-              .flatMap { case (category: ozon.Category, totalPages: Int) =>
-                Stream
+              .flatMap { case (category: ozon.Category, totalPages: Int, totalSoldOutPages: Int) =>
+                val getCategorySearchResultsV2Commands = Stream
                   .range(1, totalPages + 1)
-                  .parEvalMapUnordered[F, HandlerCommand](1000) { page =>
-                    HandlerCommand.handleOzonRequest[F](ozon.Request.GetCategorySearchResultsV2(category.id, category.name, page @@ ozon.Url.Page))
+                  .parEvalMapUnordered[F, HandlerCommand](ozon.Page.MaxTotal) { page =>
+                    val request = ozon.Request.GetCategorySearchResultsV2(category.id, category.name, page @@ ozon.Url.Page)
+                    HandlerCommand.handleOzonRequest[F](request)
                   }
+
+                val getCategorySoldOutResultsV2Commands = Stream
+                  .range(1, totalSoldOutPages + 1)
+                  .parEvalMapUnordered[F, HandlerCommand](ozon.Page.MaxTotal) { page =>
+                    val request = ozon.Request.GetCategorySoldOutResultsV2(category.id, category.name, page @@ ozon.Url.SoldOutPage)
+                    HandlerCommand.handleOzonRequest[F](request)
+                  }
+
+                Stream
+                  .emits(List(getCategorySearchResultsV2Commands, getCategorySoldOutResultsV2Commands))
+                  .parJoinUnbounded
               }
           }
     }

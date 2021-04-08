@@ -5,23 +5,21 @@ import java.util.Properties
 
 import tofu.syntax.monadic._
 import cats.effect.{Concurrent, Resource, Sync}
-import org.apache.kafka.common.utils.Bytes
-import org.apache.kafka.streams.errors.LogAndFailExceptionHandler
-import org.apache.kafka.clients.consumer.ConsumerConfig
-import org.apache.kafka.clients.producer.ProducerConfig
-import org.apache.kafka.streams.{StreamsBuilder, StreamsConfig}
-import org.apache.kafka.streams.state.WindowStore
-import org.apache.kafka.streams.kstream.{Consumed, Grouped, Materialized, Produced, SlidingWindows, ValueMapper, Windowed}
+import org.apache.kafka.common.serialization.Serde
+import org.apache.kafka.streams.StreamsBuilder
+import org.apache.kafka.streams.kstream.Produced
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient
-import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig
 import fs2.kafka.vulcan.AvroSettings
 import compstak.kafkastreams4s.Platform
 
 import net.dalytics.config.Config
-import net.dalytics.serde.{VulcanSerde}
-import net.dalytics.models.{ozon, Event}
+import net.dalytics.models.Event
 import net.dalytics.models.parser.ParserEvent
 import net.dalytics.models.enricher.EnricherEvent
+import net.dalytics.clients.KafkaClient
+import net.dalytics.wrappers.vulcan.KStream4sVulcan
+import net.dalytics.serdes.VulcanSerde
+import net.dalytics.extractors.EventTimestampExtractor
 
 trait Enricher[F[_]] {
   def run: F[Unit]
@@ -32,91 +30,45 @@ object Enricher {
 
   private final class Impl[F[_]: Concurrent](cfg: Config)(schemaRegistryClient: SchemaRegistryClient) extends Enricher[F] {
     def run: F[Unit] = {
-      val streamsBuilder = new StreamsBuilder
-
-      val streamsConfiguration: Properties = {
-        val p = new Properties()
-        //p.put(AbstractKafkaAvroSerDeConfig.AUTO_REGISTER_SCHEMAS, false)
-        p.put(AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, cfg.schemaRegistryConfig.baseUrl)
-        p.put(StreamsConfig.APPLICATION_ID_CONFIG, cfg.kafkaStreamsConfig.applicationId)
-        p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, cfg.kafkaConfig.bootstrapServers)
-        p.put("confluent.monitoring.interceptor.bootstrap.servers", cfg.kafkaConfig.bootstrapServers)
-        p.put(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG, classOf[LogAndFailExceptionHandler])
-        p.put(StreamsConfig.NUM_STREAM_THREADS_CONFIG, cfg.kafkaStreamsConfig.numberOfStreamThreads)
-        p.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, cfg.kafkaStreamsConfig.commitInterval.toMillis)
-        p.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, cfg.kafkaStreamsConfig.cacheMaxBytesBuffering)
-        p.put(StreamsConfig.mainConsumerPrefix(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG), "earliest")
-        p.put(StreamsConfig.mainConsumerPrefix(ConsumerConfig.FETCH_MAX_BYTES_CONFIG), cfg.kafkaStreamsConfig.fetchMaxBytes)
-        p.put(StreamsConfig.mainConsumerPrefix(ConsumerConfig.MAX_PARTITION_FETCH_BYTES_CONFIG), cfg.kafkaStreamsConfig.maxPartitionFetchBytes)
-        p.put(StreamsConfig.mainConsumerPrefix(ConsumerConfig.MAX_POLL_RECORDS_CONFIG), cfg.kafkaStreamsConfig.maxPollRecords)
-        p.put(
-          StreamsConfig.mainConsumerPrefix(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG),
-          "io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor"
-        )
-        p.put(StreamsConfig.producerPrefix(ProducerConfig.BUFFER_MEMORY_CONFIG), cfg.kafkaStreamsConfig.bufferMemory)
-        p.put(StreamsConfig.producerPrefix(ProducerConfig.COMPRESSION_TYPE_CONFIG), cfg.kafkaStreamsConfig.compressionType)
-        p.put(StreamsConfig.producerPrefix(ProducerConfig.LINGER_MS_CONFIG), cfg.kafkaStreamsConfig.linger.toMillis)
-        p.put(
-          StreamsConfig.producerPrefix(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG),
-          "io.confluent.monitoring.clients.interceptor.MonitoringProducerInterceptor"
-        )
-        p
-      }
-
-      val avroSettings = AvroSettings(schemaRegistryClient)
-      //  .withAutoRegisterSchemas(false)
-      //  .withProperty("use.latest.version", "true")
+      val avroSettings: AvroSettings[F]  = KafkaClient.makeAvroSettings[F](schemaRegistryClient)
+      val streamsConfig: Properties      = KafkaClient.makeKafkaStreamsConfiguration[EventTimestampExtractor](
+        cfg.kafkaConfig,
+        cfg.schemaRegistryConfig,
+        cfg.kafkaStreamsConfig
+      )
+      val streamsTimeout: Duration       = Duration.ofNanos(cfg.kafkaStreamsConfig.closeTimeout.toNanos)
+      val streamsBuilder: StreamsBuilder = new StreamsBuilder
 
       for {
-        eventKeySerde      <- VulcanSerde[Event.Key].using(avroSettings)(true)
-        parserEventSerde   <- VulcanSerde[ParserEvent].using(avroSettings)(false)
-        enricherEventSerde <- VulcanSerde[EnricherEvent].using(avroSettings)(false)
-        parserEventsKStream = streamsBuilder.stream(cfg.kafkaStreamsConfig.sourceTopic, Consumed.`with`(eventKeySerde, parserEventSerde))
-        _                  <- Sync[F].delay {
-                                parserEventsKStream
-                                  .filter { (_: Event.Key, event: ParserEvent) =>
-                                    event match {
-                                      case _: ParserEvent.OzonCategorySearchResultsV2ItemParsed => true
-                                      case _                                                    => false
-                                    }
-                                  }
-                                  .mapValues({ (event: ParserEvent) =>
-                                    val ParserEvent.OzonCategorySearchResultsV2ItemParsed(created, timestamp, page, item, category) = event
-                                    EnricherEvent.OzonCategorySearchResultsV2ItemEnriched(created, timestamp, page, item, ozon.Sale.Unknown, category)
-                                  }: ValueMapper[ParserEvent, EnricherEvent])
-                                  .groupByKey(Grouped.`with`(eventKeySerde, enricherEventSerde))
-                                  .windowedBy(
-                                    SlidingWindows.withTimeDifferenceAndGrace(
-                                      Duration.ofNanos(cfg.slidingWindowsConfig.maxTimeDifference.toNanos),
-                                      Duration.ofNanos(cfg.slidingWindowsConfig.gracePeriod.toNanos)
-                                    )
-                                  )
-                                  .reduce(
-                                    (prevEvent: EnricherEvent, currEvent: EnricherEvent) => {
-                                      // ToDo: Take into account timestamp of events
-                                      val EnricherEvent.OzonCategorySearchResultsV2ItemEnriched(_, _, _, prevItem, _, _)                         = prevEvent
-                                      val EnricherEvent.OzonCategorySearchResultsV2ItemEnriched(created, timestamp, page, currItem, _, category) = currEvent
+        implicit0(eventKeySerde: Serde[Event.Key])                                            <- VulcanSerde[Event.Key].using(avroSettings)(true)
+        implicit0(parserEventSerde: Serde[ParserEvent])                                       <- VulcanSerde[ParserEvent].using(avroSettings)(false)
+        implicit0(enricherEventSerde: Serde[EnricherEvent.OzonCategoryResultsV2ItemEnriched]) <-
+          VulcanSerde[EnricherEvent.OzonCategoryResultsV2ItemEnriched].using(avroSettings)(false)
 
-                                      val sale = ozon.Sale.aggregate(List(prevItem, currItem))
+        _ <- Sync[F].delay {
+               KStream4sVulcan[Event.Key, ParserEvent](streamsBuilder, cfg.kafkaStreamsConfig.sourceTopics)
+                 .collect {
+                   case ParserEvent.OzonCategorySearchResultsV2ItemParsed(created, timestamp, page, item, category)  =>
+                     EnricherEvent.OzonCategoryResultsV2ItemEnriched(created, timestamp, page, item, category)
+                   case ParserEvent.OzonCategorySoldOutResultsV2ItemParsed(created, timestamp, page, item, category) =>
+                     EnricherEvent.OzonCategoryResultsV2ItemEnriched(created, timestamp, page, item, category)
+                 }
+                 .reduceByKey(_ aggregate _)
+                 .toKTable
+                 .toStream((_, event) => event.key.get)
+                 .to(
+                   cfg.kafkaStreamsConfig.sinkTopic,
+                   Produced.`with`[Event.Key, EnricherEvent.OzonCategoryResultsV2ItemEnriched](eventKeySerde, enricherEventSerde)
+                 )
+             }
 
-                                      EnricherEvent.OzonCategorySearchResultsV2ItemEnriched(created, timestamp, page, currItem, sale, category)
-                                    },
-                                    Materialized
-                                      .`with`[Event.Key, EnricherEvent, WindowStore[Bytes, Array[Byte]]](eventKeySerde, enricherEventSerde)
-                                      .withCachingDisabled
-                                  )
-                                  .toStream((windowedKey: Windowed[Event.Key], event: EnricherEvent) => event.key.getOrElse(windowedKey.key))
-                                  .to(cfg.kafkaStreamsConfig.sinkTopic, Produced.`with`[Event.Key, EnricherEvent](eventKeySerde, enricherEventSerde))
-                              }
-        topology            = streamsBuilder.build()
-        platform           <- Platform.run[F](topology, streamsConfiguration, Duration.ofNanos(cfg.kafkaStreamsConfig.closeTimeout.toNanos)).void
+        topology  = streamsBuilder.build()
+        platform <- Platform.run[F](topology, streamsConfig, streamsTimeout).void
       } yield platform
     }
   }
 
-  def make[
-    F[_]: Concurrent
-  ](cfg: Config)(schemaRegistryClient: SchemaRegistryClient): Resource[F, Enricher[F]] =
+  def make[F[_]: Concurrent](cfg: Config)(schemaRegistryClient: SchemaRegistryClient): Resource[F, Enricher[F]] =
     Resource.eval {
       val impl = new Impl[F](cfg)(schemaRegistryClient): Enricher[F]
 

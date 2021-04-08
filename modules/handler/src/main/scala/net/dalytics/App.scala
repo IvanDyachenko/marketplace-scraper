@@ -32,7 +32,7 @@ object Main extends TaskApp {
       implicit0(blocker: Blocker)              <- Blocker[AppI]
       cfg                                      <- Resource.eval(Config.make[AppI])
       implicit0(httpClientF: HttpClient[AppF]) <- HttpClient.make[AppI, AppF](cfg.httpConfig)
-      schemaRegistryClient                     <- Resource.eval(SchemaRegistryClientSettings[AppI](cfg.schemaRegistryConfig.baseUrl).createSchemaRegistryClient)
+      schemaRegistryClient                     <- Resource.eval(SchemaRegistryClientSettings[AppI](cfg.schemaRegistryConfig.url).createSchemaRegistryClient)
       handle                                   <- Handle.make[AppI, AppF]
       producerOfEvents                         <- KafkaClient.makeProducer[AppI, Event.Key, HandlerEvent](
                                                     cfg.kafkaConfig,

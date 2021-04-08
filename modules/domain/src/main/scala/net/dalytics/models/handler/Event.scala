@@ -9,7 +9,7 @@ import io.circe.Json
 import vulcan.Codec
 import supertagged.postfix._
 
-import net.dalytics.models._
+import net.dalytics.models.{jsonLoggable, jsonVulcanCodec, Event, Timestamp}
 
 @derive(loggable)
 sealed trait HandlerEvent extends Event

@@ -18,9 +18,10 @@ case class Url(
   path: String,
   page: Option[Url.Page] = None,
   soldOutPage: Option[Url.SoldOutPage] = None,
+  searchFilter: Option[SearchFilter] = None,
+  searchFilterKey: Option[SearchFilter.Key] = None,
   layoutContainer: Option[Url.LayoutContainer] = None,
-  layoutPageIndex: Option[Url.LayoutPageIndex] = None,
-  searchFilterKey: Option[SearchFilter.Key] = None
+  layoutPageIndex: Option[Url.LayoutPageIndex] = None
 )
 
 object Url {
@@ -68,7 +69,8 @@ object Url {
   type LayoutPageIndex = LayoutPageIndex.Type
 
   implicit val show: Show[Url] = Show[Uri].contramap { url =>
-    Uri(path = url.path).+??(url.layoutContainer).+??(url.layoutPageIndex).+??(url.page).+??(url.soldOutPage)
+    val uri = Uri(path = url.path).+??(url.layoutContainer).+??(url.layoutPageIndex).+??(url.page).+??(url.soldOutPage)
+    url.searchFilter.fold(uri)(sf => uri.+?(sf.key, sf))
   }
 
   implicit val queryParam = new QueryParam[Url] with QueryParamEncoder[Url] {

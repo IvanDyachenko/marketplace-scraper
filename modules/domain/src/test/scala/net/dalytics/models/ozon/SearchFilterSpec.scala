@@ -10,8 +10,8 @@ import supertagged.postfix._
 
 class SearchFilterSpec extends AnyFlatSpec with Matchers with EitherValues {
 
-  it should "decode SearchFilterBr.and from a valid JSON" in {
-    val searchFilterBrandRawJson =
+  it should "decode BrandFilter from a valid JSON" in {
+    val brandFilterRawJson =
       """
         |{
         |  "key": 139867648,
@@ -19,13 +19,13 @@ class SearchFilterSpec extends AnyFlatSpec with Matchers with EitherValues {
         |}
       """.stripMargin
 
-    val decodedSearchFilterBrand = decode[SearchFilter.Value](searchFilterBrandRawJson)
+    val decodedBrandFilter = decode[BrandFilter](brandFilterRawJson)
 
-    decodedSearchFilterBrand.value should be(SearchFilter.Brand(139867648L @@ Brand.Id))
+    decodedBrandFilter.value should be(BrandFilter(139867648L @@ Brand.Id))
   }
 
-  it should "decode SearchFilter.Brands from a valid JSON" in {
-    val searchFilterBrandsRawJson =
+  it should "decode BrandFilters from a valid JSON" in {
+    val searchFiltersRawJson =
       """
         |{
         |  "key": "brand",
@@ -58,10 +58,10 @@ class SearchFilterSpec extends AnyFlatSpec with Matchers with EitherValues {
         |}
       """.stripMargin
 
-    val decodedSearchFilterBrands = decode[SearchFilter.Values](searchFilterBrandsRawJson)
+    val decodedSearchFilters = decode[SearchFilters](searchFiltersRawJson)
 
-    decodedSearchFilterBrands.value should be(
-      SearchFilter.Brands(List(SearchFilter.Brand(139867648L @@ Brand.Id), SearchFilter.Brand(7577796L @@ Brand.Id)))
+    decodedSearchFilters.value should be(
+      BrandFilters(List(BrandFilter(139867648L @@ Brand.Id), BrandFilter(7577796L @@ Brand.Id)))
     )
   }
 }

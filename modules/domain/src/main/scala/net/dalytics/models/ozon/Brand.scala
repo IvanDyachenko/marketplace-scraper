@@ -20,11 +20,7 @@ object Brand {
   object Name extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec
   type Name = Name.Type
 
-  implicit val circeDecoder: Decoder[Brand] =
-    List[Decoder[Brand]](
-      Decoder.forProduct2("brandId", "brand")(apply),
-      Decoder.forProduct2("key", "value")(apply)
-    ).reduceLeft(_ or _)
+  implicit val circeDecoder: Decoder[Brand] = Decoder.forProduct2("brandId", "brand")(apply)
 
   private[models] def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => Brand): FreeApplicative[Codec.Field[A, *], Brand] =
     (field("brandId", f(_).id), field("brandName", f(_).name)).mapN(apply)

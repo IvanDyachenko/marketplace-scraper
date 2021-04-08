@@ -21,12 +21,19 @@ import net.dalytics.models.ozon.{Category, CategoryMenu, Page, Request, Result, 
 
 trait OzonApi[F[_], S[_]] {
   def getCategory(id: Category.Id): F[Option[Category]]
+
   def getCategoryMenu(id: Category.Id): F[Option[CategoryMenu]]
+
   def getPage(id: Category.Id, sf: Option[SearchFilter] = None): F[Option[Page]]
+
   def getSoldOutPage(id: Category.Id, sf: Option[SearchFilter] = None): F[Option[Page]]
+
   def getSearchResultsV2(id: Category.Id, page: Url.Page, sf: Option[SearchFilter] = None): F[Option[SearchResultsV2]]
+
   def getSoldOutResultsV2(id: Category.Id, page: Url.SoldOutPage, sf: Option[SearchFilter] = None): F[Option[SoldOutResultsV2]]
+
   def getSearchFilterValues(id: Category.Id, sfKey: SearchFilter.Key): F[Option[SearchFilters]]
+
   def getCategories(rootId: Category.Id)(p: Category => Boolean): S[Category]
 }
 
@@ -34,9 +41,11 @@ object OzonApi {
 
   private final class Impl[F[_]: Concurrent: Logging: HttpClient: HttpClient.Handling] extends OzonApi[F, Stream[F, *]] {
 
-    def getCategory(id: Category.Id): F[Option[Category]] = getCategoryMenu(id).map(_ >>= (_.category(id)))
+    def getCategory(id: Category.Id): F[Option[Category]] =
+      getCategoryMenu(id).map(_ >>= (_.category(id)))
 
-    def getCategoryMenu(id: Category.Id): F[Option[CategoryMenu]] = get[Result](Request.GetCategoryMenu(id)).map(_ >>= (_.categoryMenu))
+    def getCategoryMenu(id: Category.Id): F[Option[CategoryMenu]] =
+      get[Result](Request.GetCategoryMenu(id)).map(_ >>= (_.categoryMenu))
 
     def getPage(id: Category.Id, sf: Option[SearchFilter]): F[Option[Page]] =
       get[Result](Request.GetCategorySearchResultsV2(id, page = 1 @@ Url.Page, searchFilter = sf)).map(_ >>= (_.page))

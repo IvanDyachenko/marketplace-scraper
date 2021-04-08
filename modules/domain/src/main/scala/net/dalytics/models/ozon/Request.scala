@@ -104,6 +104,18 @@ object Request {
       }
   }
 
+  @derive(loggable)
+  sealed trait GetCategorySearchFilterValues extends Request {
+    override val path: String = "/composer-api.bx/_action/getSearchFilterValues"
+    def categoryId: Category.Id
+  }
+
+  object GetCategorySearchFilterValues {
+    final case class GetCategorySearchFilterBrands(categoryId: Category.Id) extends GetCategorySearchFilterValues {
+      override val url: Url = Url(s"/modal/filters/category/${categoryId.show}", searchFilterKey = Some(SearchFilterKey.Brand))
+    }
+  }
+
   implicit val vulcanCodec: Codec[Request] = Codec.union[Request] { alt =>
     alt[GetSellerList] |+| alt[GetCategoryMenu] |+| alt[GetCategorySearchResultsV2] |+| alt[GetCategorySoldOutResultsV2]
   }

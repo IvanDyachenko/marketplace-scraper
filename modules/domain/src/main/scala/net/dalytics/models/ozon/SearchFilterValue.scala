@@ -16,6 +16,7 @@ object SearchFilterBrand {
 }
 
 object SearchFilterValue {
+
   implicit val circeDecoder: Decoder[SearchFilterValue] =
     List[Decoder[SearchFilterValue]](
       Decoder[SearchFilterBrand].widen

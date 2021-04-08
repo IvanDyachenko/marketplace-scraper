@@ -4,7 +4,7 @@ import cats.implicits._
 import cats.Show
 import derevo.derive
 import tofu.logging.derivation.loggable
-import io.circe.{Encoder, Json}
+import io.circe.Encoder
 import org.http4s.{QueryParam, QueryParamEncoder, QueryParameterKey, QueryParameterValue, Uri}
 import tofu.logging.LoggableEnum
 import enumeratum.{CatsEnum, Enum, EnumEntry, VulcanEnum}
@@ -76,10 +76,5 @@ object Url {
     def encode(url: Url): QueryParameterValue = QueryParameterValue(url.show)
   }
 
-  implicit val circeEncoder: Encoder[Url] = Encoder.instance[Url] { (url: Url) =>
-    Json.obj(
-      "url" -> Json.fromString(url.show),
-      "key" -> Json.fromString(url.searchFilterKey.show)
-    )
-  }
+  implicit val circeEncoder: Encoder[Url] = Encoder.forProduct2("url", "key")(url => (url.show, url.searchFilterKey))
 }

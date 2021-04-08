@@ -1,8 +1,6 @@
 package net.dalytics.clients
 
 import java.util.concurrent.TimeoutException
-//import java.net.http.{HttpClient => jdkHttpClient}
-
 import scala.util.control.NoStackTrace
 import scala.concurrent.duration._
 
@@ -23,7 +21,6 @@ import io.circe.Decoder
 import org.http4s.{DecodeFailure, Request => Http4sRequest, Status}
 import org.http4s.circe.jsonOf
 import org.http4s.client.{Client, ConnectionFailure}
-//import org.http4s.client.jdkhttpclient.JdkHttpClient
 import org.http4s.client.blaze.BlazeClientBuilder
 import org.http4s.client.middleware.{GZip, Retry, RetryPolicy}
 
@@ -40,14 +37,11 @@ sealed trait HttpClientError extends NoStackTrace {
 
 object HttpClientError {
   @derive(loggable)
-  final case class ConnectTimeoutError(message: String) extends HttpClientError
-
+  final case class ConnectTimeoutError(message: String)           extends HttpClientError
   @derive(loggable)
-  final case class RequestTimeoutError(message: String) extends HttpClientError
-
+  final case class RequestTimeoutError(message: String)           extends HttpClientError
   @derive(loggable)
-  final case class ResponseDecodeError(message: String) extends HttpClientError
-
+  final case class ResponseDecodeError(message: String)           extends HttpClientError
   @derive(loggable)
   final case class ResponseUnexpectedStatusError(message: String) extends HttpClientError
 }
@@ -121,39 +115,6 @@ object HttpClient extends ContextEmbed[HttpClient] {
   // https://scastie.scala-lang.org/Odomontois/F29lLrY2RReZrcUJ1zIEEg/25
   private def translateHttp4sClient[F[_], G[_]: Sync](client: Client[F])(implicit U: Unlift[F, G]): Client[G] =
     Client(req => Resource.suspend(U.unlift.map(gf => client.run(req.mapK(gf)).mapK(U.liftF).map(_.mapK(U.liftF)))))
-
-  // private def buildHttp4sClient[F[_]: ContextShift: ConcurrentEffect](blocker: Blocker, httpConfig: HttpConfig): Resource[F, Client[F]] = {
-  //   def blockerExecutor(blocker: Blocker): Executor = new Executor {
-  //     override def execute(command: Runnable): Unit = blocker.blockingContext.execute(command)
-  //   }
-  //
-  //   Resource.liftF(
-  //     Sync[F].delay {
-  //       val httpClient = jdkHttpClient
-  //         .newBuilder()
-  //         .executor(blockerExecutor(blocker))
-  //         //.proxy(ProxySelector.of(new InetSocketAddress(httpConfig.proxyHost, httpConfig.proxyPort)))
-  //         .version(jdkHttpClient.Version.HTTP_1_1)
-  //         .followRedirects(jdkHttpClient.Redirect.NEVER)
-  //         .connectTimeout(java.time.Duration.ofNanos(httpConfig.connectTimeout.toNanos))
-  //         .build()
-  //
-  //       JdkHttpClient[F](httpClient)
-  //     }
-  //   )
-  // }
-
-  // private def buildHttp4sClient[F[_]: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] =
-  //   AsyncHttpClient.resource {
-  //     Dsl
-  //       .config()
-  //       .setMaxConnections(httpConfig.maxTotalConnections)
-  //       .setMaxConnectionsPerHost(httpConfig.maxTotalConnectionsPerHost)
-  //       .setMaxRequestRetry(httpConfig.requestMaxTotalAttempts)
-  //       .setRequestTimeout(httpConfig.requestTimeout.toMillis.toInt)
-  //       .setFollowRedirect(false)
-  //       .build()
-  //   }
 
   private def buildHttp4sClient[F[_]: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] =
     Resource.eval(Execute[F].executionContext) >>= (

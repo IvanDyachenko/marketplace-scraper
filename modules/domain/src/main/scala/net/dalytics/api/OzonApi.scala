@@ -16,13 +16,13 @@ import io.circe.Decoder
 
 import net.dalytics.marshalling._
 import net.dalytics.clients.{HttpClient, HttpClientError}
-import net.dalytics.models.ozon.{Category, CategoryMenu, Page, Request, Result, SearchFilter, SearchResultsV2, SoldOutResultsV2, Url}
+import net.dalytics.models.ozon.{Category, CategoryMenu, Request, Result, SearchFilter, SearchResultsV2, SoldOutResultsV2, Url}
 
 trait OzonApi[F[_], S[_]] {
   def getCategory(id: Category.Id): F[Option[Category]]
   def getCategoryMenu(id: Category.Id): F[Option[CategoryMenu]]
-  def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): F[Option[(Page, Category, SearchResultsV2)]]
-  def getCategorySoldOutResultsV2(id: Category.Id, soldOutPage: Url.SoldOutPage): F[Option[(Page, Category, SoldOutResultsV2)]]
+  def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): F[Option[SearchResultsV2]]
+  def getCategorySoldOutResultsV2(id: Category.Id, soldOutPage: Url.SoldOutPage): F[Option[SoldOutResultsV2]]
   def getCategorySearchFilterBrands(id: Category.Id): F[Option[SearchFilter.Brands]]
   def getCategories(rootId: Category.Id)(p: Category => Boolean): S[Category]
 }
@@ -35,11 +35,11 @@ object OzonApi {
 
     def getCategoryMenu(id: Category.Id): F[Option[CategoryMenu]] = get[Result](Request.GetCategoryMenu(id)).map(_ >>= (_.categoryMenu))
 
-    def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): F[Option[(Page, Category, SearchResultsV2)]] =
-      get[Result](Request.GetCategorySearchResultsV2(id, page = page)).map(_ >>= (_.categorySearchResultsV2))
+    def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): F[Option[SearchResultsV2]] =
+      get[Result](Request.GetCategorySearchResultsV2(id, page = page)).map(_ >>= (_.searchResultsV2))
 
-    def getCategorySoldOutResultsV2(id: Category.Id, soldOutPage: Url.SoldOutPage): F[Option[(Page, Category, SoldOutResultsV2)]] =
-      get[Result](Request.GetCategorySoldOutResultsV2(id, soldOutPage = soldOutPage)).map(_ >>= (_.categorySoldOutResultsV2))
+    def getCategorySoldOutResultsV2(id: Category.Id, soldOutPage: Url.SoldOutPage): F[Option[SoldOutResultsV2]] =
+      get[Result](Request.GetCategorySoldOutResultsV2(id, soldOutPage = soldOutPage)).map(_ >>= (_.soldOutResultsV2))
 
     def getCategorySearchFilterBrands(id: Category.Id): F[Option[SearchFilter.Brands]] =
       get[SearchFilter.Brands](Request.GetCategorySearchFilterBrands(id))
@@ -88,15 +88,14 @@ object OzonApi {
     new BifunctorK[OzonApi] {
       def bimapK[F[_]: Functor, G[_]: Functor, W[_], Q[_]](ufg: OzonApi[F, G])(fw: F ~> W)(gq: G ~> Q): OzonApi[W, Q] =
         new OzonApi[W, Q] {
-          def getCategory(id: Category.Id): W[Option[Category]]                                                                         = fw(ufg.getCategory(id))
-          def getCategoryMenu(id: Category.Id): W[Option[CategoryMenu]]                                                                 = fw(ufg.getCategoryMenu(id))
-          def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): W[Option[(Page, Category, SearchResultsV2)]]                 =
-            fw(ufg.getCategorySearchResultsV2(id, page))
-          def getCategorySoldOutResultsV2(id: Category.Id, soldOutPage: Url.SoldOutPage): W[Option[(Page, Category, SoldOutResultsV2)]] =
-            fw(ufg.getCategorySoldOutResultsV2(id, soldOutPage))
-          def getCategorySearchFilterBrands(id: Category.Id): W[Option[SearchFilter.Brands]]                                            =
-            fw(ufg.getCategorySearchFilterBrands(id))
-          def getCategories(rootId: Category.Id)(p: Category => Boolean): Q[Category]                                                   = gq(ufg.getCategories(rootId)(p))
+          // format: off
+          def getCategory(id: Category.Id): W[Option[Category]]                                                = fw(ufg.getCategory(id))
+          def getCategoryMenu(id: Category.Id): W[Option[CategoryMenu]]                                        = fw(ufg.getCategoryMenu(id))
+          def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): W[Option[SearchResultsV2]]          = fw(ufg.getCategorySearchResultsV2(id, page))
+          def getCategorySoldOutResultsV2(id: Category.Id, page: Url.SoldOutPage): W[Option[SoldOutResultsV2]] = fw(ufg.getCategorySoldOutResultsV2(id, page))
+          def getCategorySearchFilterBrands(id: Category.Id): W[Option[SearchFilter.Brands]]                   = fw(ufg.getCategorySearchFilterBrands(id))
+          def getCategories(rootId: Category.Id)(p: Category => Boolean): Q[Category]                          = gq(ufg.getCategories(rootId)(p))
+          // format: on
         }
     }
 }

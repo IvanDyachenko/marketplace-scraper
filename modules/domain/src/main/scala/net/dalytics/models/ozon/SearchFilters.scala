@@ -1,5 +1,6 @@
 package net.dalytics.models.ozon
 
+import cats.implicits._
 import derevo.derive
 import derevo.circe.decoder
 import tofu.logging.derivation.loggable
@@ -8,6 +9,7 @@ import io.circe.{Decoder, HCursor}
 @derive(loggable)
 sealed trait SearchFilters {
   type T <: SearchFilter
+
   def values: List[T]
 }
 
@@ -21,7 +23,7 @@ object SearchFilters {
     for {
       key           <- c.get[SearchFilter.Key]("key")
       decoder        = key match {
-                         case SearchFilter.Key.Brand => Decoder[BrandFilters]
+                         case SearchFilter.Key.Brand => Decoder[BrandFilters].widen
                        }
       searchFilters <- decoder(c)
     } yield searchFilters

@@ -1,6 +1,7 @@
 package net.dalytics.models.ozon
 
 import cats.implicits._
+import cats.Show
 import derevo.derive
 import tofu.logging.derivation.loggable
 import io.circe.{Encoder, Json}
@@ -11,7 +12,6 @@ import enumeratum.EnumEntry.Snakecase
 import supertagged.TaggedType
 
 import net.dalytics.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcanCodec}
-import cats.Show
 
 @derive(loggable)
 case class Url(

@@ -33,16 +33,16 @@ object OzonApi {
 
     def getCategory(id: Category.Id): F[Option[Category]] = getCategoryMenu(id).map(_ >>= (_.category(id)))
 
-    def getCategoryMenu(id: Category.Id): F[Option[CategoryMenu]] = getResult[Result](Request.GetCategoryMenu(id)).map(_ >>= (_.categoryMenu))
+    def getCategoryMenu(id: Category.Id): F[Option[CategoryMenu]] = get[Result](Request.GetCategoryMenu(id)).map(_ >>= (_.categoryMenu))
 
     def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): F[Option[(Page, Category, SearchResultsV2)]] =
-      getResult[Result](Request.GetCategorySearchResultsV2(id, page = page)).map(_ >>= (_.categorySearchResultsV2))
+      get[Result](Request.GetCategorySearchResultsV2(id, page = page)).map(_ >>= (_.categorySearchResultsV2))
 
     def getCategorySoldOutResultsV2(id: Category.Id, soldOutPage: Url.SoldOutPage): F[Option[(Page, Category, SoldOutResultsV2)]] =
-      getResult[Result](Request.GetCategorySoldOutResultsV2(id, soldOutPage = soldOutPage)).map(_ >>= (_.categorySoldOutResultsV2))
+      get[Result](Request.GetCategorySoldOutResultsV2(id, soldOutPage = soldOutPage)).map(_ >>= (_.categorySoldOutResultsV2))
 
     def getCategorySearchFilterBrands(id: Category.Id): F[Option[SearchFilter.Brands]] =
-      getResult[SearchFilter.Brands](Request.GetCategorySearchFilterBrands(id))
+      get[SearchFilter.Brands](Request.GetCategorySearchFilterBrands(id))
 
     def getCategories(rootId: Category.Id)(p: Category => Boolean): Stream[F, Category] = {
       def go(tree: Category.Tree[Stream[F, *]]): Stream[F, Category] =
@@ -64,7 +64,7 @@ object OzonApi {
           .pure[F]
       ))
 
-    private def getResult[R: Decoder](request: Request): F[Option[R]] =
+    private def get[R: Decoder](request: Request): F[Option[R]] =
       HttpClient[F]
         .send[R](request)
         .recoverWith[HttpClientError] { case error: HttpClientError =>

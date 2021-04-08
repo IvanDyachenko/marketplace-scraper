@@ -8,8 +8,23 @@ import io.circe.parser.decode
 
 import supertagged.postfix._
 
-class SearchFilterValuesSpec extends AnyFlatSpec with Matchers with EitherValues {
-  it should "decode SearchFilterBrands from a valid JSON" in {
+class SearchFilterSpec extends AnyFlatSpec with Matchers with EitherValues {
+
+  it should "decode SearchFilterBr.and from a valid JSON" in {
+    val searchFilterBrandRawJson =
+      """
+        |{
+        |  "key": 139867648,
+        |  "value": "Maunfeld"
+        |}
+      """.stripMargin
+
+    val decodedSearchFilterBrand = decode[SearchFilter.Value](searchFilterBrandRawJson)
+
+    decodedSearchFilterBrand.value should be(SearchFilter.Brand(139867648L @@ Brand.Id))
+  }
+
+  it should "decode SearchFilter.Brands from a valid JSON" in {
     val searchFilterBrandsRawJson =
       """
         |{
@@ -43,10 +58,10 @@ class SearchFilterValuesSpec extends AnyFlatSpec with Matchers with EitherValues
         |}
       """.stripMargin
 
-    val decodedSearchFilterBrands = decode[SearchFilterValues](searchFilterBrandsRawJson)
+    val decodedSearchFilterBrands = decode[SearchFilter.Values](searchFilterBrandsRawJson)
 
     decodedSearchFilterBrands.value should be(
-      SearchFilterBrands(List(SearchFilterBrand(139867648L @@ Brand.Id), SearchFilterBrand(7577796L @@ Brand.Id)))
+      SearchFilter.Brands(List(SearchFilter.Brand(139867648L @@ Brand.Id), SearchFilter.Brand(7577796L @@ Brand.Id)))
     )
   }
 }

@@ -112,7 +112,7 @@ object Request {
 
   object GetCategorySearchFilterValues {
     final case class GetCategorySearchFilterBrands(categoryId: Category.Id) extends GetCategorySearchFilterValues {
-      override val url: Url = Url(s"/modal/filters/category/${categoryId.show}", searchFilterKey = Some(SearchFilterKey.Brand))
+      override val url: Url = Url(s"/modal/filters/category/${categoryId.show}", searchFilterKey = Some(SearchFilter.Key.Brand))
     }
   }
 

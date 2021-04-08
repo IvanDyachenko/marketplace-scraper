@@ -20,7 +20,7 @@ case class Url(
   soldOutPage: Option[Url.SoldOutPage] = None,
   layoutContainer: Option[Url.LayoutContainer] = None,
   layoutPageIndex: Option[Url.LayoutPageIndex] = None,
-  searchFilterKey: Option[SearchFilterKey] = None
+  searchFilterKey: Option[SearchFilter.Key] = None
 )
 
 object Url {

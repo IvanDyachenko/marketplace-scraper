@@ -79,8 +79,13 @@ object Scheduler {
           .awakeEvery[F](every)
           .flatMap { _ =>
             ozonApi
-              .getCategories(rootCategoryId)(_ => true)
-              .parEvalMapUnordered(256)(category => ???)
+              .categories(rootCategoryId)(_ => true)
+              .parEvalMapUnordered(512) { category =>
+                if (category.isLeaf)
+                  ???
+                else
+                  ???
+              }
           }
     }
 }

@@ -11,7 +11,17 @@ final case class Catalog private (
   categoryMenu: Option[CategoryMenu],
   searchResultsV2: Option[SearchResultsV2],
   soldOutResultsV2: Option[SoldOutResultsV2]
-)
+) {
+  def searchPage: Option[SearchPage] = page match {
+    case searchPage: SearchPage => Some(searchPage)
+    case _                      => None
+  }
+
+  def soldOutPage: Option[SoldOutPage] = page match {
+    case soldOutPage: SoldOutPage => Some(soldOutPage)
+    case _                        => None
+  }
+}
 
 object Catalog {
   object Name extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec

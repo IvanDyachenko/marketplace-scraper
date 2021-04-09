@@ -8,7 +8,25 @@ import vulcan.Codec
 import io.circe.Decoder
 
 @derive(loggable)
-final case class Page private (current: Int, total: Int, totalItems: Int)
+sealed trait Page {
+  def current: Int
+  def total: Int
+  def totalItems: Int
+}
+
+@derive(loggable)
+final case class SearchPage private (current: Int, total: Int, totalItems: Int) extends Page
+
+object SearchPage {
+  implicit val circeDecoder: Decoder[SearchPage] = Decoder.forProduct3("currentPage", "totalPages", "totalFound")(apply)
+}
+
+@derive(loggable)
+final case class SoldOutPage private (current: Int, total: Int, totalItems: Int) extends Page
+
+object SoldOutPage {
+  implicit val circeDecoder: Decoder[SoldOutPage] = Decoder.forProduct3("currentSoldOutPage", "totalPages", "totalFound")(apply)
+}
 
 object Page {
   val Top1     = 1
@@ -17,10 +35,10 @@ object Page {
 
   implicit final val circeDecoder: Decoder[Page] =
     List[Decoder[Page]](
-      Decoder.forProduct3("currentPage", "totalPages", "totalFound")(apply),
-      Decoder.forProduct3("currentSoldOutPage", "totalPages", "totalFound")(apply)
+      Decoder[SearchPage].widen,
+      Decoder[SoldOutPage].widen
     ).reduceLeft(_ or _)
 
   private[models] def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => Page): FreeApplicative[Codec.Field[A, *], Page] =
-    (field("currentPage", f(_).current), field("totalPages", f(_).total), field("totalFoundItems", f(_).totalItems)).mapN(apply)
+    (field("currentPage", f(_).current), field("totalPages", f(_).total), field("totalFoundItems", f(_).totalItems)).mapN(SearchPage.apply)
 }

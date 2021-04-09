@@ -39,7 +39,7 @@ object SourceConfig {
   final case class OzonSeller(pageLimit: Int, every: FiniteDuration) extends SourceConfig
 
   @derive(pureconfigReader)
-  final case class OzonCategory(id: ozon.Category.Id, every: FiniteDuration) extends SourceConfig
+  final case class OzonCategory(id: ozon.Category.Id, searchFilterKey: ozon.SearchFilter.Key, every: FiniteDuration) extends SourceConfig
 
   implicit val fieldCoproductHint: FieldCoproductHint[SourceConfig] = new FieldCoproductHint[SourceConfig]("type") {
     override def fieldValue(name: String) = ConfigFieldMapping(PascalCase, KebabCase)(name)

@@ -65,8 +65,8 @@ object Scheduler {
     ozonApi: OzonApi[F, Stream[F, *]]
   ): Stream[F, HandlerCommand] =
     sourceConfig match {
-      case SourceConfig.WbCatalog(_, _)                     => ???
-      case SourceConfig.OzonSeller(pageLimit, every)        =>
+      case SourceConfig.WbCatalog(_, _)                                       => ???
+      case SourceConfig.OzonSeller(pageLimit, every)                          =>
         Stream
           .awakeEvery[F](every)
           .flatMap { _ =>
@@ -74,18 +74,23 @@ object Scheduler {
               HandlerCommand.handleOzonRequest[F](ozon.Request.GetSellerList(page @@ ozon.Url.Page))
             }
           }
-      case SourceConfig.OzonCategory(rootCategoryId, every) =>
+      case SourceConfig.OzonCategory(rootCategorytId, searchFilterKey, every) =>
         Stream
           .awakeEvery[F](every)
           .flatMap { _ =>
             ozonApi
-              .categories(rootCategoryId)(_ => true)
-              .parEvalMapUnordered(512) { category =>
-                if (category.isLeaf)
-                  ???
-                else
-                  ???
+              .categories(rootCategorytId)(_ => true)
+              .flatMap { case ozon.Category(categoryId, _, _, _) =>
+                ozonApi
+                  .searchFilters(categoryId, searchFilterKey)
+                  .prefetch
+                  .broadcastThrough(
+                    (searchFilters: Stream[F, ozon.SearchFilter]) => searchFilters.parEvalMapUnordered(32)(ozonApi.searchPage(categoryId, _)),
+                    (searchFilters: Stream[F, ozon.SearchFilter]) => searchFilters.parEvalMapUnordered(32)(ozonApi.soldOutPage(categoryId, _))
+                  )
+                  .map(???)
               }
+              .parJoin(32)
           }
     }
 }

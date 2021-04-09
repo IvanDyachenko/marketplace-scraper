@@ -48,6 +48,16 @@ object OzonApi {
       Stream.eval(categoryTree(rootId)) >>= (_.fold[Stream[F, Category]](Stream.empty)(go))
     }
 
+    private def categoryTree(id: Category.Id): F[Option[Category.Tree[Stream[F, *]]]] =
+      category(id) >>= (_.traverse(
+        Cofree
+          .unfold[Stream[F, *], Category](_) { cat =>
+            val ids = cat.children.keys.toList
+            Stream.emits(ids).covary[F].parEvalMapUnordered(128)(category).collect { case Some(subcat) => subcat }
+          }
+          .pure[F]
+      ))
+
     def categoryMenu(id: Category.Id): F[Option[CategoryMenu]] =
       get[Result](Request.GetCategoryMenu(id)).map(_ >>= (_.categoryMenu))
 
@@ -87,16 +97,6 @@ object OzonApi {
       val request = Request.GetCategorySoldOutResultsV2(id, soldOutPage = page, searchFilter = searchFilter)
       get[Result](request).map(_ >>= (_.soldOutResultsV2))
     }
-
-    private def categoryTree(id: Category.Id): F[Option[Category.Tree[Stream[F, *]]]] =
-      category(id) >>= (_.traverse(
-        Cofree
-          .unfold[Stream[F, *], Category](_) { cat =>
-            val ids = cat.children.keys.toList
-            Stream.emits(ids).covary[F].parEvalMapUnordered(128)(category).collect { case Some(subcat) => subcat }
-          }
-          .pure[F]
-      ))
 
     private def get[R: Decoder](request: Request): F[Option[R]] =
       HttpClient[F]

@@ -23,9 +23,11 @@ trait OzonApi[F[_], S[_]] {
   def category(id: Category.Id): F[Option[Category]]
   def categories(rootId: Category.Id)(p: Category => Boolean): S[Category]
   def categoryMenu(id: Category.Id): F[Option[CategoryMenu]]
-  def page(id: Category.Id, searchFilter: Option[SearchFilter] = None): F[Option[Page]]
-  def soldOutPage(id: Category.Id, searchFilter: Option[SearchFilter] = None): F[Option[Page]]
-  def searchFilters(id: Category.Id, searchFilterKey: SearchFilter.Key): F[Option[SearchFilters]]
+  def page(id: Category.Id): F[Option[Page]]
+  def page(id: Category.Id, searchFilter: SearchFilter): F[Option[Page]]
+  def soldOutPage(id: Category.Id): F[Option[Page]]
+  def soldOutPage(id: Category.Id, searchFilter: SearchFilter): F[Option[Page]]
+  def searchFilters(id: Category.Id, searchFilterKey: SearchFilter.Key): S[SearchFilter]
   def searchResultsV2(id: Category.Id, page: Url.Page, searchFilter: Option[SearchFilter] = None): F[Option[SearchResultsV2]]
   def soldOutResultsV2(id: Category.Id, page: Url.SoldOutPage, searchFilter: Option[SearchFilter] = None): F[Option[SoldOutResultsV2]]
 }
@@ -49,19 +51,31 @@ object OzonApi {
     def categoryMenu(id: Category.Id): F[Option[CategoryMenu]] =
       get[Result](Request.GetCategoryMenu(id)).map(_ >>= (_.categoryMenu))
 
-    def page(id: Category.Id, searchFilter: Option[SearchFilter]): F[Option[Page]] = {
+    def page(id: Category.Id): F[Option[Page]] = page(id, None)
+
+    def page(id: Category.Id, searchFilter: SearchFilter): F[Option[Page]] = page(id, Some(searchFilter))
+
+    private def page(id: Category.Id, searchFilter: Option[SearchFilter]): F[Option[Page]] = {
       val request = Request.GetCategorySearchResultsV2(id, 1 @@ Url.Page, searchFilter)
       get[Result](request).map(_ >>= (_.page))
     }
 
-    def soldOutPage(id: Category.Id, searchFilter: Option[SearchFilter]): F[Option[Page]] = {
+    def soldOutPage(id: Category.Id): F[Option[Page]] = soldOutPage(id, None)
+
+    def soldOutPage(id: Category.Id, searchFilter: SearchFilter): F[Option[Page]] = soldOutPage(id, Some(searchFilter))
+
+    private def soldOutPage(id: Category.Id, searchFilter: Option[SearchFilter]): F[Option[Page]] = {
       val request = Request.GetCategorySoldOutResultsV2(id, soldOutPage = 1 @@ Url.SoldOutPage, searchFilter = searchFilter)
       get[Result](request).map(_ >>= (_.page))
     }
 
-    def searchFilters(id: Category.Id, searchFilterKey: SearchFilter.Key): F[Option[SearchFilters]] = {
+    def searchFilters(id: Category.Id, searchFilterKey: SearchFilter.Key): Stream[F, SearchFilter] = {
       val request = Request.GetCategorySearchFilterValues(id, searchFilterKey = searchFilterKey)
-      get[SearchFilters](request)
+
+      Stream.eval(get[SearchFilters](request)) >>= { filtersOpt =>
+        val filters = filtersOpt.fold(List.empty[SearchFilter])(_.values)
+        Stream.emits(filters)
+      }
     }
 
     def searchResultsV2(id: Category.Id, page: Url.Page, searchFilter: Option[SearchFilter]): F[Option[SearchResultsV2]] = {
@@ -111,9 +125,11 @@ object OzonApi {
           def category(id: Category.Id): W[Option[Category]]                                                               = fw(ufg.category(id))
           def categories(id: Category.Id)(p: Category => Boolean): Q[Category]                                             = gq(ufg.categories(id)(p))
           def categoryMenu(id: Category.Id): W[Option[CategoryMenu]]                                                       = fw(ufg.categoryMenu(id))
-          def page(id: Category.Id, sf: Option[SearchFilter]): W[Option[Page]]                                             = fw(ufg.page(id))
-          def soldOutPage(id: Category.Id, sf: Option[SearchFilter]): W[Option[Page]]                                      = fw(ufg.soldOutPage(id))
-          def searchFilters(id: Category.Id, key: SearchFilter.Key): W[Option[SearchFilters]]                              = fw(ufg.searchFilters(id, key))
+          def page(id: Category.Id): W[Option[Page]]                                                                       = fw(ufg.page(id))
+          def page(id: Category.Id, sf: SearchFilter): W[Option[Page]]                                                     = fw(ufg.page(id, sf))
+          def soldOutPage(id: Category.Id): W[Option[Page]]                                                                = fw(ufg.soldOutPage(id))
+          def soldOutPage(id: Category.Id, sf: SearchFilter): W[Option[Page]]                                              = fw(ufg.soldOutPage(id, sf))
+          def searchFilters(id: Category.Id, key: SearchFilter.Key): Q[SearchFilter]                                       = gq(ufg.searchFilters(id, key))
           def searchResultsV2(id: Category.Id, p: Url.Page, sf: Option[SearchFilter]): W[Option[SearchResultsV2]]          = fw(ufg.searchResultsV2(id, p, sf))
           def soldOutResultsV2(id: Category.Id, p: Url.SoldOutPage, sf: Option[SearchFilter]): W[Option[SoldOutResultsV2]] =
             fw(ufg.soldOutResultsV2(id, p, sf))

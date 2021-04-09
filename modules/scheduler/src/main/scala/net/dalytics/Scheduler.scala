@@ -65,8 +65,8 @@ object Scheduler {
     ozonApi: OzonApi[F, Stream[F, *]]
   ): Stream[F, HandlerCommand] =
     sourceConfig match {
-      case SourceConfig.WbCatalog(_, _)                                       => ???
-      case SourceConfig.OzonSeller(pageLimit, every)                          =>
+      case SourceConfig.WbCatalog(_, _)                                      => ???
+      case SourceConfig.OzonSeller(pageLimit, every)                         =>
         Stream
           .awakeEvery[F](every)
           .flatMap { _ =>
@@ -74,21 +74,33 @@ object Scheduler {
               HandlerCommand.handleOzonRequest[F](ozon.Request.GetSellerList(page @@ ozon.Url.Page))
             }
           }
-      case SourceConfig.OzonCategory(rootCategorytId, searchFilterKey, every) =>
+      case SourceConfig.OzonCategory(rootCategoryId, searchFilterKey, every) =>
         Stream
           .awakeEvery[F](every)
           .flatMap { _ =>
             ozonApi
-              .categories(rootCategorytId)(_ => true)
-              .flatMap { case ozon.Category(categoryId, _, _, _) =>
+              .categories(rootCategoryId)(_ => true)
+              .map { case ozon.Category(categoryId, _, _, _) =>
                 ozonApi
                   .searchFilters(categoryId, searchFilterKey)
                   .prefetch
                   .broadcastThrough(
-                    (searchFilters: Stream[F, ozon.SearchFilter]) => searchFilters.parEvalMapUnordered(32)(ozonApi.searchPage(categoryId, _)),
-                    (searchFilters: Stream[F, ozon.SearchFilter]) => searchFilters.parEvalMapUnordered(32)(ozonApi.soldOutPage(categoryId, _))
+                    (searchFilters: Stream[F, ozon.SearchFilter]) =>
+                      searchFilters.parEvalMapUnordered(32)(searchFilter => ozonApi.searchPage(categoryId, searchFilter).map(searchFilter -> _)),
+                    (searchFilters: Stream[F, ozon.SearchFilter]) =>
+                      searchFilters.parEvalMapUnordered(32)(searchFilter => ozonApi.soldOutPage(categoryId, searchFilter).map(searchFilter -> _))
                   )
-                  .map(???)
+                  .collect { case (searchFilter, Some(page)) => searchFilter -> page }
+                  .parEvalMapUnordered(1024) { case (searchFilter, page) =>
+                    val request = page match {
+                      case ozon.SearchPage(_, total, _)  =>
+                        ozon.Request.GetCategorySearchResultsV2(categoryId, total @@ ozon.Url.Page, searchFilter)
+                      case ozon.SoldOutPage(_, total, _) =>
+                        ozon.Request.GetCategorySoldOutResultsV2(categoryId, total @@ ozon.Url.SoldOutPage, searchFilter)
+                    }
+
+                    HandlerCommand.handleOzonRequest(request)
+                  }
               }
               .parJoin(32)
           }

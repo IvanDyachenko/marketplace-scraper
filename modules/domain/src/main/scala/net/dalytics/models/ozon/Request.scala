@@ -59,6 +59,9 @@ object Request {
   }
 
   object GetCategorySearchResultsV2 {
+    def apply(categoryId: Category.Id, page: Url.Page, searchFilter: SearchFilter): GetCategorySearchResultsV2 =
+      apply(categoryId, page, Some(searchFilter))
+
     implicit val vulcanCodec: Codec[GetCategorySearchResultsV2] =
       Codec.record[GetCategorySearchResultsV2](
         name = "GetCategorySearchResultsV2",
@@ -90,6 +93,9 @@ object Request {
   }
 
   object GetCategorySoldOutResultsV2 {
+    def apply(categoryId: Category.Id, soldOutPage: Url.SoldOutPage, searchFilter: SearchFilter): GetCategorySoldOutResultsV2 =
+      apply(categoryId, soldOutPage = soldOutPage, searchFilter = Some(searchFilter))
+
     implicit val vulcanCodec: Codec[GetCategorySoldOutResultsV2] =
       Codec.record[GetCategorySoldOutResultsV2](
         name = "GetCategorySoldOutResultsV2",

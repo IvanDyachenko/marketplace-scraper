@@ -8,21 +8,21 @@ import vulcan.Codec
 import io.circe.Decoder
 
 @derive(loggable)
-sealed trait Page {
+sealed trait Page extends Product with Serializable {
   def current: Int
   def total: Int
   def totalItems: Int
 }
 
 @derive(loggable)
-final case class SearchPage private (current: Int, total: Int, totalItems: Int) extends Page
+final case class SearchPage(current: Int, total: Int, totalItems: Int) extends Page
 
 object SearchPage {
   implicit val circeDecoder: Decoder[SearchPage] = Decoder.forProduct3("currentPage", "totalPages", "totalFound")(apply)
 }
 
 @derive(loggable)
-final case class SoldOutPage private (current: Int, total: Int, totalItems: Int) extends Page
+final case class SoldOutPage(current: Int, total: Int, totalItems: Int) extends Page
 
 object SoldOutPage {
   implicit val circeDecoder: Decoder[SoldOutPage] = Decoder.forProduct3("currentSoldOutPage", "totalPages", "totalFound")(apply)

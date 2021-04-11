@@ -88,7 +88,7 @@ object Scheduler {
                     .broadcastThrough(
                       (searchFilters: Stream[F, ozon.SearchFilter]) =>
                         searchFilters
-                          .parEvalMapUnordered(32)(searchFilter => ozonApi.searchPage(categoryId, List(searchFilter)).map(searchFilter -> _))
+                          .parEvalMapUnordered(16)(searchFilter => ozonApi.searchPage(categoryId, List(searchFilter)).map(searchFilter -> _))
                           .collect { case (searchFilter, Some(page)) if page.total > 0 => searchFilter -> page }
                           .flatMap { case (searchFilter, ozon.Page(_, total, _)) =>
                             Stream.range(1, total.min(278) + 1).covary[F].parEvalMapUnordered(278) { page =>
@@ -98,7 +98,7 @@ object Scheduler {
                           },
                       (searchFilters: Stream[F, ozon.SearchFilter]) =>
                         searchFilters
-                          .parEvalMapUnordered(32)(searchFilter => ozonApi.soldOutPage(categoryId, List(searchFilter)).map(searchFilter -> _))
+                          .parEvalMapUnordered(16)(searchFilter => ozonApi.soldOutPage(categoryId, List(searchFilter)).map(searchFilter -> _))
                           .collect { case (searchFilter, Some(page)) if page.total > 0 => searchFilter -> page }
                           .flatMap { case (searchFilter, ozon.Page(_, total, _)) =>
                             Stream.range(1, total.min(278) + 1).covary[F].parEvalMapUnordered(278) { page =>

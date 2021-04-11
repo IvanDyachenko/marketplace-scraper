@@ -2,7 +2,7 @@ package net.dalytics.config
 
 import scala.concurrent.duration.FiniteDuration
 
-import cats.effect.{Blocker, ContextShift, Sync}
+import cats.effect.Sync
 import derevo.derive
 import derevo.pureconfig.pureconfigReader
 import pureconfig.ConfigSource
@@ -25,6 +25,6 @@ final case class HttpConfig(
 object HttpConfig {
   lazy val load: HttpConfig = ConfigSource.default.at("http").loadOrThrow[HttpConfig]
 
-  def loadF[F[_]: Sync: ContextShift](implicit blocker: Blocker): F[HttpConfig] =
+  def loadF[F[_]: Sync: ContextShift]: F[HttpConfig] =
     ConfigSource.default.at("http").loadF[F, HttpConfig](blocker)
 }

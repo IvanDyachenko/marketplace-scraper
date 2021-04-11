@@ -1,6 +1,6 @@
 package net.dalytics.config
 
-import cats.effect.{Blocker, ContextShift, Sync}
+import cats.effect.Sync
 import derevo.derive
 import derevo.pureconfig.pureconfigReader
 import pureconfig.ConfigSource
@@ -14,6 +14,6 @@ final case class SchedulerConfig(
 object SchedulerConfig {
   lazy val load: SchedulerConfig = ConfigSource.default.at("scheduler").loadOrThrow[SchedulerConfig]
 
-  def loadF[F[_]: Sync: ContextShift](implicit blocker: Blocker): F[SchedulerConfig] =
+  def loadF[F[_]: Sync: ContextShift]: F[SchedulerConfig] =
     ConfigSource.default.at("scheduler").loadF[F, SchedulerConfig](blocker)
 }

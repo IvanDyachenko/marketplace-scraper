@@ -2,23 +2,25 @@ package net.dalytics.models.ozon
 
 import cats.implicits._
 import derevo.derive
+import tofu.logging.derivation.show
 import tofu.logging.derivation.loggable
 import vulcan.Codec
 import vulcan.generic._
 import io.circe.Decoder
-import tofu.logging.LoggableEnum
 import org.http4s.{QueryParamEncoder, QueryParamKeyLike, QueryParameterKey, QueryParameterValue}
+import tofu.logging.LoggableEnum
 import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry}
 import enumeratum.EnumEntry.LowerCamelcase
 
-@derive(loggable)
+@derive(show, loggable)
+@AvroNamespace("models.ozon")
 sealed trait SearchFilter {
   def key: SearchFilter.Key
 }
 
-@derive(loggable)
-@AvroNamespace("ozon.models")
-final case class BrandFilter(brandId: Brand.Id) extends SearchFilter {
+@derive(show, loggable)
+@AvroNamespace("models.ozon")
+final case class BrandFilter private (brandId: Brand.Id) extends SearchFilter {
   val key = SearchFilter.Key.Brand
 }
 
@@ -35,7 +37,7 @@ object SearchFilter {
     case object Brand extends Key
 
     implicit val queryParamKeyLike = new QueryParamKeyLike[Key] {
-      def getKey(t: Key): QueryParameterKey = QueryParameterKey(t.show)
+      def getKey(k: Key): QueryParameterKey = QueryParameterKey(k.show)
     }
   }
 
@@ -45,10 +47,9 @@ object SearchFilter {
     })
   }
 
-  implicit val circeDecoder: Decoder[SearchFilter] =
-    List[Decoder[SearchFilter]](
-      Decoder[BrandFilter].widen
-    ).reduceLeft(_ or _)
+  implicit val circeDecoder: Decoder[SearchFilter] = List[Decoder[SearchFilter]](
+    Decoder[BrandFilter].widen
+  ).reduceLeft(_ or _)
 
-  implicit val vulcanCodec: Codec[SearchFilter] = Codec.union[SearchFilter](alt => alt[BrandFilter])
+  implicit val vulcanCodec: Codec[SearchFilter] = Codec.union(alt => alt[BrandFilter])
 }

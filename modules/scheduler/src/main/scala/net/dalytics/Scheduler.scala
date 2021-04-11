@@ -71,7 +71,7 @@ object Scheduler {
           .awakeEvery[F](every)
           .flatMap { _ =>
             Stream.range(1, pageLimit + 1).parEvalMapUnordered[F, HandlerCommand](pageLimit) { page =>
-              HandlerCommand.handleOzonRequest[F](ozon.Request.GetSellerList(page @@ ozon.Url.Page))
+              HandlerCommand.handleOzonRequest[F](ozon.Request.GetSellerList(page @@ ozon.Request.Page))
             }
           }
       case SourceConfig.OzonCategory(rootCategoryId, searchFilterKey, every) =>
@@ -80,29 +80,40 @@ object Scheduler {
           .flatMap { _ =>
             ozonApi
               .categories(rootCategoryId)(_ => true)
-              .map { case ozon.Category(categoryId, _, _, _) =>
-                ozonApi
-                  .searchFilters(categoryId, searchFilterKey)
-                  .prefetch
-                  .broadcastThrough(
-                    (searchFilters: Stream[F, ozon.SearchFilter]) =>
-                      searchFilters.parEvalMapUnordered(32)(searchFilter => ozonApi.searchPage(categoryId, searchFilter).map(searchFilter -> _)),
-                    (searchFilters: Stream[F, ozon.SearchFilter]) =>
-                      searchFilters.parEvalMapUnordered(32)(searchFilter => ozonApi.soldOutPage(categoryId, searchFilter).map(searchFilter -> _))
-                  )
-                  .collect { case (searchFilter, Some(page)) => searchFilter -> page }
-                  .parEvalMapUnordered(1024) { case (searchFilter, page) =>
-                    val request = page match {
-                      case ozon.SearchPage(_, total, _)  =>
-                        ozon.Request.GetCategorySearchResultsV2(categoryId, total @@ ozon.Url.Page, searchFilter)
-                      case ozon.SoldOutPage(_, total, _) =>
-                        ozon.Request.GetCategorySoldOutResultsV2(categoryId, total @@ ozon.Url.SoldOutPage, searchFilter)
-                    }
-
+              .map {
+                case category @ ozon.Category(categoryId, _, _, _) if category.isLeaf =>
+                  ozonApi
+                    .searchFilters(categoryId, searchFilterKey)
+                    .prefetch
+                    .broadcastThrough(
+                      (searchFilters: Stream[F, ozon.SearchFilter]) =>
+                        searchFilters
+                          .parEvalMapUnordered(32)(searchFilter => ozonApi.searchPage(categoryId, List(searchFilter)).map(searchFilter -> _))
+                          .collect { case (searchFilter, Some(page)) if page.total > 0 => searchFilter -> page }
+                          .flatMap { case (searchFilter, ozon.Page(_, total, _)) =>
+                            Stream.range(1, total.min(278) + 1).covary[F].parEvalMapUnordered(278) { page =>
+                              val request = ozon.Request.GetCategorySearchResultsV2(categoryId, page @@ ozon.Request.Page, List(searchFilter))
+                              HandlerCommand.handleOzonRequest[F](request)
+                            }
+                          },
+                      (searchFilters: Stream[F, ozon.SearchFilter]) =>
+                        searchFilters
+                          .parEvalMapUnordered(32)(searchFilter => ozonApi.soldOutPage(categoryId, List(searchFilter)).map(searchFilter -> _))
+                          .collect { case (searchFilter, Some(page)) if page.total > 0 => searchFilter -> page }
+                          .flatMap { case (searchFilter, ozon.Page(_, total, _)) =>
+                            Stream.range(1, total.min(278) + 1).covary[F].parEvalMapUnordered(278) { page =>
+                              val request = ozon.Request.GetCategorySoldOutResultsV2(categoryId, page @@ ozon.Request.SoldOutPage, List(searchFilter))
+                              HandlerCommand.handleOzonRequest[F](request)
+                            }
+                          }
+                    )
+                case category @ ozon.Category(categoryId, _, _, _)                    =>
+                  Stream.eval {
+                    val request = ozon.Request.GetCategorySearchResultsV2(categoryId, 1 @@ ozon.Request.Page, List.empty)
                     HandlerCommand.handleOzonRequest(request)
                   }
               }
-              .parJoin(32)
+              .parJoin(64)
           }
     }
 }

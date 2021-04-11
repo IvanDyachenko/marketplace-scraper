@@ -78,10 +78,10 @@ object ParserEvent {
 
     def apply[F[_]: Monad: Clock](timestamp: Timestamp, result: ozon.Result): F[List[ParserEvent]] = {
       val opt = for {
+        page            <- result.page
         category        <- result.category
-        searchPage      <- result.searchPage
         searchResultsV2 <- result.searchResultsV2
-      } yield (searchPage, category, searchResultsV2)
+      } yield (page, category, searchResultsV2)
 
       opt.fold(List.empty[ParserEvent].pure[F]) { case (page, category, searchResultsV2) => apply[F](timestamp, page, category, searchResultsV2) }
     }
@@ -131,10 +131,10 @@ object ParserEvent {
 
     def apply[F[_]: Monad: Clock](timestamp: Timestamp, result: ozon.Result): F[List[ParserEvent]] = {
       val opt = for {
+        page             <- result.page
         category         <- result.category
-        soldOutPage      <- result.soldOutPage
         soldOutResultsV2 <- result.soldOutResultsV2
-      } yield (soldOutPage, category, soldOutResultsV2)
+      } yield (page, category, soldOutResultsV2)
 
       opt.fold(List.empty[ParserEvent].pure[F]) { case (page, category, soldOutResultsV2) => apply[F](timestamp, page, category, soldOutResultsV2) }
     }

@@ -8,18 +8,13 @@ import vulcan.Codec
 import io.circe.Decoder
 
 @derive(loggable)
-final case class Page private (current: Int, total: Int, totalItems: Int)
+final case class Page(current: Int, total: Int, totalItems: Int) extends Product with Serializable
 
 object Page {
-  val Top1     = 1
-  val Top10    = 10
-  val MaxTotal = 278
-
-  implicit final val circeDecoder: Decoder[Page] =
-    List[Decoder[Page]](
-      Decoder.forProduct3("currentPage", "totalPages", "totalFound")(apply),
-      Decoder.forProduct3("currentSoldOutPage", "totalPages", "totalFound")(apply)
-    ).reduceLeft(_ or _)
+  implicit val circeDecoder: Decoder[Page] = List[Decoder[Page]](
+    Decoder.forProduct3("currentPage", "totalPages", "totalFound")(apply),
+    Decoder.forProduct3("currentSoldOutPage", "totalPages", "totalFound")(apply)
+  ).reduceLeft(_ or _)
 
   private[models] def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => Page): FreeApplicative[Codec.Field[A, *], Page] =
     (field("currentPage", f(_).current), field("totalPages", f(_).total), field("totalFoundItems", f(_).totalItems)).mapN(apply)

@@ -2,14 +2,12 @@ package net.dalytics
 
 import io.circe.Encoder
 import org.http4s.{Headers, Uri, MediaType, Method, Request => Http4sRequest, ContentCoding, HttpVersion}
-import org.http4s.headers.{`Accept-Encoding`, `User-Agent`, Accept, AgentComment, AgentProduct, Connection, Host}
 import org.http4s.util.CaseInsensitiveString
 import org.http4s.circe.jsonEncoderOf
+import org.http4s.headers.{`Accept-Encoding`, `User-Agent`, Accept, AgentComment, AgentProduct, Connection, Host}
 
 import net.dalytics.models.ozon.{Request => OzonRequest}
-
 import net.dalytics.models.wildberries.{Request => WildBerriesRequest}
-
 import net.dalytics.models.yandex.market.headers._
 import net.dalytics.models.yandex.market.{Request => YandexMarketRequest}
 import net.dalytics.models.yandex.market.Request.{Fields, RearrFactors, Sections}
@@ -27,17 +25,34 @@ package object marshalling {
         `User-Agent`(AgentProduct("OzonStore", Some("430")))
       )
 
-    val uri: Uri =
-      Uri(Some(Uri.Scheme.https), Some(Uri.Authority(host = host)))
+    val uri: Uri = {
+      val uri = Uri(Some(Uri.Scheme.https), Some(Uri.Authority(host = host)))
         .addPath(request.path)
         .+*?(request.url)
+        .+??(request.layoutContainer)
+        .+??(request.layoutPageIndex)
+        .+??(request.page)
+        .+??(request.soldOutPage)
 
-    Http4sRequest(
-      httpVersion = HttpVersion.`HTTP/1.1`,
-      method = Method.GET,
-      uri = uri,
-      headers = headers
-    )
+      request.searchFilters.foldLeft(uri)((uri, searchFilter) => uri.+?(searchFilter.key, searchFilter))
+    }
+
+    request match {
+      case _: OzonRequest.GetCategorySearchFilterValues =>
+        Http4sRequest(
+          httpVersion = HttpVersion.`HTTP/1.1`,
+          method = Method.POST,
+          uri = uri,
+          headers = headers
+        ).withEntity(request)(jsonEncoderOf[F, OzonRequest])
+      case _                                            =>
+        Http4sRequest(
+          httpVersion = HttpVersion.`HTTP/1.1`,
+          method = Method.GET,
+          uri = uri,
+          headers = headers
+        )
+    }
   }
 
   implicit def wildBerriesRequest2http4sRequest[F[_]](request: WildBerriesRequest): Http4sRequest[F] = {

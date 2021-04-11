@@ -18,7 +18,6 @@ final case class Category(
   children: Map[Category.Id, Category] = Map.empty,
   catalogName: Option[Catalog.Name] = None
 ) {
-  val link: Url       = Url(s"/category/${id.show}")
   val isLeaf: Boolean = children.isEmpty
 
   def find(categoryId: Category.Id): Option[Category] = tree.collectFirst { case category if category.id == categoryId => category }

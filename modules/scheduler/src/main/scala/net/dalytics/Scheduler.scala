@@ -113,7 +113,7 @@ object Scheduler {
                     HandlerCommand.handleOzonRequest(request)
                   }
               }
-              .parJoin(64)
+              .parJoin(32)
           }
     }
 }

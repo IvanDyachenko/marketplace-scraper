@@ -80,7 +80,7 @@ object Scheduler {
           .flatMap { _ =>
             ozonApi
               .categories(rootCategoryId)(_.isLeaf)
-              .parEvalMapUnordered(64) { case ozon.Category(categoryId, _, _, _) =>
+              .parEvalMapUnordered(32) { case ozon.Category(categoryId, _, _, _) =>
                 ozonApi.searchFilters(categoryId, searchFilterKey).map(categoryId -> _)
               }
               .flatMap { case (categoryId, searchFilters) => Stream.emits(searchFilters.map(categoryId -> _)) }

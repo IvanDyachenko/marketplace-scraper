@@ -80,15 +80,14 @@ object Scheduler {
           .flatMap { _ =>
             ozonApi
               .categories(rootCategoryId)(_.isLeaf)
-              .parEvalMapUnordered(32) { case ozon.Category(categoryId, _, _, _) =>
+              .parEvalMapUnordered(256) { case ozon.Category(categoryId, _, _, _) =>
                 ozonApi.searchFilters(categoryId, searchFilterKey).map(categoryId -> _)
               }
               .flatMap { case (categoryId, searchFilters) => Stream.emits(searchFilters.map(categoryId -> _)) }
-              .prefetch
               .broadcastThrough(
                 (stream: Stream[F, (ozon.Category.Id, ozon.SearchFilter)]) =>
                   stream
-                    .parEvalMapUnordered(16) { case (categoryId, searchFilter) =>
+                    .parEvalMapUnordered(256) { case (categoryId, searchFilter) =>
                       ozonApi.searchPage(categoryId, List(searchFilter)).map(page => (categoryId, searchFilter, page))
                     }
                     .collect { case (categoryId, searchFilter, Some(page)) if page.total > 0 => (categoryId, searchFilter, page) }
@@ -100,7 +99,7 @@ object Scheduler {
                     },
                 (stream: Stream[F, (ozon.Category.Id, ozon.SearchFilter)]) =>
                   stream
-                    .parEvalMapUnordered(16) { case (categoryId, searchFilter) =>
+                    .parEvalMapUnordered(256) { case (categoryId, searchFilter) =>
                       ozonApi.soldOutPage(categoryId, List(searchFilter)).map(page => (categoryId, searchFilter, page))
                     }
                     .collect { case (categoryId, searchFilter, Some(page)) if page.total > 0 => (categoryId, searchFilter, page) }

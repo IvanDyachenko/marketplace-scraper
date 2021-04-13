@@ -99,7 +99,7 @@ object Scheduler {
                     },
                 (stream: Stream[F, (ozon.Category.Id, ozon.SearchFilter)]) =>
                   stream
-                    .parEvalMapUnordered(256) { case (categoryId, searchFilter) =>
+                    .parEvalMapUnordered(8) { case (categoryId, searchFilter) =>
                       ozonApi.soldOutPage(categoryId, List(searchFilter)).map(page => (categoryId, searchFilter, page))
                     }
                     .collect { case (categoryId, searchFilter, Some(page)) if page.total > 0 => (categoryId, searchFilter, page.total.min(278)) }

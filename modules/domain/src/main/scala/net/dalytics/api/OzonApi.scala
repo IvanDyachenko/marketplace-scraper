@@ -51,7 +51,7 @@ object OzonApi {
         Cofree
           .unfold[Stream[F, *], Category](_) { cat =>
             val ids = cat.children.keys.toList
-            Stream.emits(ids).covary[F].parEvalMapUnordered(128)(category).collect { case Some(subcat) => subcat }
+            Stream.emits(ids).covary[F].parEvalMapUnordered(64)(category).collect { case Some(subcat) => subcat }
           }
           .pure[F]
       ))
@@ -101,7 +101,11 @@ object OzonApi {
     Resource.eval {
       logs
         .forService[OzonApi[F, S]]
-        .map(implicit l => bifunctorK.bimapK(new Impl[F])(Lift.liftIdentity[F].liftF)(LiftStream[S, F].liftF))
+        .map { implicit l =>
+          val impl = new Impl[F]
+
+          bifunctorK.bimapK(impl)(Lift.liftIdentity[F].liftF)(LiftStream[S, F].liftF)
+        }
     }
 
   implicit val bifunctorK: BifunctorK[OzonApi] =

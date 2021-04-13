@@ -61,22 +61,17 @@ object HttpClient extends ContextEmbed[HttpClient] {
               jsonOf(Sync[F], decoder)
                 .decode(response, strict = false)
                 .rethrowT
-
-            case unexpected =>
+            case unexpected           =>
               HttpClientError
                 .ResponseUnexpectedStatusError(s"Received ${unexpected.status.code} status during execution of the request to ${request.uri.show}")
                 .raise[F, Res]
           }
         }
         .recoverWith[ConnectionFailure] { error =>
-          HttpClientError
-            .ConnectTimeoutError(error.toString)
-            .raise[F, Res]
+          HttpClientError.ConnectTimeoutError(error.toString).raise[F, Res]
         }
         .recoverWith[TimeoutException] { error =>
-          HttpClientError
-            .RequestTimeoutError(error.toString)
-            .raise[F, Res]
+          HttpClientError.RequestTimeoutError(error.toString).raise[F, Res]
         }
         .recoverWith[DecodeFailure] { error =>
           val errorDetails = error.cause.fold(error.message.takeWhile(_ != '{'))(_.getMessage)
@@ -87,7 +82,6 @@ object HttpClient extends ContextEmbed[HttpClient] {
             )
             .raise[F, Res]
         }
-        .retryOnly[HttpClientError.ResponseDecodeError](3)
   }
 
   implicit val embed: Embed[HttpClient] = new Embed[HttpClient] {

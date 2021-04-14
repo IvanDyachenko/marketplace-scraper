@@ -89,7 +89,7 @@ object Scheduler {
                       case (category, _)                             => (category, 1)
                     }
                     .flatMap { case (category, totalPages) =>
-                      Stream.range(1, totalPages).covary[F].parEvalMapUnordered(278) { n =>
+                      Stream.range(1, totalPages + 1).covary[F].parEvalMapUnordered(278) { n =>
                         val request = ozon.Request.GetCategorySearchResultsV2(category.id, n @@ ozon.Request.Page, List.empty)
                         HandlerCommand.handleOzonRequest[F](request)
                       }
@@ -102,7 +102,7 @@ object Scheduler {
                       case (category, _)                             => (category, 1)
                     }
                     .flatMap { case (category, totalPages) =>
-                      Stream.range(1, totalPages).covary[F].parEvalMapUnordered(278) { n =>
+                      Stream.range(1, totalPages + 1).covary[F].parEvalMapUnordered(278) { n =>
                         val request = ozon.Request.GetCategorySoldOutResultsV2(category.id, n @@ ozon.Request.SoldOutPage, List.empty)
                         HandlerCommand.handleOzonRequest[F](request)
                       }

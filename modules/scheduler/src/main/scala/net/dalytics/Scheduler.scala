@@ -90,13 +90,13 @@ object Scheduler {
                 (categories: Stream[F, ozon.Category]) =>
                   categories
                     .collect { case category if category.isLeaf => category }
-                    .map { category =>
+                    .flatMap { category =>
                       ozonApi
                         .searchFilters(category.id, searchFilterKey)
                         .broadcastThrough(
                           (searchFilters: Stream[F, ozon.SearchFilter]) =>
                             searchFilters
-                              .parEvalMapUnordered(64)(searchFilter => ozonApi.searchPage(category.id, List(searchFilter)).map(searchFilter -> _))
+                              .parEvalMapUnordered(256)(searchFilter => ozonApi.searchPage(category.id, List(searchFilter)).map(searchFilter -> _))
                               .flatMap {
                                 case (searchFilter, Some(ozon.Page(_, totalPages, _))) if totalPages > 0 =>
                                   Stream.range(1, totalPages.min(ozon.Page.MaxValue) + 1).covary[F].parEvalMapUnordered(ozon.Page.MaxValue) { n =>
@@ -107,7 +107,7 @@ object Scheduler {
                               },
                           (searchFilters: Stream[F, ozon.SearchFilter]) =>
                             searchFilters
-                              .parEvalMapUnordered(64)(searchFilter => ozonApi.soldOutPage(category.id, List(searchFilter)).map(searchFilter -> _))
+                              .parEvalMapUnordered(256)(searchFilter => ozonApi.soldOutPage(category.id, List(searchFilter)).map(searchFilter -> _))
                               .flatMap {
                                 case (searchFilter, Some(ozon.Page(_, totalPages, _))) if totalPages > 0 =>
                                   Stream.range(1, totalPages.min(ozon.Page.MaxValue) + 1).covary[F].parEvalMapUnordered(ozon.Page.MaxValue) { n =>
@@ -118,7 +118,6 @@ object Scheduler {
                               }
                         )
                     }
-                    .parJoin(16)
               )
           }
     }

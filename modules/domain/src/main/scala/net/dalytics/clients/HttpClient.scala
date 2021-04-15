@@ -59,7 +59,7 @@ object HttpClient extends ContextEmbed[HttpClient] {
           response match {
             case Status.Successful(_) =>
               jsonOf(Sync[F], decoder)
-                .decode(response, strict = false)
+                .decode(response, strict = true)
                 .rethrowT
             case unexpected           =>
               HttpClientError

@@ -41,7 +41,7 @@ package object marshalling {
       case _: OzonRequest.GetCategorySearchFilterValues =>
         Http4sRequest(
           httpVersion = HttpVersion.`HTTP/1.1`,
-          method = Method.POST,
+          method = Method.PUT,
           uri = uri,
           headers = headers
         ).withEntity(request)(jsonEncoderOf[F, OzonRequest])
@@ -51,7 +51,7 @@ package object marshalling {
           method = Method.GET,
           uri = uri,
           headers = headers
-        )
+        ).withEmptyBody
     }
   }
 

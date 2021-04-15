@@ -11,6 +11,8 @@ import io.circe.Decoder
 final case class Page(current: Int, total: Int, totalItems: Int) extends Product with Serializable
 
 object Page {
+  val MaxValue = 278
+
   implicit val circeDecoder: Decoder[Page] = List[Decoder[Page]](
     Decoder.forProduct3("currentPage", "totalPages", "totalFound")(apply),
     Decoder.forProduct3("currentSoldOutPage", "totalPages", "totalFound")(apply)

@@ -118,7 +118,7 @@ object Scheduler {
                               }
                         )
                     }
-                    .parJoin(256)
+                    .parJoin(16)
               )
           }
     }

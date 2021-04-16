@@ -2,7 +2,6 @@ package net.dalytics.clients
 
 import java.util.concurrent.TimeoutException
 import scala.util.control.NoStackTrace
-import scala.concurrent.duration._
 
 import cats.syntax.show._
 import tofu.syntax.raise._
@@ -11,7 +10,7 @@ import tofu.syntax.monadic._
 import derevo.derive
 import tofu.logging.derivation.loggable
 import cats.FlatMap
-import cats.effect.{ConcurrentEffect, Resource, Sync, Timer}
+import cats.effect.{ConcurrentEffect, Resource, Sync}
 import tofu.{Execute, Handle, Raise}
 import tofu.lift.Unlift
 import tofu.higherKind.Embed
@@ -22,7 +21,7 @@ import org.http4s.{DecodeFailure, Request => Http4sRequest, Status}
 import org.http4s.circe.jsonOf
 import org.http4s.client.{Client, ConnectionFailure}
 import org.http4s.client.blaze.BlazeClientBuilder
-import org.http4s.client.middleware.{GZip, Retry, RetryPolicy}
+import org.http4s.client.middleware.GZip
 
 import net.dalytics.config.HttpConfig
 
@@ -50,10 +49,10 @@ object HttpClient extends ContextEmbed[HttpClient] {
   type Raising[F[_]]  = Raise[F, HttpClientError]
   type Handling[F[_]] = Handle[F, HttpClientError]
 
-  class Impl[F[_]: Sync: Handle[*[_], TimeoutException]: Handle[*[_], DecodeFailure]](http4sClient: Client[F]) extends HttpClient[F] {
+  class Impl[F[_]: Sync: Handle[*[_], TimeoutException]: Handle[*[_], DecodeFailure]](cfg: HttpConfig)(client: Client[F]) extends HttpClient[F] {
 
     def send[Res](request: Http4sRequest[F])(implicit decoder: Decoder[Res]): F[Res] =
-      http4sClient
+      client
         .run(request)
         .use { response =>
           response match {
@@ -73,6 +72,7 @@ object HttpClient extends ContextEmbed[HttpClient] {
         .recoverWith[TimeoutException] { error =>
           HttpClientError.RequestTimeoutError(error.toString).raise[F, Res]
         }
+        .retryOnly[HttpClientError](cfg.requestMaxTotalAttempts)
         .recoverWith[DecodeFailure] { error =>
           val errorDetails = error.cause.fold(error.message.takeWhile(_ != '{'))(_.getMessage)
 
@@ -93,17 +93,17 @@ object HttpClient extends ContextEmbed[HttpClient] {
   def apply[F[_]](implicit ev: HttpClient[F]): ev.type = ev
 
   def make[
-    I[_]: Execute: ConcurrentEffect: Timer: Unlift[*[_], F],
+    I[_]: Execute: ConcurrentEffect: Unlift[*[_], F],
     F[_]: Sync
   ](httpConfig: HttpConfig)(implicit logs: Logs[I, F]): Resource[I, HttpClient[F]] =
     for {
       http4sClient <- buildHttp4sClient[I](httpConfig)
                         .map(GZip())
-                        .map { http4sClient =>
-                          val retryPolicy = recklesslyRetryPolicy[I](httpConfig.requestMaxDelayBetweenAttempts, httpConfig.requestMaxTotalAttempts)
-                          Retry(retryPolicy)(http4sClient)
-                        }
-      httpClient   <- Resource.eval(logs.forService[HttpClient[F]].map(_ => new Impl[F](translateHttp4sClient[I, F](http4sClient))))
+      //                .map { http4sClient =>
+      //                  val retryPolicy = recklesslyRetryPolicy[I](httpConfig.requestMaxDelayBetweenAttempts, httpConfig.requestMaxTotalAttempts)
+      //                  Retry(retryPolicy)(http4sClient)
+      //                }
+      httpClient   <- Resource.eval(logs.forService[HttpClient[F]].map(_ => new Impl[F](httpConfig)(translateHttp4sClient[I, F](http4sClient))))
     } yield httpClient
 
   // https://scastie.scala-lang.org/Odomontois/F29lLrY2RReZrcUJ1zIEEg/25
@@ -125,6 +125,6 @@ object HttpClient extends ContextEmbed[HttpClient] {
         .resource
     )
 
-  private def recklesslyRetryPolicy[F[_]](maxWait: Duration, maxRetry: Int): RetryPolicy[F] =
-    RetryPolicy(RetryPolicy.exponentialBackoff(maxWait = maxWait, maxRetry = maxRetry), (_, result) => RetryPolicy.recklesslyRetriable(result))
+//  private def recklesslyRetryPolicy[F[_]](maxWait: Duration, maxRetry: Int): RetryPolicy[F] =
+//    RetryPolicy(RetryPolicy.exponentialBackoff(maxWait = maxWait, maxRetry = maxRetry), (_, result) => RetryPolicy.recklesslyRetriable(result))
 }

@@ -98,36 +98,36 @@ object Scheduler {
                 (categories: Stream[F, ozon.Category]) =>
                   categories
                     .collect { case category if category.isLeaf => category }
-                    .map(category => ozonApi.searchFilters(category.id, searchFilterKey).map(category -> _))
-                    .parJoin(16)
+                    .map(category => ozonApi.searchFilters(category.id, searchFilterKey).map(category.id -> _))
+                    .parJoinUnbounded
                     .broadcastThrough(
-                      (categorySearchFilters: Stream[F, (ozon.Category, ozon.SearchFilter)]) =>
+                      (categorySearchFilters: Stream[F, (ozon.Category.Id, ozon.SearchFilter)]) =>
                         categorySearchFilters
-                          .parEvalMapUnordered(32) { case (category, searchFilter) =>
-                            ozonApi.searchPage(category.id, List(searchFilter)).map(page => (category, searchFilter, page))
+                          .parEvalMapUnordered(16) { case (categoryId, searchFilter) =>
+                            ozonApi.searchPage(categoryId, List(searchFilter)).map(page => (categoryId, searchFilter, page))
                           }
                           .flatMap {
-                            case (category, searchFilter, Some(ozon.Page(_, totalPages, _))) if totalPages > 0 =>
+                            case (categoryId, searchFilter, Some(ozon.Page(_, totalPages, _))) if totalPages > 0 =>
                               val filters = List(searchFilter)
                               Stream.range(1, totalPages.min(ozon.Page.MaxValue) + 1).covary[F].parEvalMapUnordered(ozon.Page.MaxValue) { n =>
-                                val request = ozon.Request.GetCategorySearchResultsV2(category.id, n @@ ozon.Request.Page, filters)
+                                val request = ozon.Request.GetCategorySearchResultsV2(categoryId, n @@ ozon.Request.Page, filters)
                                 HandlerCommand.handleOzonRequest[F](request)
                               }
-                            case _                                                                             => Stream.empty
+                            case _                                                                               => Stream.empty
                           },
-                      (categorySearchFilters: Stream[F, (ozon.Category, ozon.SearchFilter)]) =>
+                      (categorySearchFilters: Stream[F, (ozon.Category.Id, ozon.SearchFilter)]) =>
                         categorySearchFilters
-                          .parEvalMapUnordered(32) { case (category, searchFilter) =>
-                            ozonApi.soldOutPage(category.id, List(searchFilter)).map(page => (category, searchFilter, page))
+                          .parEvalMapUnordered(16) { case (categoryId, searchFilter) =>
+                            ozonApi.soldOutPage(categoryId, List(searchFilter)).map(page => (categoryId, searchFilter, page))
                           }
                           .flatMap {
-                            case (category, searchFilter, Some(ozon.Page(_, totalPages, _))) if totalPages > 0 =>
+                            case (categoryId, searchFilter, Some(ozon.Page(_, totalPages, _))) if totalPages > 0 =>
                               val filters = List(searchFilter)
                               Stream.range(1, totalPages.min(ozon.Page.MaxValue) + 1).covary[F].parEvalMapUnordered(ozon.Page.MaxValue) { n =>
-                                val request = ozon.Request.GetCategorySoldOutResultsV2(category.id, n @@ ozon.Request.SoldOutPage, filters)
+                                val request = ozon.Request.GetCategorySoldOutResultsV2(categoryId, n @@ ozon.Request.SoldOutPage, filters)
                                 HandlerCommand.handleOzonRequest[F](request)
                               }
-                            case _                                                                             => Stream.empty
+                            case _                                                                               => Stream.empty
                           }
                     )
               )

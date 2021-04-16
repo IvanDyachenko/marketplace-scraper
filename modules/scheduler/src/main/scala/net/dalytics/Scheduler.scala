@@ -86,7 +86,7 @@ object Scheduler {
                   */
                 (categories: Stream[F, ozon.Category]) =>
                   categories
-                    .parEvalMapUnordered(256) { category =>
+                    .parEvalMapUnordered(512) { category =>
                       val request = ozon.Request.GetCategorySearchResultsV2(category.id, 1 @@ ozon.Request.Page, List.empty)
                       HandlerCommand.handleOzonRequest[F](request)
                     },
@@ -97,37 +97,38 @@ object Scheduler {
                 (categories: Stream[F, ozon.Category]) =>
                   categories
                     .collect { case category if category.isLeaf => category }
-                    .map { category =>
-                      ozonApi
-                        .searchFilters(category.id, searchFilterKey)
-                        .broadcastThrough(
-                          (searchFilters: Stream[F, ozon.SearchFilter]) =>
-                            searchFilters
-                              .parEvalMapUnordered(8)(searchFilter => ozonApi.searchPage(category.id, List(searchFilter)).map(searchFilter -> _))
-                              .flatMap {
-                                case (searchFilter, Some(ozon.Page(_, totalPages, _))) if totalPages > 0 =>
-                                  val filters = List(searchFilter)
-                                  Stream.range(1, totalPages.min(ozon.Page.MaxValue) + 1).covary[F].parEvalMapUnordered(ozon.Page.MaxValue) { n =>
-                                    val request = ozon.Request.GetCategorySearchResultsV2(category.id, n @@ ozon.Request.Page, filters)
-                                    HandlerCommand.handleOzonRequest[F](request)
-                                  }
-                                case _                                                                   => Stream.empty
-                              },
-                          (searchFilters: Stream[F, ozon.SearchFilter]) =>
-                            searchFilters
-                              .parEvalMapUnordered(8)(searchFilter => ozonApi.soldOutPage(category.id, List(searchFilter)).map(searchFilter -> _))
-                              .flatMap {
-                                case (searchFilter, Some(ozon.Page(_, totalPages, _))) if totalPages > 0 =>
-                                  val filters = List(searchFilter)
-                                  Stream.range(1, totalPages.min(ozon.Page.MaxValue) + 1).covary[F].parEvalMapUnordered(ozon.Page.MaxValue) { n =>
-                                    val request = ozon.Request.GetCategorySoldOutResultsV2(category.id, n @@ ozon.Request.SoldOutPage, filters)
-                                    HandlerCommand.handleOzonRequest[F](request)
-                                  }
-                                case _                                                                   => Stream.empty
+                    .map(category => ozonApi.searchFilters(category.id, searchFilterKey).map(category -> _))
+                    .parJoin(512)
+                    .broadcastThrough(
+                      (categorySearchFilters: Stream[F, (ozon.Category, ozon.SearchFilter)]) =>
+                        categorySearchFilters
+                          .parEvalMapUnordered(512) { case (category, searchFilter) =>
+                            ozonApi.searchPage(category.id, List(searchFilter)).map(page => (category, searchFilter, page))
+                          }
+                          .flatMap {
+                            case (category, searchFilter, Some(ozon.Page(_, totalPages, _))) if totalPages > 0 =>
+                              val filters = List(searchFilter)
+                              Stream.range(1, totalPages.min(ozon.Page.MaxValue) + 1).covary[F].parEvalMapUnordered(ozon.Page.MaxValue) { n =>
+                                val request = ozon.Request.GetCategorySearchResultsV2(category.id, n @@ ozon.Request.Page, filters)
+                                HandlerCommand.handleOzonRequest[F](request)
                               }
-                        )
-                    }
-                    .parJoinUnbounded
+                            case _                                                                             => Stream.empty
+                          },
+                      (categorySearchFilters: Stream[F, (ozon.Category, ozon.SearchFilter)]) =>
+                        categorySearchFilters
+                          .parEvalMapUnordered(512) { case (category, searchFilter) =>
+                            ozonApi.soldOutPage(category.id, List(searchFilter)).map(page => (category, searchFilter, page))
+                          }
+                          .flatMap {
+                            case (category, searchFilter, Some(ozon.Page(_, totalPages, _))) if totalPages > 0 =>
+                              val filters = List(searchFilter)
+                              Stream.range(1, totalPages.min(ozon.Page.MaxValue) + 1).covary[F].parEvalMapUnordered(ozon.Page.MaxValue) { n =>
+                                val request = ozon.Request.GetCategorySoldOutResultsV2(category.id, n @@ ozon.Request.SoldOutPage, filters)
+                                HandlerCommand.handleOzonRequest[F](request)
+                              }
+                            case _                                                                             => Stream.empty
+                          }
+                    )
               )
           }
     }

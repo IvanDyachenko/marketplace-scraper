@@ -99,11 +99,11 @@ object Scheduler {
                   categories
                     .collect { case category if category.isLeaf => category }
                     .map(category => ozonApi.searchFilters(category.id, searchFilterKey).map(category -> _))
-                    .parJoinUnbounded
+                    .parJoin(32)
                     .broadcastThrough(
                       (categorySearchFilters: Stream[F, (ozon.Category, ozon.SearchFilter)]) =>
                         categorySearchFilters
-                          .parEvalMapUnordered(256) { case (category, searchFilter) =>
+                          .parEvalMapUnordered(64) { case (category, searchFilter) =>
                             ozonApi.searchPage(category.id, List(searchFilter)).map(page => (category, searchFilter, page))
                           }
                           .flatMap {
@@ -117,7 +117,7 @@ object Scheduler {
                           },
                       (categorySearchFilters: Stream[F, (ozon.Category, ozon.SearchFilter)]) =>
                         categorySearchFilters
-                          .parEvalMapUnordered(256) { case (category, searchFilter) =>
+                          .parEvalMapUnordered(64) { case (category, searchFilter) =>
                             ozonApi.soldOutPage(category.id, List(searchFilter)).map(page => (category, searchFilter, page))
                           }
                           .flatMap {

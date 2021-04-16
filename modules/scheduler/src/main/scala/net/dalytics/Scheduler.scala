@@ -80,6 +80,7 @@ object Scheduler {
           .flatMap { _ =>
             ozonApi
               .categories(rootCategoryId)(_ => true)
+              .prefetch
               .broadcastThrough(
                 /** Create tasks each of which corresponds to the first
                   * page of the category.
@@ -98,7 +99,7 @@ object Scheduler {
                   categories
                     .collect { case category if category.isLeaf => category }
                     .map(category => ozonApi.searchFilters(category.id, searchFilterKey).map(category -> _))
-                    .parJoin(256)
+                    .parJoin(64)
                     .broadcastThrough(
                       (categorySearchFilters: Stream[F, (ozon.Category, ozon.SearchFilter)]) =>
                         categorySearchFilters

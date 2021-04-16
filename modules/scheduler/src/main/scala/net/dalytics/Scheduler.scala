@@ -86,7 +86,7 @@ object Scheduler {
                   */
                 (categories: Stream[F, ozon.Category]) =>
                   categories
-                    .parEvalMapUnordered(512) { category =>
+                    .parEvalMapUnordered(1024) { category =>
                       val request = ozon.Request.GetCategorySearchResultsV2(category.id, 1 @@ ozon.Request.Page, List.empty)
                       HandlerCommand.handleOzonRequest[F](request)
                     },
@@ -97,8 +97,10 @@ object Scheduler {
                 (categories: Stream[F, ozon.Category]) =>
                   categories
                     .collect { case category if category.isLeaf => category }
-                    .map(category => ozonApi.searchFilters(category.id, searchFilterKey).map(category -> _))
-                    .parJoin(512)
+                    .parEvalMapUnordered(1024) { category =>
+                      ozonApi.searchFilters(category.id, searchFilterKey).map(_.map(category -> _))
+                    }
+                    .flatMap(Stream.emits(_))
                     .broadcastThrough(
                       (categorySearchFilters: Stream[F, (ozon.Category, ozon.SearchFilter)]) =>
                         categorySearchFilters

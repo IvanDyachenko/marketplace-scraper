@@ -99,7 +99,7 @@ object Scheduler {
                   categories
                     .collect { case category if category.isLeaf => category }
                     .map(category => ozonApi.searchFilters(category.id, searchFilterKey).map(category -> _))
-                    .parJoin(64)
+                    .parJoinUnbounded
                     .broadcastThrough(
                       (categorySearchFilters: Stream[F, (ozon.Category, ozon.SearchFilter)]) =>
                         categorySearchFilters

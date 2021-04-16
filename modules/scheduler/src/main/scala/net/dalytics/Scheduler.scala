@@ -103,7 +103,7 @@ object Scheduler {
                         .broadcastThrough(
                           (searchFilters: Stream[F, ozon.SearchFilter]) =>
                             searchFilters
-                              .evalMap(searchFilter => ozonApi.searchPage(category.id, List(searchFilter)).map(searchFilter -> _))
+                              .parEvalMapUnordered(8)(searchFilter => ozonApi.searchPage(category.id, List(searchFilter)).map(searchFilter -> _))
                               .flatMap {
                                 case (searchFilter, Some(ozon.Page(_, totalPages, _))) if totalPages > 0 =>
                                   val filters = List(searchFilter)
@@ -115,7 +115,7 @@ object Scheduler {
                               },
                           (searchFilters: Stream[F, ozon.SearchFilter]) =>
                             searchFilters
-                              .evalMap(searchFilter => ozonApi.soldOutPage(category.id, List(searchFilter)).map(searchFilter -> _))
+                              .parEvalMapUnordered(8)(searchFilter => ozonApi.soldOutPage(category.id, List(searchFilter)).map(searchFilter -> _))
                               .flatMap {
                                 case (searchFilter, Some(ozon.Page(_, totalPages, _))) if totalPages > 0 =>
                                   val filters = List(searchFilter)

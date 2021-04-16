@@ -86,7 +86,7 @@ object Scheduler {
                   */
                 (categories: Stream[F, ozon.Category]) =>
                   categories
-                    .parEvalMapUnordered(1024) { category =>
+                    .parEvalMapUnordered(512) { category =>
                       val request = ozon.Request.GetCategorySearchResultsV2(category.id, 1 @@ ozon.Request.Page, List.empty)
                       HandlerCommand.handleOzonRequest[F](request)
                     },
@@ -97,14 +97,12 @@ object Scheduler {
                 (categories: Stream[F, ozon.Category]) =>
                   categories
                     .collect { case category if category.isLeaf => category }
-                    .parEvalMapUnordered(1024) { category =>
-                      ozonApi.searchFilters(category.id, searchFilterKey).map(_.map(category -> _))
-                    }
-                    .flatMap(Stream.emits(_))
+                    .map(category => ozonApi.searchFilters(category.id, searchFilterKey).map(category -> _))
+                    .parJoin(256)
                     .broadcastThrough(
                       (categorySearchFilters: Stream[F, (ozon.Category, ozon.SearchFilter)]) =>
                         categorySearchFilters
-                          .parEvalMapUnordered(512) { case (category, searchFilter) =>
+                          .parEvalMapUnordered(256) { case (category, searchFilter) =>
                             ozonApi.searchPage(category.id, List(searchFilter)).map(page => (category, searchFilter, page))
                           }
                           .flatMap {
@@ -118,7 +116,7 @@ object Scheduler {
                           },
                       (categorySearchFilters: Stream[F, (ozon.Category, ozon.SearchFilter)]) =>
                         categorySearchFilters
-                          .parEvalMapUnordered(512) { case (category, searchFilter) =>
+                          .parEvalMapUnordered(256) { case (category, searchFilter) =>
                             ozonApi.soldOutPage(category.id, List(searchFilter)).map(page => (category, searchFilter, page))
                           }
                           .flatMap {

@@ -60,9 +60,9 @@ object HttpClient extends ContextEmbed[HttpClient] {
               jsonOf(Sync[F], decoder)
                 .decode(response, strict = true)
                 .rethrowT
-            case unexpected           =>
+            case _                    =>
               HttpClientError
-                .ResponseUnexpectedStatusError(s"Received ${unexpected.status.code} status during execution of the request to ${request.uri.show}")
+                .ResponseUnexpectedStatusError(s"Received ${response.status.code} status during execution of the request to ${request.uri.show}")
                 .raise[F, Res]
           }
         }

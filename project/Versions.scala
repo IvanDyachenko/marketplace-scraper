@@ -3,7 +3,7 @@ object Versions {
   lazy val catsCore               = "2.4.1"
   lazy val catsEffect             = "2.4.1"
   lazy val tofu                   = "0.10.1"
-  lazy val derevo                 = "0.12.2"
+  lazy val derevo                 = "0.12.3"
   lazy val supertagged            = "2.0-RC2"
   lazy val enumeratum             = "1.6.1"
   lazy val circe                  = "0.13.0"

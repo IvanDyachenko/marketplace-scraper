@@ -33,6 +33,9 @@ object ParserEvent {
         case _                              => List.empty[ParserEvent].pure[F]
       }
 
+    def apply[F[_]: Monad: Clock](timestamp: Timestamp, result: ozon.Result): F[List[ParserEvent]] =
+      result.sellerList.fold(List.empty[ParserEvent].pure[F])(apply[F](timestamp, _))
+
     implicit val vulcanCodec: Codec[OzonSellerListItemParsed] =
       Codec.record[OzonSellerListItemParsed](
         name = "OzonSellerListItemParsed",
@@ -72,6 +75,16 @@ object ParserEvent {
           } yield events
         case _                                   => List.empty[ParserEvent].pure[F]
       }
+
+    def apply[F[_]: Monad: Clock](timestamp: Timestamp, result: ozon.Result): F[List[ParserEvent]] = {
+      val opt = for {
+        page            <- result.page
+        category        <- result.category
+        searchResultsV2 <- result.searchResultsV2
+      } yield (page, category, searchResultsV2)
+
+      opt.fold(List.empty[ParserEvent].pure[F]) { case (page, category, searchResultsV2) => apply[F](timestamp, page, category, searchResultsV2) }
+    }
 
     implicit val vulcanCodec: Codec[OzonCategorySearchResultsV2ItemParsed] =
       Codec.record[OzonCategorySearchResultsV2ItemParsed](
@@ -115,6 +128,16 @@ object ParserEvent {
           } yield events
         case _                                    => List.empty[ParserEvent].pure[F]
       }
+
+    def apply[F[_]: Monad: Clock](timestamp: Timestamp, result: ozon.Result): F[List[ParserEvent]] = {
+      val opt = for {
+        page             <- result.page
+        category         <- result.category
+        soldOutResultsV2 <- result.soldOutResultsV2
+      } yield (page, category, soldOutResultsV2)
+
+      opt.fold(List.empty[ParserEvent].pure[F]) { case (page, category, soldOutResultsV2) => apply[F](timestamp, page, category, soldOutResultsV2) }
+    }
 
     implicit val vulcanCodec: Codec[OzonCategorySoldOutResultsV2ItemParsed] =
       Codec.record[OzonCategorySoldOutResultsV2ItemParsed](

@@ -103,7 +103,7 @@ object Scheduler {
                     .broadcastThrough(
                       (categorySearchFilters: Stream[F, (ozon.Category.Id, ozon.SearchFilter)]) =>
                         categorySearchFilters
-                          .parEvalMapUnordered(128) { case (categoryId, searchFilter) =>
+                          .parEvalMapUnordered(512) { case (categoryId, searchFilter) =>
                             ozonApi.searchPage(categoryId, List(searchFilter)).map(page => (categoryId, searchFilter, page))
                           }
                           .flatMap {
@@ -117,7 +117,7 @@ object Scheduler {
                           },
                       (categorySearchFilters: Stream[F, (ozon.Category.Id, ozon.SearchFilter)]) =>
                         categorySearchFilters
-                          .parEvalMapUnordered(128) { case (categoryId, searchFilter) =>
+                          .parEvalMapUnordered(512) { case (categoryId, searchFilter) =>
                             ozonApi.soldOutPage(categoryId, List(searchFilter)).map(page => (categoryId, searchFilter, page))
                           }
                           .flatMap {

@@ -85,8 +85,8 @@ object Scheduler {
             .map { case (categoryId, splitBy) =>
               ozonApi.searchFilters(categoryId, splitBy).map(categoryId -> _)
             }
-            .parJoin(512)
-            .parEvalMapUnordered(1024) { case (categoryId, searchFilter) =>
+            .parJoin(1024)
+            .parEvalMapUnordered(2048) { case (categoryId, searchFilter) =>
               ozonApi.searchPage(categoryId, List(searchFilter)).map(page => (categoryId, searchFilter, page))
             }
             .flatMap {

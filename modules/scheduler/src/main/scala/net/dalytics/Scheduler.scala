@@ -100,6 +100,6 @@ object Scheduler {
                   case _                                                                   => Stream.empty
                 }
             }
-            .parJoin(1024 - 128)
+            .parJoin(2048)
       )
 }

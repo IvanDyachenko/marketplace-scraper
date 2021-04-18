@@ -85,17 +85,21 @@ object Scheduler {
             .map { case TaskConfig.OzonCategory(categoryId, splitBy, _) =>
               ozonApi
                 .searchFilters(categoryId, splitBy)
-                .parEvalMapUnordered(256)(searchFilter => ozonApi.searchPage(categoryId, List(searchFilter)).map(searchFilter -> _))
+                .evalMap(searchFilter => ozonApi.searchPage(categoryId, List(searchFilter)).map(searchFilter -> _))
                 .flatMap {
                   case (searchFilter, Some(ozon.Page(_, totalPages, _))) if totalPages > 0 =>
                     val filters = List(searchFilter)
-                    Stream.range(1, totalPages.min(ozon.Page.MaxValue) + 1).covary[F].parEvalMapUnordered(ozon.Page.MaxValue) { n =>
-                      val request = ozon.Request.GetCategorySearchResultsV2(categoryId, n @@ ozon.Request.Page, filters)
-                      HandlerCommand.handleOzonRequest[F](request)
-                    }
+                    Stream
+                      .range(1, totalPages + 1)
+                      .take(ozon.Page.MaxValue)
+                      .covary[F]
+                      .parEvalMapUnordered(ozon.Page.MaxValue) { n =>
+                        val request = ozon.Request.GetCategorySearchResultsV2(categoryId, n @@ ozon.Request.Page, filters)
+                        HandlerCommand.handleOzonRequest[F](request)
+                      }
                   case _                                                                   => Stream.empty
                 }
             }
-            .parJoin(256)
+            .parJoin(512)
       )
 }

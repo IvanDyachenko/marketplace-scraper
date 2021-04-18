@@ -7,17 +7,15 @@
 ```bash
 docker run --detach \
   --restart=always \
-  --sysctl net.ipv4.ip_local_port_range="1024 65000" \
+  --sysctl net.core.somaxconn=16384 \
+  --sysctl net.core.wmem_max=16777216 \
+  --sysctl net.core.rmem_max=16777216 \
   --sysctl net.ipv4.tcp_wmem="4096 65536  16777216" \
   --sysctl net.ipv4.tcp_rmem="4096 131072 16777216" \
   --sysctl net.ipv4.tcp_tw_reuse=1 \
-  --sysctl net.ipv4.tcp_fin_timeout=15 \
-  --sysctl net.ipv4.tcp_max_tw_buckets=65536 \
-  --sysctl net.ipv4.tcp_max_syn_backlog=16384 \
-  --sysctl net.core.somaxconn=4096 \
-  --sysctl net.core.netdev_max_backlog=4096 \
-  --sysctl net.core.wmem_max=16777216 \
-  --sysctl net.core.rmem_max=16777216 \
+  --sysctl net.ipv4.tcp_fin_timeout=30 \
+  --sysctl net.ipv4.tcp_max_tw_buckets=2048 \
+  --sysctl net.ipv4.ip_local_port_range="1024 65000" \
   --memory=<number>[<unit>] \
   --env KAFKA_BOOTSTRAP_SERVERS=<host>:<port> \
   --env SCHEMA_REGISTRY_BASE_URL=http://<host>:<port> \

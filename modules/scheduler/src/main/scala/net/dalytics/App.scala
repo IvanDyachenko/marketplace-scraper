@@ -27,19 +27,16 @@ object Main extends TaskApp {
   private def init: Resource[Task, Scheduler[AppS]] =
     for {
       implicit0(blocker: Blocker)              <- Blocker[AppI]
-      cfg                                      <- Resource.eval(Config.make[AppI])
-      implicit0(httpClientI: HttpClient[AppI]) <- HttpClient.make[AppI, AppI](cfg.httpConfig)
-      schemaRegistryClient                     <- Resource.eval(SchemaRegistryClientSettings[AppI](cfg.schemaRegistryConfig.url).createSchemaRegistryClient)
+      config                                   <- Resource.eval(Config.make[AppI])
+      implicit0(httpClientI: HttpClient[AppI]) <- HttpClient.make[AppI, AppI](config.httpConfig)
+      schemaRegistryClient                     <- Resource.eval(SchemaRegistryClientSettings[AppI](config.schemaRegistryConfig.url).createSchemaRegistryClient)
       wbApi                                    <- WildBerriesApi.make[AppI, AppI, AppS]
       ozonApi                                  <- OzonApi.make[AppI, AppI, AppS]
-      sourcesOfCommands                         = cfg.sourcesConfig.sources.map(Scheduler.makeCommandsSource[AppI](_)(wbApi, ozonApi))
-      producerOfCommands                       <- KafkaClient.makeProducer[AppI, Command.Key, HandlerCommand](
-                                                    cfg.kafkaConfig,
-                                                    cfg.kafkaProducerConfig
+      commands                                  = Scheduler.makeCommands(config.tasksConfig)(wbApi, ozonApi)
+      producer                                 <- KafkaClient.makeProducer[AppI, Command.Key, HandlerCommand](
+                                                    config.kafkaConfig,
+                                                    config.kafkaProducerConfig
                                                   )(schemaRegistryClient)
-      scheduler                                <- Scheduler.make[AppI, AppS](cfg)(
-                                                    sourcesOfCommands,
-                                                    producerOfCommands
-                                                  )
+      scheduler                                <- Scheduler.make[AppI, AppS](config)(commands, producer)
     } yield scheduler
 }

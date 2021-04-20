@@ -116,6 +116,7 @@ object HttpClient extends ContextEmbed[HttpClient] {
         .withTcpNoDelay(true) // Disable Nagle's algorithm.
         .withSocketReuseAddress(true)
         .withCheckEndpointAuthentication(false)
+        .withBufferSize(httpConfig.bufferSize)
         .withMaxTotalConnections(httpConfig.maxTotalConnections)
         .withMaxConnectionsPerRequestKey(Function.const(httpConfig.maxTotalConnectionsPerHost))
         .withMaxWaitQueueLimit(httpConfig.maxWaitQueueLimit)

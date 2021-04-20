@@ -32,7 +32,10 @@ object Main extends TaskApp {
       schemaRegistryClient                     <- Resource.eval(SchemaRegistryClientSettings[AppI](config.schemaRegistryConfig.url).createSchemaRegistryClient)
       wbApi                                    <- WildBerriesApi.make[AppI, AppI, AppS]
       ozonApi                                  <- OzonApi.make[AppI, AppI, AppS]
-      commands                                  = Scheduler.makeCommands(config.tasksConfig)(wbApi, ozonApi)
+      commands                                  = Scheduler.makeCommands(
+                                                    config.tasksConfig,
+                                                    config.apiRateLimitsConfig
+                                                  )(wbApi, ozonApi)
       producer                                 <- KafkaClient.makeProducer[AppI, Command.Key, HandlerCommand](
                                                     config.kafkaConfig,
                                                     config.kafkaProducerConfig

@@ -86,7 +86,6 @@ object Scheduler {
               ozonApi.searchFilters(categoryId, splitBy).map(categoryId -> _)
             }
             .parJoin(apiRateLimitsConfig.ozon.searchFilters)
-            .prefetch
             .broadcastThrough(
               (categorySearchFilters: Stream[F, (ozon.Category.Id, ozon.SearchFilter)]) =>
                 categorySearchFilters

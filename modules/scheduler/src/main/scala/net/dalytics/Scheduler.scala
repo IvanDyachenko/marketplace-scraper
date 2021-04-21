@@ -88,7 +88,7 @@ object Scheduler {
             .parJoin(apiRateLimitsConfig.ozon.searchFilters)
             .broadcastThrough(
               (categorySearchFilters: Stream[F, (ozon.Category.Id, ozon.SearchFilter)]) =>
-                categorySearchFilters
+                categorySearchFilters.prefetch
                   .parEvalMapUnordered(apiRateLimitsConfig.ozon.searchPage) { case (categoryId, searchFilter) =>
                     ozonApi.searchPage(categoryId, List(searchFilter)).map(page => (categoryId, searchFilter, page))
                   }
@@ -102,7 +102,7 @@ object Scheduler {
                     case _                                                                               => Stream.empty
                   },
               (categorySearchFilters: Stream[F, (ozon.Category.Id, ozon.SearchFilter)]) =>
-                categorySearchFilters
+                categorySearchFilters.prefetch
                   .parEvalMapUnordered(apiRateLimitsConfig.ozon.soldOutPage) { case (categoryId, searchFilter) =>
                     ozonApi.soldOutPage(categoryId, List(searchFilter)).map(page => (categoryId, searchFilter, page))
                   }

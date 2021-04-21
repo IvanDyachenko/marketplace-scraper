@@ -20,7 +20,9 @@ final case class HttpConfig(
   connectTimeout: FiniteDuration,
   requestTimeout: FiniteDuration,  // Maximum duration from the submission of a request through reading the body before a timeout.
   requestMaxTotalAttempts: Int,
-  requestMaxDelayBetweenAttempts: FiniteDuration
+  requestMaxDelayBetweenAttempts: FiniteDuration,
+  logHeaders: Boolean = false,
+  logBody: Boolean = false
 )
 
 object HttpConfig {

@@ -1,7 +1,7 @@
 object Versions {
   lazy val monix                  = "3.3.0"
   lazy val catsCore               = "2.4.1"
-  lazy val catsEffect             = "2.4.1"
+  lazy val catsEffect             = "2.5.0"
   lazy val tofu                   = "0.10.1"
   lazy val derevo                 = "0.12.2"
   lazy val supertagged            = "2.0-RC2"
@@ -27,8 +27,8 @@ object Versions {
   lazy val betterMonadicFor = "0.3.1"
   lazy val kindProjector    = "0.11.3"
 
-  lazy val scalactic               = "3.2.7"
-  lazy val scalatest               = "3.2.7"
+  lazy val scalactic               = "3.2.8"
+  lazy val scalatest               = "3.2.8"
   lazy val scalacheck              = "1.15.3"
   lazy val scalatestPlusScalacheck = "3.2.2.0"
 }

@@ -15,7 +15,6 @@ docker run --detach \
   --sysctl net.ipv4.tcp_mem="524288 1048576 4194304" \
   --sysctl net.ipv4.tcp_wmem="4096 87380 16777216" \
   --sysctl net.ipv4.tcp_rmem="4096 131072 16777216" \
-  --sysctl net.ipv4.tcp_mem="32768000 32768000 32768000" \
   --sysctl net.ipv4.tcp_tw_reuse=1 \
   --sysctl net.ipv4.tcp_fin_timeout=10 \
   --sysctl net.ipv4.tcp_max_tw_buckets=65536 \

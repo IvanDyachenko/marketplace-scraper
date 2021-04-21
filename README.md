@@ -8,6 +8,7 @@
 docker run --detach \
   --restart=always \
   --sysctl net.core.somaxconn=65536 \
+  --sysctl net.core.netdev_max_backlog=65536 \
   --sysctl net.core.wmem_max=16777216 \
   --sysctl net.core.rmem_max=16777216 \
   --sysctl net.ipv4.ip_local_port_range="1024 65000" \

@@ -85,6 +85,31 @@ class ComponentSpec extends AnyFlatSpec with Matchers {
     decode[Component](componentRawJson).isRight shouldBe true
   }
 
+  it should "decode Component.SoldOutResultsV2 from a valid JSON" in {
+    val componentRawJson =
+      """
+        |{
+        |  "vertical": "catalog",
+        |  "component": "soldOutResultsV2",
+        |  "stateId": "soldOutResultsV2-189813-default-1",
+        |  "version": 1,
+        |  "widgetTrackingInfo": {
+        |    "name": "catalog.soldOutResultsV2",
+        |    "vertical": "catalog",
+        |    "component": "soldOutResultsV2",
+        |    "version": 1,
+        |    "id": 189813,
+        |    "revisionId": 113258,
+        |    "index": 5,
+        |    "timeSpent": 1770986218
+        |  },
+        |  "widgetToken": ""
+        |}
+      """.stripMargin
+
+    decode[Component](componentRawJson).isRight shouldBe true
+  }
+
   ignore should "decode Component.UWidgetSKU from a valid JSON" in {
     val componentRawJson =
       """

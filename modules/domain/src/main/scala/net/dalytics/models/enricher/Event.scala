@@ -15,22 +15,25 @@ sealed trait EnricherEvent extends Event {
 object EnricherEvent {
 
   @derive(loggable)
-  final case class OzonCategorySearchResultsV2ItemEnriched(
+  final case class OzonCategoryResultsV2ItemEnriched(
     created: Timestamp,
     timestamp: Timestamp,
     page: ozon.Page,
     item: ozon.Item,
-    sale: ozon.Sale,
-    category: ozon.Category
+    category: ozon.Category,
+    sale: ozon.Sale = ozon.Sale.Unknown
   ) extends EnricherEvent {
     override val key: Option[Event.Key] = Some(category.id.show @@@ Event.Key)
+
+    def aggregate(that: OzonCategoryResultsV2ItemEnriched): OzonCategoryResultsV2ItemEnriched =
+      if (timestamp.isBefore(that.timestamp)) that.aggregate(this)
+      else OzonCategoryResultsV2ItemEnriched(created, timestamp, page, item, category, ozon.Sale.from(List(that.item, item)))
   }
 
-  object OzonCategorySearchResultsV2ItemEnriched {
-
-    implicit val vulcanCodec: Codec[OzonCategorySearchResultsV2ItemEnriched] =
-      Codec.record[OzonCategorySearchResultsV2ItemEnriched](
-        name = "OzonCategorySearchResultsV2ItemEnriched",
+  object OzonCategoryResultsV2ItemEnriched {
+    implicit val vulcanCodec: Codec[OzonCategoryResultsV2ItemEnriched] =
+      Codec.record[OzonCategoryResultsV2ItemEnriched](
+        name = "OzonCategoryResultsV2ItemEnriched",
         namespace = "enricher.events"
       ) { field =>
         (
@@ -38,11 +41,11 @@ object EnricherEvent {
           field("timestamp", _.timestamp),
           ozon.Page.vulcanCodecFieldFA(field)(_.page),
           ozon.Item.vulcanCodecFieldFA(field)(_.item),
-          ozon.Sale.vulcanCodecFieldFA(field)(_.sale),
-          ozon.Category.vulcanCodecFieldFA(field)(_.category)
+          ozon.Category.vulcanCodecFieldFA(field)(_.category),
+          ozon.Sale.vulcanCodecFieldFA(field)(_.sale)
         ).mapN(apply)
       }
   }
 
-  implicit val vulcanCodec: Codec[EnricherEvent] = Codec.union[EnricherEvent](alt => alt[OzonCategorySearchResultsV2ItemEnriched])
+  implicit val vulcanCodec: Codec[EnricherEvent] = Codec.union[EnricherEvent](alt => alt[OzonCategoryResultsV2ItemEnriched])
 }

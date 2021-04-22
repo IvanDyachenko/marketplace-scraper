@@ -10,11 +10,19 @@ final case class Config(
   schemaRegistryConfig: SchemaRegistryConfig,
   kafkaConfig: KafkaConfig,
   kafkaProducerConfig: KafkaProducerConfig,
-  sourcesConfig: SourcesConfig
+  tasksConfig: TasksConfig,
+  apiRateLimitsConfig: ApiRateLimitsConfig
 )
 
 object Config {
   def make[F[_]: Sync: ContextShift](implicit blocker: Blocker): F[Config] =
-    (HttpConfig.loadF[F], SchemaRegistryConfig.loadF[F], KafkaConfig.loadF[F], KafkaProducerConfig.loadF[F], SourcesConfig.loadF[F])
+    (
+      HttpConfig.loadF[F],
+      SchemaRegistryConfig.loadF[F],
+      KafkaConfig.loadF[F],
+      KafkaProducerConfig.loadF[F],
+      TasksConfig.loadF[F],
+      ApiRateLimitsConfig.loadF[F]
+    )
       .mapN(Config.apply)
 }

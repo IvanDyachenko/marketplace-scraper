@@ -58,15 +58,10 @@ object Parse {
       case Command.ParseOzonResponse(created, response) => // format: off
         parse[ozon.Result](response) >>= (_.traverse { result => // format: on
           for {
-            sellerListItemParsedEvents              <-
-              result.sellerList.fold(List.empty[Event].pure[F]) { sellerList =>
-                Event.OzonSellerListItemParsed(created, sellerList)
-              }
-            categorySearchResultsV2ItemParsedEvents <-
-              result.categorySearchResultsV2.fold(List.empty[Event].pure[F]) { case (page, category, searchResultsV2) =>
-                Event.OzonCategorySearchResultsV2ItemParsed(created, page, category, searchResultsV2)
-              }
-          } yield List(sellerListItemParsedEvents, categorySearchResultsV2ItemParsedEvents).flatten
+            sellerListParsed               <- Event.OzonSellerListItemParsed(created, result)
+            categorySearchResultsV2Parsed  <- Event.OzonCategorySearchResultsV2ItemParsed(created, result)
+            categorySoldOutResultsV2Parsed <- Event.OzonCategorySoldOutResultsV2ItemParsed(created, result)
+          } yield List(sellerListParsed, categorySearchResultsV2Parsed, categorySoldOutResultsV2Parsed).flatten
         })
     }
 

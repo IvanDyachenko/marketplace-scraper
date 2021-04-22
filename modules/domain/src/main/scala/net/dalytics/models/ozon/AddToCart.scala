@@ -38,7 +38,7 @@ object AddToCart {
         case TextSmall.PremiumPriority | TextSmall.NotDelivered                                => PremiumOnly
         case AddToCartWithCount(minItems, maxItems)                                            => With(minItems, maxItems)
         case UniversalAction(UniversalAction.Button.AddToCartWithQuantity(quantity, maxItems)) => With(quantity, maxItems)
-        case MobileContainer(_, _, footer) if footer.addToCart.isDefined                       => footer.addToCart.get
+        case MobileContainer(footer) if footer.addToCart.isDefined                             => footer.addToCart.get
       }
   }
 

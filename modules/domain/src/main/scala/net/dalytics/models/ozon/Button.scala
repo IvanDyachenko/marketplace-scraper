@@ -26,14 +26,14 @@ object Button {
 
   @derive(loggable)
   final case class AddToCartWithQuantity(private val action: AddToCartWithQuantity.Action, maxItems: Int) extends Button {
-    def `type`: Type  = Type.AddToCartButtonWithQuantity
-    def quantity: Int = action.quantity
+    val `type`: Type  = Type.AddToCartButtonWithQuantity
+    val quantity: Int = action.quantity
   }
 
   object AddToCartWithQuantity {
 
     @derive(loggable, decoder, tethysReader)
-    final case class Action(quantity: Int) extends AnyVal
+    private[Button] final case class Action(quantity: Int) extends AnyVal
 
     implicit val circeDecoder: Decoder[AddToCartWithQuantity] = Decoder.instance[AddToCartWithQuantity] { (c: HCursor) =>
       lazy val i = c.downField("addToCartButtonWithQuantity")
@@ -47,10 +47,7 @@ object Button {
       JsonReader.builder
         .addField[AddToCartWithQuantity](
           "addToCartButtonWithQuantity",
-          JsonReader.builder
-            .addField[Action]("action")
-            .addField[Int]("maxItems")
-            .buildReader(apply)
+          JsonReader.builder.addField[Action]("action").addField[Int]("maxItems").buildReader(apply)
         )
         .buildReader(identity)
   }
@@ -65,11 +62,12 @@ object Button {
     } yield button
   }
 
-  implicit val jsonReader: JsonReader[Button] = JsonReader.builder
-    .addField[Type]("type")
-    .selectReader {
-      // format: off
-      case Type.AddToCartButtonWithQuantity => JsonReader.builder.addField[AddToCartWithQuantity]("default").buildReader(identity)
-      // format: on
-    }
+  implicit val jsonReader: JsonReader[Button] =
+    JsonReader.builder
+      .addField[Type]("type")
+      .selectReader {
+        // format: off
+        case Type.AddToCartButtonWithQuantity => JsonReader.builder.addField[AddToCartWithQuantity]("default").buildReader(identity)
+        // format: on
+      }
 }

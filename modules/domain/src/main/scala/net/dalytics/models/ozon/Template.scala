@@ -55,8 +55,9 @@ object Template {
 
     @derive(loggable)
     sealed trait Action extends State {
-      def id: State.Id
       val `type`: State.Type = State.Type.Action
+
+      def id: State.Id
     }
 
     object Action {
@@ -105,8 +106,9 @@ object Template {
 
     @derive(loggable)
     sealed trait TextSmall extends State {
-      def id: State.Id
       val `type`: State.Type = State.Type.TextSmall
+
+      def id: State.Id
     }
 
     object TextSmall {
@@ -125,12 +127,12 @@ object Template {
     }
 
     @derive(loggable)
-    final case class MobileContainer(left: Template, content: Template, footer: Template) extends State {
+    final case class MobileContainer(footer: Template) extends State {
       val `type`: State.Type = State.Type.Action
     }
 
     object MobileContainer {
-      implicit val circeDecoder: Decoder[MobileContainer] = Decoder.forProduct3("leftContainer", "contentContainer", "footerContainer")(apply)
+      implicit val circeDecoder: Decoder[MobileContainer] = Decoder.forProduct1("footerContainer")(apply)
     }
 
     implicit val circeDecoder: Decoder[State] = Decoder.instance[State] { (c: HCursor) =>

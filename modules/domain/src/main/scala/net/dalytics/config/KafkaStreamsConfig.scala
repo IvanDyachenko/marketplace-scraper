@@ -11,7 +11,7 @@ import pureconfig.module.catseffect.syntax._
 @derive(pureconfigReader)
 final case class KafkaStreamsConfig(
   applicationId: String,
-  sourceTopic: String,
+  sourceTopics: List[String],     // If multiple topics are specified there is no ordering guarantee for records from different topics.
   sinkTopic: String,
   closeTimeout: FiniteDuration,   // How long to wait for the threads to shutdown.
   numberOfStreamThreads: Int,     // The number of threads to execute stream processing.

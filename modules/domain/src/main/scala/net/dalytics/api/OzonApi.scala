@@ -12,58 +12,89 @@ import tofu.logging.{Logging, Logs}
 import fs2.Stream
 import tofu.lift.Lift
 import tofu.fs2.LiftStream
+import io.circe.Decoder
+import supertagged.postfix._
 
 import net.dalytics.marshalling._
 import net.dalytics.clients.{HttpClient, HttpClientError}
-import net.dalytics.models.ozon.{Category, CategoryMenu, Page, Request, Result, SearchResultsV2, SoldOutResultsV2, Url}
+import net.dalytics.models.ozon.{Category, CategoryMenu, Page, Request, Result, SearchFilter, SearchFilters, SearchResultsV2, SoldOutResultsV2}
 
 trait OzonApi[F[_], S[_]] {
-  def getCategory(id: Category.Id): F[Option[Category]]
-  def getCategoryMenu(id: Category.Id): F[Option[CategoryMenu]]
-  def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): F[Option[(Page, Category, SearchResultsV2)]]
-  def getCategorySoldOutResultsV2(id: Category.Id, soldOutPage: Url.SoldOutPage): F[Option[(Page, Category, SoldOutResultsV2)]]
-  def getCategories(rootId: Category.Id)(p: Category => Boolean): S[Category]
+  def category(id: Category.Id): F[Option[Category]]
+  def categories(rootId: Category.Id)(p: Category => Boolean): S[Category]
+  def categoryMenu(id: Category.Id): F[Option[CategoryMenu]]
+  def searchFilters(id: Category.Id, searchFilterKey: SearchFilter.Key): S[SearchFilter]
+  def searchPage(id: Category.Id, searchFilters: List[SearchFilter] = List.empty): F[Option[Page]]
+  def searchResultsV2(id: Category.Id, page: Request.Page, searchFilters: List[SearchFilter] = List.empty): F[Option[SearchResultsV2]]
+  def soldOutPage(id: Category.Id, searchFilters: List[SearchFilter] = List.empty): F[Option[Page]]
+  def soldOutResultsV2(id: Category.Id, page: Request.SoldOutPage, searchFilters: List[SearchFilter] = List.empty): F[Option[SoldOutResultsV2]]
 }
 
 object OzonApi {
 
   private final class Impl[F[_]: Concurrent: Logging: HttpClient: HttpClient.Handling] extends OzonApi[F, Stream[F, *]] {
+    def category(id: Category.Id): F[Option[Category]] =
+      categoryMenu(id).map(_ >>= (_.category(id)))
 
-    def getCategory(id: Category.Id): F[Option[Category]] = getCategoryMenu(id).map(_ >>= (_.category(id)))
-
-    def getCategoryMenu(id: Category.Id): F[Option[CategoryMenu]] = getResult(Request.GetCategoryMenu(id)).map(_ >>= (_.categoryMenu))
-
-    def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): F[Option[(Page, Category, SearchResultsV2)]] =
-      getResult(Request.GetCategorySearchResultsV2(id, page = page)).map(_ >>= (_.categorySearchResultsV2))
-
-    def getCategorySoldOutResultsV2(id: Category.Id, soldOutPage: Url.SoldOutPage): F[Option[(Page, Category, SoldOutResultsV2)]] =
-      getResult(Request.GetCategorySoldOutResultsV2(id, soldOutPage = soldOutPage)).map(_ >>= (_.categorySoldOutResultsV2))
-
-    def getCategories(rootId: Category.Id)(p: Category => Boolean): Stream[F, Category] = {
+    def categories(rootId: Category.Id)(p: Category => Boolean): Stream[F, Category] = {
       def go(tree: Category.Tree[Stream[F, *]]): Stream[F, Category] =
         Option.when(p(tree.head))(tree.head) match {
           case None      => (tree.tailForced >>= go)
           case Some(cat) => Stream.emit(cat) ++ (tree.tailForced >>= go)
         }
 
-      Stream.eval(getCategoryTree(rootId)) >>= (_.fold[Stream[F, Category]](Stream.empty)(go))
+      Stream.eval(categoryTree(rootId)) >>= (_.fold[Stream[F, Category]](Stream.empty)(go))
     }
 
-    private def getCategoryTree(id: Category.Id): F[Option[Category.Tree[Stream[F, *]]]] =
-      getCategory(id) >>= (_.traverse(
+    private def categoryTree(id: Category.Id): F[Option[Category.Tree[Stream[F, *]]]] =
+      category(id) >>= (_.traverse(
         Cofree
-          .unfold[Stream[F, *], Category](_) { category =>
-            val ids = category.children.keys.toList
-            Stream.emits(ids).covary[F].parEvalMapUnordered(128)(getCategory).collect { case Some(subcategory) => subcategory }
+          .unfold[Stream[F, *], Category](_) { cat =>
+            val ids = cat.children.keys.toList
+            Stream.emits(ids).covary[F].parEvalMapUnordered(128)(category).collect { case Some(subcat) => subcat }
           }
           .pure[F]
       ))
 
-    private def getResult(request: Request): F[Option[Result]] =
+    def categoryMenu(id: Category.Id): F[Option[CategoryMenu]] =
+      get[Result](Request.GetCategoryMenu(id)).map(_ >>= (_.categoryMenu))
+
+    def searchFilters(id: Category.Id, searchFilterKey: SearchFilter.Key): Stream[F, SearchFilter] = {
+      val request = Request.GetCategorySearchFilterValues(id, searchFilterKey)
+
+      Stream
+        .eval(get[SearchFilters](request))
+        .flatMap {
+          case Some(searchFilters) => Stream.emits(searchFilters.values)
+          case None                => Stream.empty
+        }
+    }
+
+    def searchPage(id: Category.Id, searchFilters: List[SearchFilter]): F[Option[Page]] = {
+      val request = Request.GetCategorySearchResultsV2(id, 1 @@ Request.Page, searchFilters)
+      get[Result](request).map(_ >>= (_.page))
+    }
+
+    def searchResultsV2(id: Category.Id, page: Request.Page, searchFilters: List[SearchFilter]): F[Option[SearchResultsV2]] = {
+      val request = Request.GetCategorySearchResultsV2(id, page, searchFilters)
+      get[Result](request).map(_ >>= (_.searchResultsV2))
+    }
+
+    def soldOutPage(id: Category.Id, searchFilters: List[SearchFilter]): F[Option[Page]] = {
+      val request = Request.GetCategorySoldOutResultsV2(id, 1 @@ Request.SoldOutPage, searchFilters)
+      get[Result](request).map(_ >>= (_.page))
+    }
+
+    def soldOutResultsV2(id: Category.Id, soldOutPage: Request.SoldOutPage, searchFilters: List[SearchFilter]): F[Option[SoldOutResultsV2]] = {
+      val request = Request.GetCategorySoldOutResultsV2(id, soldOutPage, searchFilters)
+      get[Result](request).map(_ >>= (_.soldOutResultsV2))
+    }
+
+    private def get[R: Decoder](request: Request): F[Option[R]] =
       HttpClient[F]
-        .send[Result](request)
+        .send[R](request)
         .recoverWith[HttpClientError] { case error: HttpClientError =>
-          error"${error} was thrown while attempting to execute ${request}" *> error.raise[F, Result]
+          error"${error} was thrown while attempting to execute ${request}" *> error.raise[F, R]
         }
         .restore
   }
@@ -76,20 +107,27 @@ object OzonApi {
     Resource.eval {
       logs
         .forService[OzonApi[F, S]]
-        .map(implicit l => bifunctorK.bimapK(new Impl[F])(Lift.liftIdentity[F].liftF)(LiftStream[S, F].liftF))
+        .map { implicit l =>
+          val impl = new Impl[F]
+
+          bifunctorK.bimapK(impl)(Lift.liftIdentity[F].liftF)(LiftStream[S, F].liftF)
+        }
     }
 
   implicit val bifunctorK: BifunctorK[OzonApi] =
     new BifunctorK[OzonApi] {
       def bimapK[F[_]: Functor, G[_]: Functor, W[_], Q[_]](ufg: OzonApi[F, G])(fw: F ~> W)(gq: G ~> Q): OzonApi[W, Q] =
         new OzonApi[W, Q] {
-          def getCategory(id: Category.Id): W[Option[Category]]                                                                         = fw(ufg.getCategory(id))
-          def getCategoryMenu(id: Category.Id): W[Option[CategoryMenu]]                                                                 = fw(ufg.getCategoryMenu(id))
-          def getCategorySearchResultsV2(id: Category.Id, page: Url.Page): W[Option[(Page, Category, SearchResultsV2)]]                 =
-            fw(ufg.getCategorySearchResultsV2(id, page))
-          def getCategorySoldOutResultsV2(id: Category.Id, soldOutPage: Url.SoldOutPage): W[Option[(Page, Category, SoldOutResultsV2)]] =
-            fw(ufg.getCategorySoldOutResultsV2(id, soldOutPage))
-          def getCategories(rootId: Category.Id)(p: Category => Boolean): Q[Category]                                                   = gq(ufg.getCategories(rootId)(p))
+          def category(id: Category.Id): W[Option[Category]]                                                                  = fw(ufg.category(id))
+          def categories(id: Category.Id)(p: Category => Boolean): Q[Category]                                                = gq(ufg.categories(id)(p))
+          def categoryMenu(id: Category.Id): W[Option[CategoryMenu]]                                                          = fw(ufg.categoryMenu(id))
+          def searchFilters(id: Category.Id, key: SearchFilter.Key): Q[SearchFilter]                                          = gq(ufg.searchFilters(id, key))
+          def searchPage(id: Category.Id, sfs: List[SearchFilter]): W[Option[Page]]                                           = fw(ufg.searchPage(id, sfs))
+          def searchResultsV2(id: Category.Id, p: Request.Page, sfs: List[SearchFilter]): W[Option[SearchResultsV2]]          =
+            fw(ufg.searchResultsV2(id, p, sfs))
+          def soldOutPage(id: Category.Id, sfs: List[SearchFilter]): W[Option[Page]]                                          = fw(ufg.soldOutPage(id, sfs))
+          def soldOutResultsV2(id: Category.Id, p: Request.SoldOutPage, sfs: List[SearchFilter]): W[Option[SoldOutResultsV2]] =
+            fw(ufg.soldOutResultsV2(id, p, sfs))
         }
     }
 }

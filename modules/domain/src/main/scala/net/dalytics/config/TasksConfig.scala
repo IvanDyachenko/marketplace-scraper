@@ -14,34 +14,34 @@ import supertagged.postfix._
 import net.dalytics.models.{ozon, wildberries => wb}
 
 @derive(pureconfigReader)
-final case class SourcesConfig(sources: List[SourceConfig])
+final case class TasksConfig(tasks: List[TaskConfig])
 
-object SourcesConfig {
-  import SourceConfig._
+object TasksConfig {
+  import TaskConfig._
 
-  lazy val load: SourcesConfig = ConfigSource.default.loadOrThrow[SourcesConfig]
+  lazy val load: TasksConfig = ConfigSource.default.loadOrThrow[TasksConfig]
 
-  def loadF[F[_]: Sync: ContextShift](implicit blocker: Blocker): F[SourcesConfig] =
-    ConfigSource.default.loadF[F, SourcesConfig](blocker)
+  def loadF[F[_]: Sync: ContextShift](implicit blocker: Blocker): F[TasksConfig] =
+    ConfigSource.default.loadF[F, TasksConfig](blocker)
 }
 
 @derive(pureconfigReader)
-sealed trait SourceConfig {
+sealed trait TaskConfig {
   def every: FiniteDuration
 }
 
-object SourceConfig {
+object TaskConfig {
 
   @derive(pureconfigReader)
-  final case class WbCatalog(id: wb.Catalog.Id, every: FiniteDuration) extends SourceConfig
+  final case class WbCatalog(id: wb.Catalog.Id, every: FiniteDuration) extends TaskConfig
 
   @derive(pureconfigReader)
-  final case class OzonSeller(pageLimit: Int, every: FiniteDuration) extends SourceConfig
+  final case class OzonSeller(pageLimit: Int, every: FiniteDuration) extends TaskConfig
 
   @derive(pureconfigReader)
-  final case class OzonCategory(id: ozon.Category.Id, every: FiniteDuration) extends SourceConfig
+  final case class OzonCategory(id: ozon.Category.Id, splitBy: ozon.SearchFilter.Key, every: FiniteDuration) extends TaskConfig
 
-  implicit val fieldCoproductHint: FieldCoproductHint[SourceConfig] = new FieldCoproductHint[SourceConfig]("type") {
+  implicit val fieldCoproductHint: FieldCoproductHint[TaskConfig] = new FieldCoproductHint[TaskConfig]("type") {
     override def fieldValue(name: String) = ConfigFieldMapping(PascalCase, KebabCase)(name)
   }
 

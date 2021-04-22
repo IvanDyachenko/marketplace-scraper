@@ -1,38 +1,49 @@
 package net.dalytics.models.ozon
 
 import cats.implicits._
+import cats.Show
 import derevo.derive
 import tofu.logging.derivation.loggable
 import vulcan.Codec
-import vulcan.generic.AvroNamespace
+import vulcan.generic._
+import io.circe.Encoder
+import org.http4s.{QueryParam, QueryParamEncoder, QueryParameterKey, QueryParameterValue}
+import enumeratum.{CatsEnum, Enum, EnumEntry, VulcanEnum}
+import enumeratum.EnumEntry.Snakecase
+import tofu.logging.LoggableEnum
+import supertagged.TaggedType
 import supertagged.postfix._
 
-import net.dalytics.models.ozon.Url
+import net.dalytics.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcanCodec}
 
 @derive(loggable)
 @AvroNamespace("ozon.models")
 sealed trait Request {
-  def host: String = "api.ozon.ru"
-  def path: String = "/composer-api.bx/page/json/v1"
-  def url: Url
+  def host: String                                     = "api.ozon.ru"
+  def path: String                                     = "/composer-api.bx/page/json/v1"
+  def url: Request.Url
+  def page: Option[Request.Page]                       = None
+  def soldOutPage: Option[Request.SoldOutPage]         = None
+  def layoutContainer: Option[Request.LayoutContainer] = None
+  def layoutPageIndex: Option[Request.LayoutPageIndex] = None
+  def searchFilters: List[SearchFilter]                = List.empty
+  def searchFilterKey: Option[SearchFilter.Key]        = None
 }
 
 object Request {
-
   @derive(loggable)
-  final case class GetSellerList(page: Url.Page) extends Request {
-    private val layoutContainer: Url.LayoutContainer = Url.LayoutContainer.Default
-    private val layoutPageIndex: Url.LayoutPageIndex = page.self @@ Url.LayoutPageIndex
-
-    val url = Url("/seller", Some(page), None, Some(layoutContainer), Some(layoutPageIndex))
+  final case class GetSellerList(onPage: Request.Page) extends Request {
+    val url                      = Url("/seller")
+    override val page            = Some(onPage)
+    override val layoutContainer = Some(LayoutContainer.Default)
+    override val layoutPageIndex = page.map(_.self @@ LayoutPageIndex)
   }
 
   object GetSellerList {
-    implicit val vulcanCodec: Codec[GetSellerList] =
-      Codec.record[GetSellerList](
-        name = "GetSellerList",
-        namespace = "ozon.models"
-      )(field => field("host", _.host) *> field("path", _.path) *> field("page", _.page).map(apply))
+    implicit val vulcanCodec: Codec[GetSellerList] = Codec.record[GetSellerList](name = "GetSellerList", namespace = "ozon.models") { field =>
+      field("host", _.host) *> field("path", _.path) *> field("url", _.url) *>
+        field("page", _.onPage).map(apply)
+    }
   }
 
   @derive(loggable)
@@ -40,71 +51,116 @@ object Request {
     val url = Url(s"/modal/categoryMenu/category/${categoryId.show}/")
   }
 
-  object GetCategoryMenu {
-    implicit val vulcanCodec: Codec[GetCategoryMenu] =
-      Codec.record[GetCategoryMenu](
-        name = "GetCategoryMenu",
-        namespace = "ozon.models"
-      )(field => field("host", _.host) *> field("path", _.path) *> field("categoryId", _.categoryId).map(apply))
+  @derive(loggable)
+  final case class GetCategorySearchFilterValues(categoryId: Category.Id, withSearchFilterKey: SearchFilter.Key) extends Request {
+    override val path            = "/composer-api.bx/_action/getSearchFilterValues"
+    override val url             = Url(s"/modal/filters/category/${categoryId.show}")
+    override val searchFilterKey = Some(withSearchFilterKey)
   }
 
   @derive(loggable)
-  final case class GetCategorySearchResultsV2 private (
+  final case class GetCategorySearchResultsV2(
     categoryId: Category.Id,
-    categoryName: Option[Category.Name] = None,
-    page: Url.Page
+    onPage: Request.Page,
+    withSearchFilters: List[SearchFilter]
   ) extends Request {
-    private val layoutContainer: Url.LayoutContainer = Url.LayoutContainer.Default
-    private val layoutPageIndex: Url.LayoutPageIndex = page.self @@ Url.LayoutPageIndex
-
-    val url = Url(s"/category/${categoryId.show}/", Some(page), None, Some(layoutContainer), Some(layoutPageIndex))
+    val url                      = Url(s"/category/${categoryId.show}/")
+    override val page            = Some(onPage)
+    override val layoutContainer = Some(LayoutContainer.Default)
+    override val layoutPageIndex = page.map(_.self @@ LayoutPageIndex)
+    override val searchFilters   = withSearchFilters
   }
 
   object GetCategorySearchResultsV2 {
-    def apply(id: Category.Id, name: Category.Name, page: Url.Page): GetCategorySearchResultsV2 = GetCategorySearchResultsV2(id, Some(name), page)
-
     implicit val vulcanCodec: Codec[GetCategorySearchResultsV2] =
-      Codec.record[GetCategorySearchResultsV2](
-        name = "GetCategorySearchResultsV2",
-        namespace = "ozon.models"
-      ) { field =>
-        field("host", _.host) *> field("path", _.path) *>
-          (field("categoryId", _.categoryId), field("categoryName", _.categoryName), field("page", _.page)).mapN(apply)
+      Codec.record[GetCategorySearchResultsV2](name = "GetCategorySearchResultsV2", namespace = "ozon.models") { field =>
+        field("host", _.host) *> field("path", _.path) *> field("url", _.url) *>
+          (field("categoryId", _.categoryId), field("page", _.onPage), field("searchFilters", _.withSearchFilters)).mapN(apply)
       }
   }
 
   @derive(loggable)
-  final case class GetCategorySoldOutResultsV2 private (
+  final case class GetCategorySoldOutResultsV2(
     categoryId: Category.Id,
-    categoryName: Option[Category.Name] = None,
-    page: Url.Page = 0 @@ Url.Page,
-    soldOutPage: Url.SoldOutPage
+    onPage: Request.SoldOutPage,
+    withSearchFilters: List[SearchFilter]
   ) extends Request {
-    private val layoutContainer: Url.LayoutContainer = Url.LayoutContainer.Default
-    private val layoutPageIndex: Url.LayoutPageIndex = (page.self + soldOutPage.self) @@ Url.LayoutPageIndex
-
-    val url = Url(s"/category/${categoryId.show}/", Some(page), Some(soldOutPage), Some(layoutContainer), Some(layoutPageIndex))
+    val url                      = Url(s"/category/${categoryId.show}/")
+    override val page            = Some(0 @@ Page)
+    override val soldOutPage     = Some(onPage)
+    override val layoutContainer = Some(LayoutContainer.Default)
+    override val layoutPageIndex = soldOutPage.map(_.self @@ LayoutPageIndex)
+    override val searchFilters   = withSearchFilters
   }
 
   object GetCategorySoldOutResultsV2 {
-    def apply(id: Category.Id, name: Category.Name, soldOutPage: Url.SoldOutPage): GetCategorySoldOutResultsV2 =
-      GetCategorySoldOutResultsV2(id, Some(name), soldOutPage = soldOutPage)
-
-    def apply(id: Category.Id, name: Category.Name, page: Url.Page, soldOutPage: Url.SoldOutPage): GetCategorySoldOutResultsV2 =
-      GetCategorySoldOutResultsV2(id, Some(name), page, soldOutPage)
-
     implicit val vulcanCodec: Codec[GetCategorySoldOutResultsV2] =
-      Codec.record[GetCategorySoldOutResultsV2](
-        name = "GetCategorySoldOutResultsV2",
-        namespace = "ozon.models"
-      ) { field =>
-        field("host", _.host) *> field("path", _.path) *>
-          (field("categoryId", _.categoryId), field("categoryName", _.categoryName), field("page", _.page), field("soldOutPage", _.soldOutPage))
-            .mapN(apply)
+      Codec.record[GetCategorySoldOutResultsV2](name = "GetCategorySoldOutResultsV2", namespace = "ozon.models") { field =>
+        field("host", _.host) *> field("path", _.path) *> field("url", _.url) *>
+          (field("categoryId", _.categoryId), field("soldOutPage", _.onPage), field("searchFilter", _.withSearchFilters)).mapN(apply)
       }
   }
 
+  @AvroNamespace("ozon.models.request")
+  final case class Url(path: String) extends AnyVal
+
+  object Url {
+    implicit val queryParam = new QueryParam[Url] with QueryParamEncoder[Url] {
+      val key                                   = QueryParameterKey("url")
+      def encode(url: Url): QueryParameterValue = QueryParameterValue(url.show)
+    }
+
+    implicit val show: Show[Url]            = Show.show(_.path)
+    implicit val circeEncoder: Encoder[Url] = Encoder.encodeString.contramap(_.path)
+    implicit val vulcanCodec: Codec[Url]    = Codec.derive[Url]
+  }
+
+  object Page extends TaggedType[Int] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec {
+    implicit val queryParam = new QueryParam[Type] with QueryParamEncoder[Type] {
+      val key                                      = QueryParameterKey("page")
+      def encode(value: Type): QueryParameterValue = QueryParameterValue(value.show)
+    }
+  }
+  type Page = Page.Type
+
+  object SoldOutPage extends TaggedType[Int] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec {
+    implicit val queryParam = new QueryParam[Type] with QueryParamEncoder[Type] {
+      val key                                      = QueryParameterKey("sold_out_page")
+      def encode(value: Type): QueryParameterValue = QueryParameterValue(value.show)
+    }
+  }
+  type SoldOutPage = SoldOutPage.Type
+
+  @derive(loggable)
+  case class LayoutContainer private (name: LayoutContainer.Name)
+
+  object LayoutContainer {
+    sealed trait Name extends EnumEntry with Snakecase with Product with Serializable
+    object Name       extends Enum[Name] with CatsEnum[Name] with LoggableEnum[Name] with VulcanEnum[Name] {
+      val values = findValues
+
+      case object Default extends Name
+    }
+
+    object Default extends LayoutContainer(LayoutContainer.Name.Default)
+
+    implicit val queryParam = new QueryParam[LayoutContainer] with QueryParamEncoder[LayoutContainer] {
+      val key                                                 = QueryParameterKey("layout_container")
+      def encode(value: LayoutContainer): QueryParameterValue = QueryParameterValue(value.name.show)
+    }
+  }
+
+  object LayoutPageIndex extends TaggedType[Int] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec {
+    implicit val queryParam = new QueryParam[Type] with QueryParamEncoder[Type] {
+      val key                                      = QueryParameterKey("layout_page_index")
+      def encode(value: Type): QueryParameterValue = QueryParameterValue(value.show)
+    }
+  }
+  type LayoutPageIndex = LayoutPageIndex.Type
+
+  implicit val circeEncoder: Encoder[Request] = Encoder.forProduct2("url", "key")(request => (request.url, request.searchFilterKey))
+
   implicit val vulcanCodec: Codec[Request] = Codec.union[Request] { alt =>
-    alt[GetSellerList] |+| alt[GetCategoryMenu] |+| alt[GetCategorySearchResultsV2] |+| alt[GetCategorySoldOutResultsV2]
+    alt[GetSellerList] |+| alt[GetCategorySearchResultsV2] |+| alt[GetCategorySoldOutResultsV2]
   }
 }

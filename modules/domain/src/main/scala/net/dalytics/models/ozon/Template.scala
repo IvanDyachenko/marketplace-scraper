@@ -19,13 +19,11 @@ final case class Template(states: List[Template.State])
 object Template {
 
   @derive(loggable)
-  sealed trait State {
-    def `type`: State.Type
-  }
+  sealed trait State
 
   object State {
-    sealed trait Type extends EnumEntry with LowerCamelcase with Product with Serializable
-    object Type       extends Enum[Type] with CatsEnum[Type] with CirceEnum[Type] with LoggableEnum[Type] {
+    private[State] sealed trait Type extends EnumEntry with LowerCamelcase with Product with Serializable
+    private[State] object Type       extends Enum[Type] with CatsEnum[Type] with CirceEnum[Type] with LoggableEnum[Type] {
       val values = findValues
 
       case object Action          extends Type
@@ -34,8 +32,8 @@ object Template {
       case object MobileContainer extends Type
     }
 
-    sealed trait Id extends EnumEntry with LowerCamelcase with Product with Serializable
-    object Id       extends Enum[Id] with CatsEnum[Id] with CirceEnum[Id] with LoggableEnum[Id] {
+    private[this] sealed trait Id extends EnumEntry with LowerCamelcase with Product with Serializable
+    private[this] object Id       extends Enum[Id] with CatsEnum[Id] with CirceEnum[Id] with LoggableEnum[Id] {
       val values = findValues
 
       case object Name               extends Id
@@ -49,63 +47,41 @@ object Template {
     }
 
     @derive(loggable, decoder)
-    final object Unknown extends State {
-      val `type`: State.Type = State.Type.Unknown
-    }
+    final object Unknown extends State
 
     @derive(loggable)
-    sealed trait Action extends State {
-      val `type`: State.Type = State.Type.Action
-
-      def id: State.Id
-    }
+    sealed trait Action extends State
 
     object Action {
       @derive(loggable, decoder)
-      final object Redirect extends Action {
-        val id: State.Id = State.Id.Redirect
-      }
+      final object Redirect extends Action
 
       @derive(loggable, decoder)
-      final case class AddToCartWithCount(minItems: Int, maxItems: Int) extends Action {
-        val id: State.Id = State.Id.AddToCartWithCount
-      }
+      final case class UniversalAction(button: Button) extends Action
 
       @derive(loggable, decoder)
-      final case class UniversalAction(button: Button) extends Action {
-        val id: State.Id = State.Id.UniversalAction
-      }
+      final case class AddToCartWithCount(minItems: Int, maxItems: Int) extends Action
 
       implicit val circeDecoderConfig: Configuration = Configuration(Predef.identity, _.decapitalize, false, Some("id"))
       implicit val circeDecoder: Decoder[Action]     = deriveConfiguredDecoder[Action].widen
     }
 
     @derive(loggable)
-    sealed trait TextSmall extends State {
-      val `type`: State.Type = State.Type.TextSmall
-
-      def id: State.Id
-    }
+    sealed trait TextSmall extends State
 
     object TextSmall {
       @derive(loggable, decoder)
-      final object NotDelivered extends TextSmall {
-        val id: State.Id = State.Id.NotDelivered
-      }
+      final object NotDelivered extends TextSmall
 
       @derive(loggable, decoder)
-      final object PremiumPriority extends TextSmall {
-        val id: State.Id = State.Id.PremiumPriority
-      }
+      final object PremiumPriority extends TextSmall
 
       implicit val circeDecoderConfig: Configuration = Configuration(Predef.identity, _.decapitalize, false, Some("id"))
       implicit val circeDecoder: Decoder[TextSmall]  = deriveConfiguredDecoder[TextSmall].widen
     }
 
     @derive(loggable)
-    final case class MobileContainer(footer: Template) extends State {
-      val `type`: State.Type = State.Type.Action
-    }
+    final case class MobileContainer(footer: Template) extends State
 
     object MobileContainer {
       implicit val circeDecoder: Decoder[MobileContainer] = Decoder.forProduct1("footerContainer")(apply)
@@ -113,12 +89,12 @@ object Template {
 
     implicit val circeDecoder: Decoder[State] = Decoder.instance[State] { (c: HCursor) =>
       for {
-        stateType   <- c.get[State.Type]("type").fold(_ => State.Type.Unknown.asRight, Right(_))
+        stateType   <- c.get[State.Type]("type").orElse(State.Type.Unknown.asRight)
         stateDecoder = stateType match {
                          case State.Type.Action          => Action.circeDecoder
                          case State.Type.TextSmall       => TextSmall.circeDecoder
                          case State.Type.MobileContainer => MobileContainer.circeDecoder
-                         case State.Type.Unknown         => Decoder[Json].map(_ => State.Unknown)
+                         case State.Type.Unknown         => Decoder.const(State.Unknown)
                        }
         state       <- stateDecoder(c)
       } yield state

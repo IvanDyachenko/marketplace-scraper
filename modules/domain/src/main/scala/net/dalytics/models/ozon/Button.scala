@@ -1,6 +1,5 @@
 package net.dalytics.models.ozon
 
-import cats.implicits._
 import derevo.derive
 import derevo.circe.decoder
 import derevo.tethys.tethysReader
@@ -8,6 +7,7 @@ import tofu.logging.derivation.loggable
 import tofu.logging.LoggableEnum
 import io.circe.{Decoder, HCursor}
 import tethys.JsonReader
+import tethys.readers.{FieldName, ReaderError}
 import tethys.enumeratum.TethysEnum
 import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry}
 import enumeratum.EnumEntry.LowerCamelcase
@@ -58,13 +58,16 @@ object Button {
     } yield button
   }
 
-  implicit val jsonReader: JsonReader[Option[Button]] =
+  implicit val jsonReader: JsonReader[Button] =
     JsonReader.builder
-      .addField[Option[Button]](
+      .addField[Button](
         "default",
         JsonReader.builder
           .addField[Option[AddToCartWithQuantity]](Type.AddToCartButtonWithQuantity.entryName)
-          .buildReader(_.widen[Button])
+          .buildReader[Button] {
+            case Some(addToCartWithQuantity) => addToCartWithQuantity
+            case _                           => ReaderError.wrongJson("Unrecognized type of button")(FieldName("???"))
+          }
       )
       .buildReader(identity)
 }

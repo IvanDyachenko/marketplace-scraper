@@ -83,7 +83,7 @@ class ButtonSpec extends AnyFlatSpec with Matchers with EitherValues with Option
         |}
       """.stripMargin
 
-    val button = buttonRawJson.jsonAs[Option[Button]].value.value
+    val button = buttonRawJson.jsonAs[Button].value
 
     button should be(Button.AddToCartWithQuantity(1, 700))
   }
@@ -109,7 +109,7 @@ class ButtonSpec extends AnyFlatSpec with Matchers with EitherValues with Option
         |}
       """.stripMargin
 
-    val button = buttonRawJson.jsonAs[Option[Button]].value.value
+    val button = buttonRawJson.jsonAs[Button].value
 
     button should be(Button.AddToCartWithQuantity(1, 3))
   }

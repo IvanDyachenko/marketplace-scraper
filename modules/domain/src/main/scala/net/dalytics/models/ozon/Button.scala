@@ -67,5 +67,4 @@ object Button {
           .buildReader(_.widen[Button])
       )
       .buildReader(identity)
-
 }

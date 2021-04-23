@@ -32,20 +32,6 @@ object Template {
       case object MobileContainer extends Type
     }
 
-    private[this] sealed trait Id extends EnumEntry with LowerCamelcase with Product with Serializable
-    private[this] object Id       extends Enum[Id] with CatsEnum[Id] with CirceEnum[Id] with LoggableEnum[Id] {
-      val values = findValues
-
-      case object Name               extends Id
-      case object Price              extends Id
-      case object PricePerUnit       extends Id
-      case object Redirect           extends Id
-      case object NotDelivered       extends Id
-      case object PremiumPriority    extends Id
-      case object UniversalAction    extends Id
-      case object AddToCartWithCount extends Id
-    }
-
     @derive(loggable, decoder)
     final object Unknown extends State
 

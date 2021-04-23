@@ -34,11 +34,11 @@ object AddToCart {
 
     def addToCart: Option[AddToCart] =
       template.states.collectFirst {
-        case Action.Redirect                                                                   => Redirect
-        case TextSmall.PremiumPriority | TextSmall.NotDelivered                                => PremiumOnly
-        case AddToCartWithCount(minItems, maxItems)                                            => With(minItems, maxItems)
-        case UniversalAction(UniversalAction.Button.AddToCartWithQuantity(quantity, maxItems)) => With(quantity, maxItems)
-        case MobileContainer(footer) if footer.addToCart.isDefined                             => footer.addToCart.get
+        case Action.Redirect                                                   => Redirect
+        case TextSmall.PremiumPriority | TextSmall.NotDelivered                => PremiumOnly
+        case AddToCartWithCount(minItems, maxItems)                            => With(minItems, maxItems)
+        case UniversalAction(Button.AddToCartWithQuantity(quantity, maxItems)) => With(quantity, maxItems)
+        case MobileContainer(footer) if footer.addToCart.isDefined             => footer.addToCart.get
       }
   }
 

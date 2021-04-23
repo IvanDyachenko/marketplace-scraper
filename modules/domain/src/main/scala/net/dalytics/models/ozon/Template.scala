@@ -72,32 +72,8 @@ object Template {
       }
 
       @derive(loggable, decoder)
-      final case class UniversalAction(button: UniversalAction.Button) extends Action {
+      final case class UniversalAction(button: Button) extends Action {
         val id: State.Id = State.Id.UniversalAction
-      }
-
-      object UniversalAction {
-        @derive(loggable)
-        sealed trait Button
-
-        object Button {
-          @derive(loggable)
-          final case class AddToCartWithQuantity(quantity: Int, maxItems: Int) extends Button
-
-          object AddToCartWithQuantity {
-            implicit val circeDecoder: Decoder[AddToCartWithQuantity] = Decoder.instance[AddToCartWithQuantity] { (c: HCursor) =>
-              lazy val i = c.downField("default").downField("addToCartButtonWithQuantity")
-              for {
-                quantity <- i.downField("action").get[Int]("quantity")
-                maxItems <- i.get[Int]("maxItems")
-              } yield AddToCartWithQuantity(quantity, maxItems)
-            }
-          }
-
-          implicit val circeDecoder: Decoder[Button] = List[Decoder[Button]](
-            Decoder[AddToCartWithQuantity].widen
-          ).reduceLeft(_ or _)
-        }
       }
 
       implicit val circeDecoderConfig: Configuration = Configuration(Predef.identity, _.decapitalize, false, Some("id"))

@@ -6,6 +6,8 @@ import tofu.syntax.loggable._
 import derevo.derive
 import tofu.logging.derivation.loggable
 import vulcan.Codec
+import tethys.JsonReader
+import tethys.readers.{FieldName, ReaderError}
 import io.circe.{Decoder, DecodingFailure, HCursor, Json}
 
 @derive(loggable)
@@ -27,6 +29,16 @@ object AddToCart {
                       }(Right(_))
     } yield addToCart
   }
+
+  implicit val jsonReader: JsonReader[AddToCart] =
+    JsonReader.builder
+      .addField[Template]("templateState")
+      .buildReader { template =>
+        template.addToCart.fold {
+          val message = s"Decoded value doesn't contain description of the 'add to cart' action: ${template.logShow}."
+          ReaderError.wrongJson(message)(FieldName.apply("templateState"))
+        }(identity)
+      }
 
   implicit final class TemplateOps(private val template: Template) extends AnyVal {
     import net.dalytics.models.ozon.Template.State.{Action, MobileContainer, TextSmall}

@@ -22,6 +22,32 @@ docker run --detach \
   --memory=<number>[<unit>] \
   --env KAFKA_BOOTSTRAP_SERVERS=<host>:<port> \
   --env SCHEMA_REGISTRY_BASE_URL=http://<host>:<port> \
-  --add-host api.ozon.ru:<api> \
+  --add-host api.ozon.ru:<ip> \
   --name marketplace-scheduler ivandyachenko/marketplace-scheduler:<tag>
+```
+
+## Handler
+
+#### Run the docker image in the background
+
+```bash
+docker run --detach \
+  --restart=always \
+  --sysctl net.core.somaxconn=65536 \
+  --sysctl net.core.netdev_max_backlog=65536 \
+  --sysctl net.core.wmem_max=16777216 \
+  --sysctl net.core.rmem_max=16777216 \
+  --sysctl net.ipv4.ip_local_port_range="1024 65000" \
+  --sysctl net.ipv4.tcp_mem="524288 1048576 4194304" \
+  --sysctl net.ipv4.tcp_wmem="4096 87380 16777216" \
+  --sysctl net.ipv4.tcp_rmem="4096 131072 16777216" \
+  --sysctl net.ipv4.tcp_tw_reuse=1 \
+  --sysctl net.ipv4.tcp_fin_timeout=10 \
+  --sysctl net.ipv4.tcp_max_tw_buckets=65536 \
+  --sysctl net.ipv4.tcp_max_syn_backlog=65536 \
+  --memory=<number>[<unit>] \
+  --env KAFKA_BOOTSTRAP_SERVERS=<host>:<port> \
+  --env SCHEMA_REGISTRY_BASE_URL=http://<host>:<port> \
+  --add-host api.ozon.ru:<ip> \
+  --name marketplace-handler ivandyachenko/marketplace-handler:<tag>
 ```

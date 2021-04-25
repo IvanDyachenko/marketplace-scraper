@@ -1,6 +1,7 @@
 package net.dalytics.models.ozon
 
 import derevo.derive
+import derevo.tethys.tethysReader
 import tofu.logging.derivation.loggable
 import tethys.JsonReader
 import io.circe.Decoder
@@ -10,7 +11,6 @@ import supertagged.TaggedType
 
 import net.dalytics.syntax._
 import net.dalytics.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedTethys, LiftedVulcanCodec}
-import derevo.tethys.tethysReader
 
 @derive(loggable)
 sealed trait Component {

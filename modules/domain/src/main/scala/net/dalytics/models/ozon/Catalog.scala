@@ -3,7 +3,7 @@ package net.dalytics.models.ozon
 import io.circe.{Decoder, DecodingFailure, HCursor, Json}
 import supertagged.TaggedType
 
-import net.dalytics.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcanCodec}
+import net.dalytics.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedTethys, LiftedVulcanCodec}
 
 final case class Catalog private (
   page: Page,
@@ -14,7 +14,7 @@ final case class Catalog private (
 )
 
 object Catalog {
-  object Name extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec
+  object Name extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedTethys with LiftedVulcanCodec
   type Name = Name.Type
 
   implicit def circeDecoder(layout: Layout): Decoder[Catalog] = Decoder.instance[Catalog] { (c: HCursor) =>

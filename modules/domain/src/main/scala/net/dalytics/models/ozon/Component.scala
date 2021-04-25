@@ -1,6 +1,7 @@
 package net.dalytics.models.ozon
 
 import derevo.derive
+import derevo.circe.decoder
 import derevo.tethys.tethysReader
 import tofu.logging.derivation.loggable
 import tethys.JsonReader
@@ -20,6 +21,13 @@ sealed trait Component {
 object Component {
   object StateId extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedTethys with LiftedVulcanCodec
   type StateId = StateId.Type
+
+  @derive(loggable, decoder)
+  final object Unknown extends Component {
+    val stateId: Component.StateId = Component.StateId("unknown")
+
+    implicit val jsonReader: JsonReader[Unknown.type] = JsonReader.builder.addField[String]("stateId").buildReader(_ => Unknown)
+  }
 
   //@derive(loggable)
   //final case class UWidgetSKU(stateId: Component.StateId) extends Component
@@ -44,5 +52,6 @@ object Component {
     case "categoryMenu"     => JsonReader[CategoryMenu]
     case "searchResultsV2"  => JsonReader[SearchResultsV2]
     case "soldOutResultsV2" => JsonReader[SoldOutResultsV2]
+    case _                  => JsonReader[Unknown.type]
   }
 }

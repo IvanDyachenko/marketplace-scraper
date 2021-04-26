@@ -5,7 +5,7 @@ import supertagged.TaggedType
 
 import net.dalytics.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedTethys, LiftedVulcanCodec}
 
-final case class Catalog private (
+final case class Catalog(
   page: Page,
   category: Category,
   categoryMenu: Option[CategoryMenu],

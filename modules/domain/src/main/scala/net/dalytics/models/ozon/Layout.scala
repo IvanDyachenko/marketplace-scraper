@@ -20,5 +20,7 @@ object Layout {
       .map(ls => Layout(ls.flatMap(_.left.toOption)))
 
   implicit val jsonReader: JsonReader[Layout] =
-    JsonReader.iterableReader[Component, List].map(components => apply(components.filterNot(_ == Component.Unknown)))
+    JsonReader
+      .iterableReader[Component, List]
+      .map(components => apply(components.filterNot(_ == Component.Unknown)))
 }

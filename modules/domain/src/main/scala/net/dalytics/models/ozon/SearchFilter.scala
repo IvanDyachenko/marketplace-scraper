@@ -22,7 +22,7 @@ sealed trait SearchFilter {
 
 @derive(show, loggable)
 @AvroNamespace("models.ozon")
-final case class BrandFilter private (brandId: Brand.Id) extends SearchFilter {
+final case class BrandFilter(brandId: Brand.Id) extends SearchFilter {
   val key = SearchFilter.Key.Brand
 }
 

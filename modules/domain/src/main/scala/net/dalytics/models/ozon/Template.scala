@@ -135,5 +135,7 @@ object Template {
       .map(ls => Template(ls.flatMap(_.left.toOption)))
 
   implicit val jsonReader: JsonReader[Template] =
-    JsonReader.iterableReader[State, List].map(apply)
+    JsonReader
+      .iterableReader[State, List]
+      .map(apply)
 }

@@ -4,11 +4,13 @@ import cats.implicits._
 import derevo.derive
 import tofu.logging.derivation.show
 import tofu.logging.derivation.loggable
+import tofu.logging.LoggableEnum
 import vulcan.Codec
 import vulcan.generic._
 import io.circe.Decoder
+import tethys.JsonReader
+import tethys.enumeratum.TethysEnum
 import org.http4s.{QueryParamEncoder, QueryParamKeyLike, QueryParameterKey, QueryParameterValue}
-import tofu.logging.LoggableEnum
 import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry}
 import enumeratum.EnumEntry.LowerCamelcase
 
@@ -25,13 +27,14 @@ final case class BrandFilter private (brandId: Brand.Id) extends SearchFilter {
 }
 
 object BrandFilter {
-  implicit val circeDecoder: Decoder[BrandFilter] = Decoder.forProduct1("key")(apply)
-  implicit val vulcanCodec: Codec[BrandFilter]    = Codec.derive[BrandFilter]
+  implicit val circeDecoder: Decoder[BrandFilter]  = Decoder.forProduct1("key")(apply)
+  implicit val jsonReader: JsonReader[BrandFilter] = JsonReader.builder.addField[Brand.Id]("key").buildReader(apply)
+  implicit val vulcanCodec: Codec[BrandFilter]     = Codec.derive[BrandFilter]
 }
 
 object SearchFilter {
   sealed trait Key extends EnumEntry with LowerCamelcase with Product with Serializable
-  object Key       extends Enum[Key] with CatsEnum[Key] with CirceEnum[Key] with LoggableEnum[Key] {
+  object Key       extends Enum[Key] with CatsEnum[Key] with CirceEnum[Key] with TethysEnum[Key] with LoggableEnum[Key] {
     val values = findValues
 
     case object Brand extends Key
@@ -46,10 +49,6 @@ object SearchFilter {
       case BrandFilter(brandId) => brandId.show
     })
   }
-
-  implicit val circeDecoder: Decoder[SearchFilter] = List[Decoder[SearchFilter]](
-    Decoder[BrandFilter].widen
-  ).reduceLeft(_ or _)
 
   implicit val vulcanCodec: Codec[SearchFilter] = Codec.union(alt => alt[BrandFilter])
 }

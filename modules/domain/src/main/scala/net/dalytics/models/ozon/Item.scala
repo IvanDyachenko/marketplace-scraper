@@ -109,7 +109,7 @@ object Item {
     } yield item
   }
 
-  implicit val tethysItemReader: JsonReader[Item] =
+  implicit val tethysReader: JsonReader[Item] =
     JsonReader.builder
       .addField[CellTrackingInfo]("cellTrackingInfo")
       .addField[Template]("templateState")

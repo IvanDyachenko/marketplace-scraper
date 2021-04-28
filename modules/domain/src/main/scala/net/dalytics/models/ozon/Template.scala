@@ -37,7 +37,7 @@ private[ozon] object Template {
 
     @derive(loggable)
     final object Unknown extends State {
-      implicit val jsonReader: JsonReader[Unknown.type] = JsonReader.builder.addField[String]("type").buildReader(_ => Unknown)
+      implicit val jsonReader: JsonReader[Unknown.type] = JsonReader.builder.addField[Option[String]]("type").buildReader(_ => Unknown)
     }
 
     @derive(loggable)
@@ -46,7 +46,7 @@ private[ozon] object Template {
     object Action {
       @derive(loggable, decoder)
       final object Unknown extends Action {
-        implicit val jsonReader: JsonReader[Unknown.type] = JsonReader.builder.addField[String]("id").buildReader(_ => Unknown)
+        implicit val jsonReader: JsonReader[Unknown.type] = JsonReader.builder.addField[Option[String]]("id").buildReader(_ => Unknown)
       }
 
       @derive(loggable, decoder)
@@ -65,12 +65,12 @@ private[ozon] object Template {
 
       implicit val jsonReader: JsonReader[Action] =
         JsonReader.builder
-          .addField[String]("id")
+          .addField[Option[String]]("id")
           .selectReader {
-            case "redirect"           => JsonReader[Redirect.type]
-            case "universalAction"    => JsonReader[UniversalAction]
-            case "addToCartWithCount" => JsonReader[AddToCartWithCount]
-            case _                    => JsonReader[Unknown.type]
+            case Some("redirect")           => JsonReader[Redirect.type]
+            case Some("universalAction")    => JsonReader[UniversalAction]
+            case Some("addToCartWithCount") => JsonReader[AddToCartWithCount]
+            case _                          => JsonReader[Unknown.type]
           }
     }
 
@@ -80,7 +80,7 @@ private[ozon] object Template {
     object TextSmall {
       @derive(loggable, decoder)
       final object Unknown extends TextSmall {
-        implicit val jsonReader: JsonReader[Unknown.type] = JsonReader.builder.addField[String]("id").buildReader(_ => Unknown)
+        implicit val jsonReader: JsonReader[Unknown.type] = JsonReader.builder.addField[Option[String]]("id").buildReader(_ => Unknown)
       }
 
       @derive(loggable, decoder)
@@ -94,11 +94,11 @@ private[ozon] object Template {
 
       implicit val jsonReader: JsonReader[TextSmall] =
         JsonReader.builder
-          .addField[String]("id")
+          .addField[Option[String]]("id")
           .buildReader {
-            case "notDelivered"    => NotDelivered
-            case "premiumPriority" => PremiumPriority
-            case _                 => Unknown
+            case Some("notDelivered")    => NotDelivered
+            case Some("premiumPriority") => PremiumPriority
+            case _                       => Unknown
           }
     }
 
@@ -119,8 +119,8 @@ private[ozon] object Template {
     }
 
     implicit val jsonReader: JsonReader[State] =
-      JsonReader.builder.addField[String]("type").selectReader {
-        Type.withNameOption(_) match {
+      JsonReader.builder.addField[Option[String]]("type").selectReader { typeOpt =>
+        Type.withNameOption(typeOpt.getOrElse(Type.Unknown.entryName)) match {
           case Some(Type.Action)          => JsonReader[Action]
           case Some(Type.TextSmall)       => JsonReader[TextSmall]
           case Some(Type.MobileContainer) => JsonReader[MobileContainer]

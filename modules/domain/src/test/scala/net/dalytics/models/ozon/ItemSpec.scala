@@ -5,6 +5,8 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import io.circe.parser.decode
+import tethys._
+import tethys.jackson._
 
 class ItemSpec extends AnyFlatSpec with Matchers with EitherValues {
 
@@ -141,9 +143,11 @@ class ItemSpec extends AnyFlatSpec with Matchers with EitherValues {
         |}
       """.stripMargin
 
-    val decodedItem = decode[Item](itemRawJson)
+    val itemCirce  = decode[Item](itemRawJson).value
+    val itemTethys = itemRawJson.jsonAs[Item].value
 
-    decodedItem.value.addToCart should be(AddToCart.With(1, 700))
+    itemCirce.addToCart should be(AddToCart.With(1, 700))
+    itemTethys.addToCart should be(AddToCart.With(1, 700))
   }
 
   it should "decode Item.InStock (AddToCart.With, 2) from a valid JSON" in {
@@ -289,9 +293,11 @@ class ItemSpec extends AnyFlatSpec with Matchers with EitherValues {
         |}
       """.stripMargin
 
-    val decodedItem = decode[Item](itemRawJson)
+    val itemCirce  = decode[Item](itemRawJson).value
+    val itemTethys = itemRawJson.jsonAs[Item].value
 
-    decodedItem.value.addToCart should be(AddToCart.With(1, 51))
+    itemCirce.addToCart should be(AddToCart.With(1, 51))
+    itemTethys.addToCart should be(AddToCart.With(1, 51))
   }
 
   it should "decode Item.InStock (AddToCart.With, 3) from a valid JSON" in {
@@ -486,9 +492,11 @@ class ItemSpec extends AnyFlatSpec with Matchers with EitherValues {
         |}
       """.stripMargin
 
-    val decodedItem = decode[Item](itemRawJson)
+    val itemCirce  = decode[Item](itemRawJson).value
+    val itemTethys = itemRawJson.jsonAs[Item].value
 
-    decodedItem.value.addToCart should be(AddToCart.With(1, 3))
+    itemCirce.addToCart should be(AddToCart.With(1, 3))
+    itemTethys.addToCart should be(AddToCart.With(1, 3))
   }
 
   it should "decode Item.InStock (AddToCart.Redirect, 1) from a valid JSON" in {
@@ -624,9 +632,11 @@ class ItemSpec extends AnyFlatSpec with Matchers with EitherValues {
         |}
       """.stripMargin
 
-    val decodedItem = decode[Item](itemRawJson)
+    val itemCirce  = decode[Item](itemRawJson).value
+    val itemTethys = itemRawJson.jsonAs[Item].value
 
-    decodedItem.value.addToCart should be(AddToCart.Redirect)
+    itemCirce.addToCart should be(AddToCart.Redirect)
+    itemTethys.addToCart should be(AddToCart.Redirect)
   }
 
   it should "decode Item.InStock (AddToCart.PremiumOnly, 1) from a valid JSON" in {
@@ -808,9 +818,11 @@ class ItemSpec extends AnyFlatSpec with Matchers with EitherValues {
         |}
       """.stripMargin
 
-    val decodedItem = decode[Item](itemRawJson)
+    val itemCirce  = decode[Item](itemRawJson).value
+    val itemTethys = itemRawJson.jsonAs[Item].value
 
-    decodedItem.value.addToCart should be(AddToCart.PremiumOnly)
+    itemCirce.addToCart should be(AddToCart.PremiumOnly)
+    itemTethys.addToCart should be(AddToCart.PremiumOnly)
   }
 
   it should "decode Item.InStock (AddToCart.PremiumOnly, 2) from a valid JSON" in {
@@ -1003,9 +1015,11 @@ class ItemSpec extends AnyFlatSpec with Matchers with EitherValues {
         |}
       """.stripMargin
 
-    val decodedItem = decode[Item](itemRawJson)
+    val itemCirce  = decode[Item](itemRawJson).value
+    val itemTethys = itemRawJson.jsonAs[Item].value
 
-    decodedItem.value.addToCart should be(AddToCart.PremiumOnly)
+    itemCirce.addToCart should be(AddToCart.PremiumOnly)
+    itemTethys.addToCart should be(AddToCart.PremiumOnly)
   }
 
   it should "decode Item.OutOfStock from a valid JSON" in {
@@ -1136,9 +1150,11 @@ class ItemSpec extends AnyFlatSpec with Matchers with EitherValues {
         |}
       """.stripMargin
 
-    val decodedItem = decode[Item](itemRawJson)
+    val itemCirce  = decode[Item](itemRawJson).value
+    val itemTethys = itemRawJson.jsonAs[Item].value
 
-    decodedItem.value.addToCart should be(AddToCart.With(0, 0))
+    itemCirce.addToCart should be(AddToCart.With(0, 0))
+    itemTethys.addToCart should be(AddToCart.With(0, 0))
   }
 
   it should "decode Item.CannotBeShipped from a valid JSON" in {
@@ -1236,9 +1252,11 @@ class ItemSpec extends AnyFlatSpec with Matchers with EitherValues {
         |}
       """.stripMargin
 
-    val decodedItem = decode[Item](itemRawJson)
+    val itemCirce  = decode[Item](itemRawJson).value
+    val itemTethys = itemRawJson.jsonAs[Item].value
 
-    decodedItem.value.addToCart should be(AddToCart.Unavailable)
+    itemCirce.addToCart should be(AddToCart.Unavailable)
+    itemTethys.addToCart should be(AddToCart.Unavailable)
   }
 
   it should "decode Item.Preorder from a valid JSON" in {
@@ -1412,8 +1430,10 @@ class ItemSpec extends AnyFlatSpec with Matchers with EitherValues {
         |}
       """.stripMargin
 
-    val decodedItem = decode[Item](itemRawJson)
+    val itemCirce  = decode[Item](itemRawJson).value
+    val itemTethys = itemRawJson.jsonAs[Item].value
 
-    decodedItem.value.addToCart should be(AddToCart.Unavailable)
+    itemCirce.addToCart should be(AddToCart.Unavailable)
+    itemTethys.addToCart should be(AddToCart.Unavailable)
   }
 }

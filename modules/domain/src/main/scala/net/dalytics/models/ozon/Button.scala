@@ -7,7 +7,6 @@ import tofu.logging.derivation.loggable
 import tofu.logging.LoggableEnum
 import io.circe.{Decoder, HCursor}
 import tethys.JsonReader
-import tethys.readers.{FieldName, ReaderError}
 import tethys.enumeratum.TethysEnum
 import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry}
 import enumeratum.EnumEntry.LowerCamelcase
@@ -21,6 +20,11 @@ object Button {
     val values = findValues
 
     case object AddToCartButtonWithQuantity extends Type
+  }
+
+  @derive(loggable)
+  final object Unknown extends Button {
+    implicit val jsonReader: JsonReader[Unknown.type] = JsonReader.builder.addField[Option[String]]("type").buildReader(_ => Unknown)
   }
 
   @derive(loggable)
@@ -66,7 +70,7 @@ object Button {
           .addField[Option[AddToCartWithQuantity]](Type.AddToCartButtonWithQuantity.entryName)
           .buildReader[Button] {
             case Some(addToCartWithQuantity) => addToCartWithQuantity
-            case _                           => ReaderError.wrongJson("Unrecognized type of button")(FieldName("???"))
+            case _                           => Unknown
           }
       )
       .buildReader(identity)

@@ -19,17 +19,6 @@ object AddToCart {
 
   def apply(template: Template): Option[AddToCart] = template.addToCart
 
-  implicit val circeDecoder: Decoder[AddToCart] = Decoder.instance[AddToCart] { (c: HCursor) =>
-    for {
-      templateJson <- c.get[Json]("templateState")
-      template     <- templateJson.as[Template]
-      addToCart    <- template.addToCart.fold[Decoder.Result[AddToCart]] {
-                        val message = s"Decoded value of ${templateJson.noSpacesSortKeys} is ${template.logShow}."
-                        Left(DecodingFailure(message, c.history))
-                      }(Right(_))
-    } yield addToCart
-  }
-
   implicit final class TemplateOps(private val template: Template) extends AnyVal {
     import net.dalytics.models.ozon.Template.State.{Action, MobileContainer, TextSmall}
     import net.dalytics.models.ozon.Template.State.Action.{AddToCartWithCount, UniversalAction}
@@ -42,6 +31,17 @@ object AddToCart {
         case UniversalAction(Button.AddToCartWithQuantity(quantity, maxItems)) => With(quantity, maxItems)
         case MobileContainer(footer) if footer.addToCart.isDefined             => footer.addToCart.get
       }
+  }
+
+  implicit val circeDecoder: Decoder[AddToCart] = Decoder.instance[AddToCart] { (c: HCursor) =>
+    for {
+      templateJson <- c.get[Json]("templateState")
+      template     <- templateJson.as[Template]
+      addToCart    <- template.addToCart.fold[Decoder.Result[AddToCart]] {
+                        val message = s"Decoded value of ${templateJson.noSpacesSortKeys} is ${template.logShow}."
+                        Left(DecodingFailure(message, c.history))
+                      }(Right(_))
+    } yield addToCart
   }
 
   private[models] def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => AddToCart): FreeApplicative[Codec.Field[A, *], AddToCart] =

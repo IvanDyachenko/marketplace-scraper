@@ -17,6 +17,7 @@ import vulcan.generic.AvroNamespace
 final case class Delivery(schema: Delivery.Schema, timeDiffDays: Short)
 
 object Delivery {
+  def apply(schema: Delivery.Schema, timeDiffDays: Option[Short]): Delivery = apply(schema, timeDiffDays.getOrElse(0: Short))
 
   @AvroNamespace("ozon.models.delivery")
   sealed trait Schema extends EnumEntry with Camelcase with Product with Serializable
@@ -36,16 +37,10 @@ object Delivery {
     val values = findValues
   }
 
-  implicit val circeDecoder: Decoder[Delivery] = Decoder.forProduct2[Delivery, Schema, Option[Short]]("deliverySchema", "deliveryTimeDiffDays") {
-    case (schema, Some(timeDiffDays)) => Delivery(schema, timeDiffDays)
-    case (schema, _)                  => Delivery(schema, 0)
-  }
+  implicit val circeDecoder: Decoder[Delivery] = Decoder.forProduct2[Delivery, Schema, Option[Short]]("deliverySchema", "deliveryTimeDiffDays")(apply)
 
   implicit val jsonReader: JsonReader[Delivery] =
-    JsonReader.builder.addField[Schema]("deliverySchema").addField[Option[Short]]("deliveryTimeDiffDays").buildReader {
-      case (schema, Some(timeDiffDays)) => Delivery(schema, timeDiffDays)
-      case (schema, _)                  => Delivery(schema, 0)
-    }
+    JsonReader.builder.addField[Schema]("deliverySchema").addField[Option[Short]]("deliveryTimeDiffDays").buildReader(apply)
 
   private[models] def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => Delivery): FreeApplicative[Codec.Field[A, *], Delivery] =
     (field("deliverySchema", f(_).schema), field("deliveryTimeDiffDays", f(_).timeDiffDays)).mapN(apply)

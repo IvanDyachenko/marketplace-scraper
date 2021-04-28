@@ -21,7 +21,7 @@ class DeliverySpec extends AnyFlatSpec with Matchers with EitherValues {
 
     val delivery = decode[Delivery](deliveryRawJson).value
 
-    delivery should be(Delivery(Delivery.Schema.Retail, 0))
+    delivery should be(Delivery(Delivery.Schema.Retail, 0: Short))
   }
 
   it should "decode Delivery from a valid JSON (1) (tethys)" in {
@@ -35,7 +35,7 @@ class DeliverySpec extends AnyFlatSpec with Matchers with EitherValues {
 
     val delivery = deliveryRawJson.jsonAs[Delivery].value
 
-    delivery should be(Delivery(Delivery.Schema.Retail, 0))
+    delivery should be(Delivery(Delivery.Schema.Retail, 0: Short))
   }
 
   it should "decode Delivery from a valid JSON (2) (circe)" in {
@@ -49,7 +49,7 @@ class DeliverySpec extends AnyFlatSpec with Matchers with EitherValues {
 
     val delivery = decode[Delivery](deliveryRawJson).value
 
-    delivery should be(Delivery(Delivery.Schema.FBO, 42))
+    delivery should be(Delivery(Delivery.Schema.FBO, 42: Short))
   }
 
   it should "decode Delivery from a valid JSON (2) (tethys)" in {
@@ -63,6 +63,6 @@ class DeliverySpec extends AnyFlatSpec with Matchers with EitherValues {
 
     val delivery = deliveryRawJson.jsonAs[Delivery].value
 
-    delivery should be(Delivery(Delivery.Schema.FBO, 42))
+    delivery should be(Delivery(Delivery.Schema.FBO, 42: Short))
   }
 }

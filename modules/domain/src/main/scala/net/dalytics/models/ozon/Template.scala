@@ -17,9 +17,9 @@ import enumeratum.EnumEntry.LowerCamelcase
 import net.dalytics.syntax._
 
 @derive(loggable)
-final case class Template(states: List[Template.State])
+private[ozon] final case class Template(states: List[Template.State])
 
-object Template {
+private[ozon] object Template {
 
   @derive(loggable)
   sealed trait State
@@ -29,8 +29,8 @@ object Template {
     private[State] object Type       extends Enum[Type] with CatsEnum[Type] with CirceEnum[Type] with TethysEnum[Type] with LoggableEnum[Type] {
       val values = findValues
 
-      case object Action          extends Type
       case object Unknown         extends Type
+      case object Action          extends Type
       case object TextSmall       extends Type
       case object MobileContainer extends Type
     }
@@ -119,8 +119,8 @@ object Template {
     }
 
     implicit val jsonReader: JsonReader[State] =
-      JsonReader.builder.addField[String]("type").selectReader { typeName =>
-        Type.withNameOption(typeName) match {
+      JsonReader.builder.addField[String]("type").selectReader {
+        Type.withNameOption(_) match {
           case Some(Type.Action)          => JsonReader[Action]
           case Some(Type.TextSmall)       => JsonReader[TextSmall]
           case Some(Type.MobileContainer) => JsonReader[MobileContainer]

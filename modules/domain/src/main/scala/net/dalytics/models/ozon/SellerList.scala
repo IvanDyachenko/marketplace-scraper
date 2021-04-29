@@ -26,7 +26,7 @@ object SellerList {
     c.downField(component.stateId).as[SellerList](circeDecoders)
   }
 
-  implicit def jsonReader(component: Component.SellerList): JsonReader[SellerList] =
+  implicit def tethysJsonReader(component: Component.SellerList): JsonReader[SellerList] =
     JsonReader.builder
       .addField(
         component.stateId,

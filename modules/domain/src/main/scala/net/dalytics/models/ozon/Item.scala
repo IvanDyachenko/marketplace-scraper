@@ -122,7 +122,7 @@ object Item {
           case Availability.OutOfStock      => AddToCart.With(0, 0)
           case Availability.InStock         =>
             AddToCart(template).getOrElse {
-              val message = s"Decoded value doesn't contain description of the 'add to cart' action: ${template.logShow}."
+              val message = s"Decoded value of 'templateState' object doesn't contain description of the 'add to cart' action: ${template.logShow}."
               ReaderError.wrongJson(message)(FieldName.apply("templateState"))
             }
         }

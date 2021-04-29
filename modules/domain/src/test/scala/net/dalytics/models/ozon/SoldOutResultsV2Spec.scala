@@ -67,7 +67,8 @@ class SoldOutResultsV2Spec extends AnyFlatSpec with Matchers with EitherValues w
         |}
       """.stripMargin
 
-    implicit val jsonReader = SoldOutResultsV2.jsonReader(Component.SoldOutResultsV2("soldOutResultsV2-189813-default-1" @@ Component.StateId))
+    val component           = Component.SoldOutResultsV2("soldOutResultsV2-189813-default-1" @@ Component.StateId)
+    implicit val jsonReader = SoldOutResultsV2.tethysJsonReader(component)
     val soldOutResultsV2    = soldOutResultsV2RawJson.jsonAs[SoldOutResultsV2].value
 
     soldOutResultsV2 should be(SoldOutResultsV2.Success(List.empty))
@@ -102,7 +103,8 @@ class SoldOutResultsV2Spec extends AnyFlatSpec with Matchers with EitherValues w
         |}
       """.stripMargin
 
-    implicit val jsonReader = SoldOutResultsV2.jsonReader(Component.SoldOutResultsV2("soldOutResultsV2-189813-default-1" @@ Component.StateId))
+    val component           = Component.SoldOutResultsV2("soldOutResultsV2-189813-default-1" @@ Component.StateId)
+    implicit val jsonReader = SoldOutResultsV2.tethysJsonReader(component)
     val soldOutResultsV2    = soldOutResultsV2RawJson.jsonAs[SoldOutResultsV2].value
 
     soldOutResultsV2 should be(SoldOutResultsV2.Success(List.empty))

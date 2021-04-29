@@ -18,7 +18,7 @@ object CategoryMenu {
       .map(apply)
   }
 
-  implicit def jsonReader(component: Component.CategoryMenu): JsonReader[CategoryMenu] =
+  implicit def tethysJsonReader(component: Component.CategoryMenu): JsonReader[CategoryMenu] =
     JsonReader.builder
       .addField[List[Category]](component.stateId, JsonReader.builder.addField[List[Category]]("categories").buildReader(identity))
       .buildReader(apply)

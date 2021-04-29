@@ -34,7 +34,7 @@ object SoldOutResultsV2 {
     c.downField(component.stateId).as[SoldOutResultsV2](circeDecoders)
   }
 
-  implicit def jsonReader(component: Component.SoldOutResultsV2): JsonReader[SoldOutResultsV2] =
+  implicit def tethysJsonReader(component: Component.SoldOutResultsV2): JsonReader[SoldOutResultsV2] =
     JsonReader.builder
       .addField(
         component.stateId,

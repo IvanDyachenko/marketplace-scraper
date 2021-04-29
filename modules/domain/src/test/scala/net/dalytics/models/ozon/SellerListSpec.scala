@@ -91,7 +91,8 @@ class SellerListSpec extends AnyFlatSpec with Matchers with EitherValues with Op
         |}
       """.stripMargin
 
-    implicit val jsonReader = SellerList.jsonReader(Component.SellerList("sellerList-438294-default-500" @@ Component.StateId))
+    val component           = Component.SellerList("sellerList-438294-default-500" @@ Component.StateId)
+    implicit val jsonReader = SellerList.tethysJsonReader(component)
     val sellerList          = sellerListRawJson.jsonAs[SellerList].value
 
     sellerList should be(SellerList.Failure("internal server error"))
@@ -121,7 +122,8 @@ class SellerListSpec extends AnyFlatSpec with Matchers with EitherValues with Op
         |}
       """.stripMargin
 
-    implicit val jsonReader = SellerList.jsonReader(Component.SellerList("sellerList-438294-default-5" @@ Component.StateId))
+    val component           = Component.SellerList("sellerList-438294-default-5" @@ Component.StateId)
+    implicit val jsonReader = SellerList.tethysJsonReader(component)
     val sellerList          = sellerListRawJson.jsonAs[SellerList].value
 
     sellerList should be(SellerList.Success(List.empty))

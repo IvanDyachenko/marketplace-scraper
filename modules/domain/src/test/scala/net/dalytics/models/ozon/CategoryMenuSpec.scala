@@ -270,7 +270,8 @@ class CategoryMenuSpec extends AnyFlatSpec with Matchers with EitherValues with 
         |}
       """.stripMargin
 
-    implicit val jsonReader = CategoryMenu.jsonReader(Component.CategoryMenu("categoryMenu-281296-default-1" @@ Component.StateId))
+    val component           = Component.CategoryMenu("categoryMenu-281296-default-1" @@ Component.StateId)
+    implicit val jsonReader = CategoryMenu.tethysJsonReader(component)
     val categoryMenu        = categoryMenuRawJson.jsonAs[CategoryMenu].value
 
     categoryMenu.categories.length should be(1)

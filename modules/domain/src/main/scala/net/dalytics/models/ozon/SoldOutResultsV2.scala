@@ -5,6 +5,7 @@ import derevo.derive
 import derevo.circe.decoder
 import tofu.logging.derivation.loggable
 import io.circe.{Decoder, HCursor}
+import tethys.JsonReader
 
 @derive(loggable)
 sealed trait SoldOutResultsV2
@@ -32,4 +33,19 @@ object SoldOutResultsV2 {
 
     c.downField(component.stateId).as[SoldOutResultsV2](circeDecoders)
   }
+
+  implicit def jsonReader(component: Component.SoldOutResultsV2): JsonReader[SoldOutResultsV2] =
+    JsonReader.builder
+      .addField(
+        component.stateId,
+        JsonReader.builder
+          .addField[Option[List[Item]]]("items")
+          .addField[Option[String]]("error")
+          .buildReader {
+            case (Some(items), _) => Success(items)
+            case (_, None)        => Success(List.empty)
+            case (_, Some(error)) => Failure(error)
+          }
+      )
+      .buildReader(identity)
 }

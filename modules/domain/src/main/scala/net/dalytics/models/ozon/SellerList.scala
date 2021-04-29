@@ -35,7 +35,8 @@ object SellerList {
           .addField[Option[String]]("error")
           .buildReader {
             case (Some(items), _) => Success(items)
-            case (_, error)       => Failure(error.getOrElse(s"Unexpected content at '${component.stateId}'"))
+            case (_, None)        => Success(List.empty)
+            case (_, Some(error)) => Failure(error)
           }
       )
       .buildReader(identity)

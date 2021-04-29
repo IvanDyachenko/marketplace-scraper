@@ -21,7 +21,7 @@ import org.http4s.{DecodeFailure, Request => Http4sRequest, Status}
 import org.http4s.circe.jsonOf
 import org.http4s.client.{Client, ConnectionFailure}
 import org.http4s.client.blaze.BlazeClientBuilder
-import org.http4s.client.middleware.GZip
+import org.http4s.client.middleware.{GZip, Logger}
 
 import net.dalytics.config.HttpConfig
 
@@ -97,14 +97,19 @@ object HttpClient extends ContextEmbed[HttpClient] {
     F[_]: Sync
   ](httpConfig: HttpConfig)(implicit logs: Logs[I, F]): Resource[I, HttpClient[F]] =
     for {
-      http4sClient <- buildHttp4sClient[I](httpConfig)
-                        .map(GZip())
-      //                .map { http4sClient =>
+      http4sClientI <- buildHttp4sClient[I](httpConfig)
+                         .map { http4sClientI =>
+                           if (httpConfig.logHeaders || httpConfig.logBody)
+                             Logger(httpConfig.logHeaders, httpConfig.logBody)(http4sClientI)
+                           else http4sClientI
+                         }
+                         .map(GZip())
+      //                .map { http4sClientI =>
       //                  val retryPolicy = recklesslyRetryPolicy[I](httpConfig.requestMaxDelayBetweenAttempts, httpConfig.requestMaxTotalAttempts)
-      //                  Retry(retryPolicy)(http4sClient)
+      //                  Retry(retryPolicy)(http4sClientI)
       //                }
-      httpClient   <- Resource.eval(logs.forService[HttpClient[F]].map(_ => new Impl[F](httpConfig)(translateHttp4sClient[I, F](http4sClient))))
-    } yield httpClient
+      httpClientF   <- Resource.eval(logs.forService[HttpClient[F]].map(_ => new Impl[F](httpConfig)(translateHttp4sClient[I, F](http4sClientI))))
+    } yield httpClientF
 
   // https://scastie.scala-lang.org/Odomontois/F29lLrY2RReZrcUJ1zIEEg/25
   private def translateHttp4sClient[F[_], G[_]: Sync](client: Client[F])(implicit U: Unlift[F, G]): Client[G] =
@@ -116,6 +121,7 @@ object HttpClient extends ContextEmbed[HttpClient] {
         .withTcpNoDelay(true) // Disable Nagle's algorithm.
         .withSocketReuseAddress(true)
         .withCheckEndpointAuthentication(false)
+        .withBufferSize(httpConfig.bufferSize)
         .withMaxTotalConnections(httpConfig.maxTotalConnections)
         .withMaxConnectionsPerRequestKey(Function.const(httpConfig.maxTotalConnectionsPerHost))
         .withMaxWaitQueueLimit(httpConfig.maxWaitQueueLimit)

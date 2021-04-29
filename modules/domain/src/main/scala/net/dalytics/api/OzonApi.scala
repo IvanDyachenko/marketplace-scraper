@@ -51,7 +51,7 @@ object OzonApi {
         Cofree
           .unfold[Stream[F, *], Category](_) { cat =>
             val ids = cat.children.keys.toList
-            Stream.emits(ids).covary[F].parEvalMapUnordered(256)(category).collect { case Some(subcat) => subcat }
+            Stream.emits(ids).covary[F].parEvalMapUnordered(128)(category).collect { case Some(subcat) => subcat }
           }
           .pure[F]
       ))

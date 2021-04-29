@@ -13,7 +13,9 @@ final case class CategoryMenu(categories: List[Category]) {
 
 object CategoryMenu {
   implicit def circeDecoder(component: Component.CategoryMenu): Decoder[CategoryMenu] = Decoder.instance[CategoryMenu] { (c: HCursor) =>
-    c.downField(component.stateId).get[List[Category]]("categories")(Decoder.decodeList[Category]).map(apply)
+    c.downField(component.stateId)
+      .get[List[Category]]("categories")(Decoder.decodeList[Category])
+      .map(apply)
   }
 
   implicit def jsonReader(component: Component.CategoryMenu): JsonReader[CategoryMenu] =

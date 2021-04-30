@@ -4,17 +4,18 @@ import cats.implicits._
 import cats.free.FreeApplicative
 import derevo.derive
 import derevo.circe.decoder
+import derevo.tethys.tethysReader
 import tofu.logging.derivation.loggable
 import vulcan.Codec
 import supertagged.TaggedType
 
-import net.dalytics.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcanCodec}
+import net.dalytics.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedTethys, LiftedVulcanCodec}
 
-@derive(loggable, decoder)
+@derive(loggable, decoder, tethysReader)
 final case class MarketplaceSeller(id: MarketplaceSeller.Id, title: String, subtitle: String)
 
 object MarketplaceSeller {
-  object Id extends TaggedType[Long] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec
+  object Id extends TaggedType[Long] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedTethys with LiftedVulcanCodec
   type Id = Id.Type
 
   private[models] def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(

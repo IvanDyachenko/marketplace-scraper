@@ -5,14 +5,18 @@ import cats.free.FreeApplicative
 import derevo.derive
 import tofu.logging.derivation.loggable
 import tofu.logging.LoggableEnum
+import tofu.syntax.loggable._
 import vulcan.Codec
 import vulcan.generic.AvroNamespace
 import io.circe.{Decoder, DecodingFailure, HCursor}
+import tethys.JsonReader
+import tethys.readers.{FieldName, ReaderError}
+import tethys.enumeratum.TethysEnum
 import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry, VulcanEnum}
 import enumeratum.EnumEntry.Lowercase
 import supertagged.TaggedType
 
-import net.dalytics.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcanCodec}
+import net.dalytics.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedTethys, LiftedVulcanCodec}
 
 @derive(loggable)
 final case class Item(
@@ -40,13 +44,12 @@ final case class Item(
 }
 
 object Item {
-
-  object Id extends TaggedType[Long] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec
+  object Id extends TaggedType[Long] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedTethys with LiftedVulcanCodec
   type Id = Id.Type
 
   @AvroNamespace("ozon.models.item")
   sealed trait Type extends EnumEntry with Lowercase with Product with Serializable
-  object Type       extends Enum[Type] with CatsEnum[Type] with CirceEnum[Type] with LoggableEnum[Type] with VulcanEnum[Type] {
+  object Type       extends Enum[Type] with CatsEnum[Type] with CirceEnum[Type] with TethysEnum[Type] with VulcanEnum[Type] with LoggableEnum[Type] {
     val values = findValues
 
     case object SKU extends Type
@@ -54,7 +57,7 @@ object Item {
 
   @AvroNamespace("ozon.models.item")
   sealed abstract class Availability extends EnumEntry
-  object Availability                extends Enum[Availability] with CirceEnum[Availability] with VulcanEnum[Availability] {
+  object Availability                extends Enum[Availability] with CirceEnum[Availability] with TethysEnum[Availability] with VulcanEnum[Availability] {
     val values = findValues
 
     case object InStock         extends Availability
@@ -105,6 +108,47 @@ object Item {
                       ).mapN(apply)
     } yield item
   }
+
+  implicit val tethysReader: JsonReader[Item] =
+    JsonReader.builder
+      .addField[CellTrackingInfo]("cellTrackingInfo")
+      .addField[Template]("templateState")
+      .addField[Boolean]("isAdult")
+      .addField[Boolean]("isAlcohol")
+      .buildReader { (info, template, isAdult, isAlcohol) =>
+        val addToCart = Availability.from(info.availability) match {
+          case Availability.PreOrder        => AddToCart.Unavailable
+          case Availability.CannotBeShipped => AddToCart.Unavailable
+          case Availability.OutOfStock      => AddToCart.With(0, 0)
+          case Availability.InStock         =>
+            AddToCart(template).getOrElse {
+              val message = s"Decoded value of 'templateState' object doesn't contain description of the 'add to cart' action: ${template.logShow}."
+              ReaderError.wrongJson(message)(FieldName.apply("templateState"))
+            }
+        }
+
+        Item(
+          info.itemId,
+          info.itemIndex,
+          info.itemType,
+          info.itemTitle,
+          info.brand,
+          info.price,
+          info.rating,
+          info.categoryPath,
+          info.delivery,
+          info.availability,
+          info.availableInDays,
+          info.marketplaceSellerId,
+          addToCart,
+          isAdult,
+          isAlcohol,
+          info.isSupermarket,
+          info.isPersonalized,
+          info.isPromotedProduct,
+          info.freeRest
+        )
+      }
 
   private[models] def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => Item): FreeApplicative[Codec.Field[A, *], Item] =
     field("isAvailable", f(_).isAvailable) *> (

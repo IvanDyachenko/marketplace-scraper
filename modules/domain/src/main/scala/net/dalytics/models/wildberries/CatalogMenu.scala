@@ -10,8 +10,9 @@ final case class CatalogMenu(@masked(MaskMode.ForLength(0, 50)) catalogs: List[C
 }
 
 object CatalogMenu {
-  implicit val circeDecoder: Decoder[CatalogMenu] =
-    Decoder.instance[CatalogMenu] { (c: HCursor) =>
-      c.downField("data").get[List[Catalog]]("catalog")(Decoder.decodeList[Catalog]).map(apply)
-    }
+  implicit val circeDecoder: Decoder[CatalogMenu] = Decoder.instance[CatalogMenu] { (c: HCursor) =>
+    c.downField("data")
+      .get[List[Catalog]]("catalog")(Decoder.decodeList[Catalog])
+      .map(apply)
+  }
 }

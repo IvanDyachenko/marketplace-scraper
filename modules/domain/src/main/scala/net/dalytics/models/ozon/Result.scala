@@ -1,6 +1,9 @@
 package net.dalytics.models.ozon
 
 import io.circe.{Decoder, HCursor}
+import tethys.JsonReader
+import tethys.derivation.semiauto._
+import tethys.derivation.builder.ReaderBuilder
 
 final case class Result(cms: Option[Cms], catalog: Option[Catalog]) {
   def page: Option[Page]                         = catalog.map(_.page)
@@ -18,5 +21,15 @@ object Result {
       cms     <- c.getOrElse[Option[Cms]]("cms")(None)(Cms.circeDecoder(layout).map(Some(_)))
       catalog <- c.getOrElse[Option[Catalog]]("catalog")(None)(Catalog.circeDecoder(layout).map(Some(_)))
     } yield Result(cms, catalog)
+  }
+
+  implicit val tethysJsonReader: JsonReader[Result] = jsonReader[Result] {
+    describe {
+      ReaderBuilder[Result]
+        .extractReader[Option[Cms]](_.cms)
+        .from("layout".as[Layout])(layout => JsonReader.optionReader(Cms.tethysJsonReader(layout)))
+        .extractReader[Option[Catalog]](_.catalog)
+        .from("layout".as[Layout])(layout => JsonReader.optionReader(Catalog.tethysJsonReader(layout)))
+    }
   }
 }

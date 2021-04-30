@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 import cats.Show
 import tofu.logging.Loggable
 import vulcan.{AvroError, Codec}
+import tethys.JsonReader
 import io.circe.{Decoder, Encoder, Json}
 import io.circe.parser.decode
 import supertagged.TaggedType
@@ -62,6 +63,13 @@ package object models {
 
     implicit def circeEncoder(implicit raw: Encoder[Raw]): Encoder[Type] = raw.asInstanceOf[Encoder[Type]]
     implicit def circeDecoder(implicit raw: Decoder[Raw]): Decoder[Type] = raw.asInstanceOf[Decoder[Type]]
+  }
+
+  trait LiftedTethys {
+    type Raw
+    type Type
+
+    implicit def jsonReader(implicit raw: JsonReader[Raw]): JsonReader[Type] = raw.asInstanceOf[JsonReader[Type]]
   }
 
   trait LiftedVulcanCodec {

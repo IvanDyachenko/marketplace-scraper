@@ -1,11 +1,16 @@
 package net.dalytics.models.ozon
 
+import derevo.derive
+import derevo.tethys.tethysReader
 import io.circe.{Decoder, DecodingFailure, HCursor, Json}
+import tethys.JsonReader
+import tethys.derivation.semiauto._
+import tethys.derivation.builder.ReaderBuilder
 import supertagged.TaggedType
 
-import net.dalytics.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcanCodec}
+import net.dalytics.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedTethys, LiftedVulcanCodec}
 
-final case class Catalog private (
+final case class Catalog(
   page: Page,
   category: Category,
   categoryMenu: Option[CategoryMenu],
@@ -14,8 +19,53 @@ final case class Catalog private (
 )
 
 object Catalog {
-  object Name extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec
+  object Name extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedTethys with LiftedVulcanCodec
   type Name = Name.Type
+
+  private[this] final case class Shared(page: Page, catalog: Shared.Catalog) {
+    def category: Category = catalog.category
+  }
+
+  private[this] object Shared {
+    @derive(tethysReader)
+    private[Shared] final case class Catalog(category: Category)
+
+    implicit val tethysJsonReader: JsonReader[Shared] = jsonReader[Shared] {
+      describe {
+        // format: off
+        ReaderBuilder[Shared]
+          .extract(_.page).from("catalog".as[Page])(identity)        
+          .extract(_.catalog).from("catalog".as[Catalog])(identity)
+        // format: on
+      }
+    }
+  }
+
+  implicit def tethysJsonReader(layout: Layout): JsonReader[Catalog] = {
+    implicit val categoryMenuJsonReader: JsonReader[CategoryMenu] = {
+      val component = layout.categoryMenu.getOrElse(Component.CategoryMenu(Component.Unknown.stateId))
+      CategoryMenu.tethysJsonReader(component)
+    }
+
+    implicit val searchResultsV2JsonReader: JsonReader[SearchResultsV2] = {
+      val component = layout.searchResultsV2.getOrElse(Component.SearchResultsV2(Component.Unknown.stateId))
+      SearchResultsV2.tethysJsonReader(component)
+    }
+
+    implicit val soldOutResultsV2JsonReader: JsonReader[SoldOutResultsV2] = {
+      val component = layout.soldOutResultsV2.getOrElse(Component.SoldOutResultsV2(Component.Unknown.stateId))
+      SoldOutResultsV2.tethysJsonReader(component)
+    }
+
+    JsonReader.builder
+      .addField[Shared]("shared")
+      .addField[Option[CategoryMenu]]("categoryMenu")
+      .addField[Option[SearchResultsV2]]("searchResultsV2")
+      .addField[Option[SoldOutResultsV2]]("soldOutResultsV2")
+      .buildReader { case (Shared(page, catalog), categoryMenu, searchResultsV2, soldOutResultsV2) =>
+        apply(page, catalog.category, categoryMenu, searchResultsV2, soldOutResultsV2)
+      }
+  }
 
   implicit def circeDecoder(layout: Layout): Decoder[Catalog] = Decoder.instance[Catalog] { (c: HCursor) =>
     lazy val i = c.downField("shared").downField("catalog")

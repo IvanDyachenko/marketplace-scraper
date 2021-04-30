@@ -3,152 +3,139 @@ package net.dalytics.models.ozon
 import cats.implicits._
 import derevo.derive
 import derevo.circe.decoder
-import io.circe.{Decoder, HCursor, Json}
-import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
+import derevo.tethys.tethysReader
 import tofu.logging.derivation.loggable
 import tofu.logging.LoggableEnum
+import io.circe.{Decoder, HCursor}
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
+import tethys.JsonReader
+import tethys.enumeratum.TethysEnum
 import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry}
 import enumeratum.EnumEntry.LowerCamelcase
 
 import net.dalytics.syntax._
 
 @derive(loggable)
-final case class Template(states: List[Template.State])
+private[ozon] final case class Template(states: List[Template.State])
 
-object Template {
+private[ozon] object Template {
 
   @derive(loggable)
-  sealed trait State {
-    def `type`: State.Type
-  }
+  sealed trait State
 
   object State {
-    sealed trait Type extends EnumEntry with LowerCamelcase with Product with Serializable
-    object Type       extends Enum[Type] with CatsEnum[Type] with CirceEnum[Type] with LoggableEnum[Type] {
+    private[State] sealed trait Type extends EnumEntry with LowerCamelcase with Product with Serializable
+    private[State] object Type       extends Enum[Type] with CatsEnum[Type] with CirceEnum[Type] with TethysEnum[Type] with LoggableEnum[Type] {
       val values = findValues
 
-      case object Action          extends Type
       case object Unknown         extends Type
+      case object Action          extends Type
       case object TextSmall       extends Type
       case object MobileContainer extends Type
     }
 
-    sealed trait Id extends EnumEntry with LowerCamelcase with Product with Serializable
-    object Id       extends Enum[Id] with CatsEnum[Id] with CirceEnum[Id] with LoggableEnum[Id] {
-      val values = findValues
-
-      case object Name               extends Id
-      case object Price              extends Id
-      case object PricePerUnit       extends Id
-      case object Redirect           extends Id
-      case object NotDelivered       extends Id
-      case object PremiumPriority    extends Id
-      case object UniversalAction    extends Id
-      case object AddToCartWithCount extends Id
-    }
-
-    @derive(loggable, decoder)
+    @derive(loggable)
     final object Unknown extends State {
-      val `type`: State.Type = State.Type.Unknown
+      implicit val jsonReader: JsonReader[Unknown.type] = JsonReader.builder.addField[Option[String]]("type").buildReader(_ => Unknown)
     }
 
     @derive(loggable)
-    sealed trait Action extends State {
-      def id: State.Id
-      val `type`: State.Type = State.Type.Action
-    }
+    sealed trait Action extends State
 
     object Action {
       @derive(loggable, decoder)
+      final object Unknown extends Action {
+        implicit val jsonReader: JsonReader[Unknown.type] = JsonReader.builder.addField[Option[String]]("id").buildReader(_ => Unknown)
+      }
+
+      @derive(loggable, decoder)
       final object Redirect extends Action {
-        val id: State.Id = State.Id.Redirect
+        implicit val jsonReader: JsonReader[Redirect.type] = JsonReader.builder.addField[String]("id").buildReader(_ => Redirect)
       }
 
-      @derive(loggable, decoder)
-      final case class AddToCartWithCount(minItems: Int, maxItems: Int) extends Action {
-        val id: State.Id = State.Id.AddToCartWithCount
-      }
+      @derive(loggable, decoder, tethysReader)
+      final case class UniversalAction(button: Button) extends Action
 
-      @derive(loggable, decoder)
-      final case class UniversalAction(button: UniversalAction.Button) extends Action {
-        val id: State.Id = State.Id.UniversalAction
-      }
-
-      object UniversalAction {
-        @derive(loggable)
-        sealed trait Button
-
-        object Button {
-          @derive(loggable)
-          final case class AddToCartWithQuantity(quantity: Int, maxItems: Int) extends Button
-
-          object AddToCartWithQuantity {
-            implicit val circeDecoder: Decoder[AddToCartWithQuantity] = Decoder.instance[AddToCartWithQuantity] { (c: HCursor) =>
-              lazy val i = c.downField("default").downField("addToCartButtonWithQuantity")
-              for {
-                quantity <- i.downField("action").get[Int]("quantity")
-                maxItems <- i.get[Int]("maxItems")
-              } yield AddToCartWithQuantity(quantity, maxItems)
-            }
-          }
-
-          implicit val circeDecoder: Decoder[Button] = List[Decoder[Button]](
-            Decoder[AddToCartWithQuantity].widen
-          ).reduceLeft(_ or _)
-        }
-      }
+      @derive(loggable, decoder, tethysReader)
+      final case class AddToCartWithCount(minItems: Int, maxItems: Int) extends Action
 
       implicit val circeDecoderConfig: Configuration = Configuration(Predef.identity, _.decapitalize, false, Some("id"))
       implicit val circeDecoder: Decoder[Action]     = deriveConfiguredDecoder[Action].widen
+
+      implicit val jsonReader: JsonReader[Action] =
+        JsonReader.builder
+          .addField[Option[String]]("id")
+          .selectReader {
+            case Some("redirect")           => JsonReader[Redirect.type]
+            case Some("universalAction")    => JsonReader[UniversalAction]
+            case Some("addToCartWithCount") => JsonReader[AddToCartWithCount]
+            case _                          => JsonReader[Unknown.type]
+          }
     }
 
     @derive(loggable)
-    sealed trait TextSmall extends State {
-      def id: State.Id
-      val `type`: State.Type = State.Type.TextSmall
-    }
+    sealed trait TextSmall extends State
 
     object TextSmall {
       @derive(loggable, decoder)
-      final object NotDelivered extends TextSmall {
-        val id: State.Id = State.Id.NotDelivered
+      final object Unknown extends TextSmall {
+        implicit val jsonReader: JsonReader[Unknown.type] = JsonReader.builder.addField[Option[String]]("id").buildReader(_ => Unknown)
       }
 
       @derive(loggable, decoder)
-      final object PremiumPriority extends TextSmall {
-        val id: State.Id = State.Id.PremiumPriority
-      }
+      final object NotDelivered extends TextSmall
+
+      @derive(loggable, decoder)
+      final object PremiumPriority extends TextSmall
 
       implicit val circeDecoderConfig: Configuration = Configuration(Predef.identity, _.decapitalize, false, Some("id"))
       implicit val circeDecoder: Decoder[TextSmall]  = deriveConfiguredDecoder[TextSmall].widen
+
+      implicit val jsonReader: JsonReader[TextSmall] =
+        JsonReader.builder
+          .addField[Option[String]]("id")
+          .buildReader {
+            case Some("notDelivered")    => NotDelivered
+            case Some("premiumPriority") => PremiumPriority
+            case _                       => Unknown
+          }
     }
 
-    @derive(loggable)
-    final case class MobileContainer(left: Template, content: Template, footer: Template) extends State {
-      val `type`: State.Type = State.Type.Action
-    }
-
-    object MobileContainer {
-      implicit val circeDecoder: Decoder[MobileContainer] = Decoder.forProduct3("leftContainer", "contentContainer", "footerContainer")(apply)
-    }
+    @derive(loggable, decoder, tethysReader)
+    final case class MobileContainer(footerContainer: Template) extends State
 
     implicit val circeDecoder: Decoder[State] = Decoder.instance[State] { (c: HCursor) =>
       for {
-        stateType   <- c.get[State.Type]("type").fold(_ => State.Type.Unknown.asRight, Right(_))
+        stateType   <- c.get[Type]("type").orElse(Type.Unknown.asRight)
         stateDecoder = stateType match {
-                         case State.Type.Action          => Action.circeDecoder
-                         case State.Type.TextSmall       => TextSmall.circeDecoder
-                         case State.Type.MobileContainer => MobileContainer.circeDecoder
-                         case State.Type.Unknown         => Decoder[Json].map(_ => State.Unknown)
+                         case Type.Action          => Decoder[Action]
+                         case Type.TextSmall       => Decoder[TextSmall]
+                         case Type.MobileContainer => Decoder[MobileContainer]
+                         case Type.Unknown         => Decoder.const(State.Unknown)
                        }
         state       <- stateDecoder(c)
       } yield state
     }
+
+    implicit val jsonReader: JsonReader[State] =
+      JsonReader.builder.addField[Option[String]]("type").selectReader { typeOpt =>
+        Type.withNameOption(typeOpt.getOrElse(Type.Unknown.entryName)) match {
+          case Some(Type.Action)          => JsonReader[Action]
+          case Some(Type.TextSmall)       => JsonReader[TextSmall]
+          case Some(Type.MobileContainer) => JsonReader[MobileContainer]
+          case _                          => JsonReader[Unknown.type]
+        }
+      }
   }
 
   implicit val circeDecoder: Decoder[Template] =
     Decoder
-      .decodeList(Decoder[State].either(Decoder[Json]))
+      .decodeList(Decoder[State].either(Decoder.const(State.Unknown)))
       .map(ls => Template(ls.flatMap(_.left.toOption)))
+
+  implicit val jsonReader: JsonReader[Template] =
+    JsonReader
+      .iterableReader[State, List]
+      .map(apply)
 }

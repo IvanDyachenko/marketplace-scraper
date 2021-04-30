@@ -70,8 +70,8 @@ class CmsSpec extends AnyFlatSpec with Matchers with EitherValues with OptionVal
     val component           = Component.SellerList("sellerList-438294-default-3" @@ Component.StateId)
     val layout              = Layout(List(component))
     implicit val jsonReader = Cms.tethysJsonReader(layout)
-    val decodedCms          = cmsRawJson.jsonAs[Cms].value
+    val cms          = cmsRawJson.jsonAs[Cms].value
 
-    decodedCms should be(expectedCms)
+    cms should be(expectedCms)
   }
 }

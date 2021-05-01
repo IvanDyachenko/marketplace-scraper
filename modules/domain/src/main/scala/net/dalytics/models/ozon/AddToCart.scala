@@ -23,14 +23,13 @@ object AddToCart {
     import net.dalytics.models.ozon.Template.State.{Action, MobileContainer, TextSmall}
     import net.dalytics.models.ozon.Template.State.Action.{AddToCartWithCount, UniversalAction}
 
-    def addToCart: Option[AddToCart] =
-      template.states.collectFirst {
-        case Action.Redirect                                                   => Redirect
-        case TextSmall.PremiumPriority | TextSmall.NotDelivered                => PremiumOnly
-        case AddToCartWithCount(minItems, maxItems)                            => With(minItems, maxItems)
-        case UniversalAction(Button.AddToCartWithQuantity(quantity, maxItems)) => With(quantity, maxItems)
-        case MobileContainer(footer) if footer.addToCart.isDefined             => footer.addToCart.get
-      }
+    def addToCart: Option[AddToCart] = template.states.collectFirst {
+      case Action.Redirect                                                   => Redirect
+      case TextSmall.PremiumPriority | TextSmall.NotDelivered                => PremiumOnly
+      case AddToCartWithCount(minItems, maxItems)                            => With(minItems, maxItems)
+      case UniversalAction(Button.AddToCartWithQuantity(quantity, maxItems)) => With(quantity, maxItems)
+      case MobileContainer(footer) if footer.addToCart.isDefined             => footer.addToCart.get
+    }
   }
 
   implicit val circeDecoder: Decoder[AddToCart] = Decoder.instance[AddToCart] { (c: HCursor) =>

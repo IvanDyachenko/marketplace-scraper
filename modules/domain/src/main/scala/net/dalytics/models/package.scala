@@ -36,6 +36,12 @@ package object models {
     type Key = Key.Type
   }
 
+  object Raw extends TaggedType[String] {
+    implicit val loggable: Loggable[Type] = Loggable.empty
+    implicit val vulcanCodec: Codec[Type] = Codec.bytes.imap(bytes => new String(bytes, UTF_8))(_.getBytes(UTF_8)).asInstanceOf[Codec[Type]]
+  }
+  type Raw = Raw.Type
+
   trait LiftedOrdered {
     type Raw
     type Type

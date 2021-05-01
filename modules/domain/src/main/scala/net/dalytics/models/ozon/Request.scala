@@ -16,8 +16,8 @@ import supertagged.postfix._
 
 import net.dalytics.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcanCodec}
 
-@derive(loggable)
 @AvroNamespace("ozon.models")
+@derive(loggable)
 sealed trait Request {
   def host: String                                     = "api.ozon.ru"
   def path: String                                     = "/composer-api.bx/page/json/v1"

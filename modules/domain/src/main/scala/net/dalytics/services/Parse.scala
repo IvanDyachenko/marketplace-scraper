@@ -1,6 +1,7 @@
 package net.dalytics.services
 
 import scala.util.control.NoStackTrace
+import java.nio.charset.StandardCharsets.UTF_8
 
 import cats.syntax.traverse._
 import cats.Monad
@@ -67,7 +68,7 @@ object Parse {
     }
 
     private def parse[R: JsonReader](raw: Raw): F[Either[ParsingError, R]] =
-      raw.jsonAs[R].left.map(failure => ParsingError.decodingError(failure.getMessage)).pure[F]
+      new String(raw, UTF_8).jsonAs[R].left.map(failure => ParsingError.decodingError(failure.getMessage)).pure[F]
   }
 
   def make[

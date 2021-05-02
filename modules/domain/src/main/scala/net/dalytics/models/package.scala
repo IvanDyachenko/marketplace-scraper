@@ -4,11 +4,13 @@ import java.time.Instant
 import java.nio.charset.StandardCharsets.UTF_8
 
 import cats.Show
+import cats.effect.Sync
 import tofu.logging.Loggable
 import vulcan.{AvroError, Codec}
 import tethys.JsonReader
 import io.circe.{Decoder, Encoder, Json}
 import io.circe.parser.decode
+import org.http4s.EntityDecoder
 import supertagged.TaggedType
 
 package object models {
@@ -39,6 +41,9 @@ package object models {
   object Raw extends TaggedType[String] {
     implicit val loggable: Loggable[Type] = Loggable.empty
     implicit val vulcanCodec: Codec[Type] = Codec.bytes.imap(bytes => new String(bytes, UTF_8))(_.getBytes(UTF_8)).asInstanceOf[Codec[Type]]
+
+    implicit def entityDecoder[F[_]: Sync]: EntityDecoder[F, Type] =
+      EntityDecoder.byteArrayDecoder[F].map(bytes => new String(bytes, UTF_8)).asInstanceOf[EntityDecoder[F, Type]]
   }
   type Raw = Raw.Type
 

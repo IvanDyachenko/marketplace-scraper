@@ -1,18 +1,19 @@
 package net.dalytics.services
 
-import cats.implicits._
+import cats.syntax.traverse._
+import tofu.syntax.monadic._
 import tofu.syntax.handle._
 import tofu.syntax.logging._
 import derevo.derive
 import cats.Monad
-import cats.effect.{Clock, Resource}
+import cats.effect.{Clock, Resource, Sync}
 import tofu.higherKind.Mid
 import tofu.higherKind.derived.representableK
 import tofu.logging.{Logging, Logs}
-import io.circe.Json
 
 import net.dalytics.marshalling._
 import net.dalytics.clients.{HttpClient, HttpClientError}
+import net.dalytics.models.Raw
 import net.dalytics.models.handler.{HandlerEvent => Event, HandlerCommand => Command}
 
 @derive(representableK)
@@ -33,15 +34,16 @@ object Handle {
       }
   }
 
-  private final class Impl[F[_]: Monad: Clock: HttpClient: HttpClient.Handling] extends Handle[F] {
+  private final class Impl[F[_]: Sync: Clock: HttpClient: HttpClient.Handling] extends Handle[F] {
     def handle(command: Command): F[Result] = command match {
-      case Command.HandleOzonRequest(_, request) => HttpClient[F].send[Json](request).attempt >>= (_.traverse(Event.ozonRequestHandled[F]))
+      case Command.HandleOzonRequest(_, request) =>
+        HttpClient[F].send[Raw](request).attempt >>= (_.traverse(Event.ozonRequestHandled[F]))
     }
   }
 
   def make[
     I[_]: Monad,
-    F[_]: Monad: Clock: HttpClient: HttpClient.Handling
+    F[_]: Sync: Monad: Clock: HttpClient: HttpClient.Handling
   ](implicit logs: Logs[I, F]): Resource[I, Handle[F]] =
     Resource.eval {
       logs

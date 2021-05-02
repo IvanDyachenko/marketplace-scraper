@@ -5,11 +5,13 @@ import tofu.syntax.handle._
 import tofu.syntax.monadic._
 import tofu.syntax.logging._
 import cats.{~>, Functor, Monad}
-import cats.effect.Resource
+import cats.effect.{Resource, Sync}
 import tofu.logging.{Logging, Logs}
 import fs2.Stream
 import tofu.lift.Lift
 import tofu.fs2.LiftStream
+import io.circe.Decoder
+import org.http4s.circe.jsonOf
 
 import net.dalytics.marshalling._
 import net.dalytics.clients.{HttpClient, HttpClientError}
@@ -22,7 +24,7 @@ trait WildBerriesApi[F[_], S[_]] {
 
 object WildBerriesApi {
 
-  final class Impl[F[_]: Monad: Logging: HttpClient: HttpClient.Raising: HttpClient.Handling] extends WildBerriesApi[F, Stream[F, *]] {
+  final class Impl[F[_]: Sync: Logging: HttpClient: HttpClient.Handling] extends WildBerriesApi[F, Stream[F, *]] {
 
     def getCatalog(id: Catalog.Id): F[Option[Catalog]] = getCatalogMenu.map(_ >>= (_.catalog(id)))
 
@@ -31,19 +33,21 @@ object WildBerriesApi {
 
     private def getCatalogMenu: F[Option[CatalogMenu]] = {
       val request = Request.GetCatalogMenu
+      get[CatalogMenu](request)
+    }
 
+    private def get[R](request: Request)(implicit decoder: Decoder[R]): F[Option[R]] =
       HttpClient[F]
-        .send[CatalogMenu](request)
+        .send[R](request)(jsonOf(Sync[F], decoder))
         .recoverWith[HttpClientError] { case error: HttpClientError =>
-          error"Error was thrown while attempting to execute ${request}. ${error}" *> error.raise[F, CatalogMenu]
+          error"${error} was thrown while attempting to execute ${request}" *> error.raise[F, R]
         }
         .restore
-    }
   }
 
   def make[
     I[_]: Monad,
-    F[_]: Monad: HttpClient: HttpClient.Raising: HttpClient.Handling,
+    F[_]: Sync: HttpClient: HttpClient.Handling,
     S[_]: LiftStream[*[_], F]
   ](implicit logs: Logs[I, F]): Resource[I, WildBerriesApi[F, S]] =
     Resource.eval {

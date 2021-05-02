@@ -16,9 +16,7 @@ import tofu.lift.Unlift
 import tofu.higherKind.Embed
 import tofu.data.derived.ContextEmbed
 import tofu.logging.Logs
-import io.circe.Decoder
-import org.http4s.{DecodeFailure, Request => Http4sRequest, Status}
-import org.http4s.circe.jsonOf
+import org.http4s.{DecodeFailure, Request => Http4sRequest, Status, EntityDecoder}
 import org.http4s.client.{Client, ConnectionFailure}
 import org.http4s.client.blaze.BlazeClientBuilder
 import org.http4s.client.middleware.{GZip, Logger}
@@ -26,7 +24,7 @@ import org.http4s.client.middleware.{GZip, Logger}
 import net.dalytics.config.HttpConfig
 
 trait HttpClient[F[_]] {
-  def send[Res: Decoder](request: Http4sRequest[F]): F[Res]
+  def send[Res: EntityDecoder[F, *]](request: Http4sRequest[F]): F[Res]
 }
 
 @derive(loggable)
@@ -51,15 +49,12 @@ object HttpClient extends ContextEmbed[HttpClient] {
 
   class Impl[F[_]: Sync: Handle[*[_], TimeoutException]: Handle[*[_], DecodeFailure]](cfg: HttpConfig)(client: Client[F]) extends HttpClient[F] {
 
-    def send[Res](request: Http4sRequest[F])(implicit decoder: Decoder[Res]): F[Res] =
+    def send[Res](request: Http4sRequest[F])(implicit decoder: EntityDecoder[F, Res]): F[Res] =
       client
         .run(request)
         .use { response =>
           response match {
-            case Status.Successful(_) =>
-              jsonOf(Sync[F], decoder)
-                .decode(response, strict = true)
-                .rethrowT
+            case Status.Successful(_) => decoder.decode(response, strict = true).rethrowT
             case _                    =>
               HttpClientError
                 .ResponseUnexpectedStatusError(s"Received ${response.status.code} status during execution of the request to ${request.uri.show}")
@@ -86,7 +81,7 @@ object HttpClient extends ContextEmbed[HttpClient] {
 
   implicit val embed: Embed[HttpClient] = new Embed[HttpClient] {
     def embed[F[_]: FlatMap](ft: F[HttpClient[F]]): HttpClient[F] = new HttpClient[F] {
-      def send[Res: Decoder](request: Http4sRequest[F]): F[Res] = ft >>= (_.send(request))
+      def send[Res: EntityDecoder[F, *]](request: Http4sRequest[F]): F[Res] = ft >>= (_.send(request))
     }
   }
 

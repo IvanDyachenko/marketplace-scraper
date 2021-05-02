@@ -1,15 +1,13 @@
 package net.dalytics
 
 import java.time.Instant
-import java.nio.charset.StandardCharsets.UTF_8
 
 import cats.Show
 import cats.effect.Sync
 import tofu.logging.Loggable
-import vulcan.{AvroError, Codec}
+import vulcan.Codec
 import tethys.JsonReader
-import io.circe.{Decoder, Encoder, Json}
-import io.circe.parser.decode
+import io.circe.{Decoder, Encoder}
 import org.http4s.EntityDecoder
 import supertagged.TaggedType
 
@@ -38,12 +36,10 @@ package object models {
     type Key = Key.Type
   }
 
-  object Raw extends TaggedType[String] {
-    implicit val loggable: Loggable[Type] = Loggable.empty
-    implicit val vulcanCodec: Codec[Type] = Codec.bytes.imap(bytes => new String(bytes, UTF_8))(_.getBytes(UTF_8)).asInstanceOf[Codec[Type]]
-
-    implicit def entityDecoder[F[_]: Sync]: EntityDecoder[F, Type] =
-      EntityDecoder.byteArrayDecoder[F].map(bytes => new String(bytes, UTF_8)).asInstanceOf[EntityDecoder[F, Type]]
+  object Raw extends TaggedType[Array[Byte]] {
+    implicit val loggable: Loggable[Type]                          = Loggable.empty
+    implicit val vulcanCodec: Codec[Type]                          = Codec.bytes.asInstanceOf[Codec[Type]]
+    implicit def entityDecoder[F[_]: Sync]: EntityDecoder[F, Type] = EntityDecoder.byteArrayDecoder[F].asInstanceOf[EntityDecoder[F, Type]]
   }
   type Raw = Raw.Type
 
@@ -89,9 +85,4 @@ package object models {
 
     implicit def vulcanCodec(implicit raw: Codec[Raw]): Codec[Type] = raw.asInstanceOf[Codec[Type]]
   }
-
-  implicit val jsonLoggable: Loggable[Json] = Loggable.empty
-  implicit val jsonVulcanCodec: Codec[Json] = Codec.bytes.imapError { bytes =>
-    decode[Json](new String(bytes, UTF_8)).left.map(err => AvroError(err.getMessage))
-  }(_.noSpaces.getBytes(UTF_8))
 }

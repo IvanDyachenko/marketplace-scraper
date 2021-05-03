@@ -37,11 +37,8 @@ final case class Item(
   isAlcohol: Boolean,
   isSupermarket: Boolean,
   isPersonalized: Boolean,
-  isPromotedProduct: Boolean,
-  freeRest: Int
-) {
-  def isAvailable: Boolean = Item.Availability.from(availability) == Item.Availability.InStock
-}
+  isPromotedProduct: Boolean
+)
 
 object Item {
   object Id extends TaggedType[Long] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedTethys with LiftedVulcanCodec
@@ -103,8 +100,7 @@ object Item {
                         c.get[Boolean]("isAlcohol"),
                         i.get[Boolean]("isSupermarket"),
                         i.get[Boolean]("isPersonalized"),
-                        i.get[Boolean]("isPromotedProduct"),
-                        i.get[Int]("freeRest")
+                        i.get[Boolean]("isPromotedProduct")
                       ).mapN(apply)
     } yield item
   }
@@ -145,13 +141,12 @@ object Item {
           isAlcohol,
           info.isSupermarket,
           info.isPersonalized,
-          info.isPromotedProduct,
-          info.freeRest
+          info.isPromotedProduct
         )
       }
 
   private[models] def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => Item): FreeApplicative[Codec.Field[A, *], Item] =
-    field("isAvailable", f(_).isAvailable) *> (
+    (
       field("itemId", f(_).id),
       field("itemIndex", f(_).index),
       field("itemType", f(_).`type`),
@@ -169,7 +164,6 @@ object Item {
       field("isAlcohol", f(_).isAlcohol),
       field("isSupermarket", f(_).isSupermarket),
       field("isPersonalized", f(_).isPersonalized),
-      field("isPromotedProduct", f(_).isPromotedProduct),
-      field("freeRest", f(_).freeRest)
+      field("isPromotedProduct", f(_).isPromotedProduct)
     ).mapN(apply)
 }

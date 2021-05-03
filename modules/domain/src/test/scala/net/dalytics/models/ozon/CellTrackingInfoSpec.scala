@@ -74,8 +74,7 @@ class CellTrackingInfoSpec extends AnyFlatSpec with Matchers with EitherValues {
         deliveryTimeDiffDays = Some(3: Short),
         isSupermarket = false,
         isPersonalized = false,
-        isPromotedProduct = false,
-        freeRest = 5
+        isPromotedProduct = false
       )
     )
   }

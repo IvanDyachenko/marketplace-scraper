@@ -24,8 +24,7 @@ private[ozon] final case class CellTrackingInfo(
   deliveryTimeDiffDays: Option[Short],
   isSupermarket: Boolean,
   isPersonalized: Boolean,
-  isPromotedProduct: Boolean,
-  freeRest: Int
+  isPromotedProduct: Boolean
 ) {
   def brand: Brand       = Brand(brandId, brandName)
   def price: Price       = Price(priceInit, priceFinal, priceDiscount)

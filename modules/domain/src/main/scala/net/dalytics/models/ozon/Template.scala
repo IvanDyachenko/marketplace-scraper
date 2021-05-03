@@ -17,7 +17,17 @@ import enumeratum.EnumEntry.LowerCamelcase
 import net.dalytics.syntax._
 
 @derive(loggable)
-private[ozon] final case class Template(states: List[Template.State])
+private[ozon] final case class Template(states: List[Template.State]) {
+  def isNew: Boolean        = isLabeled(Template.State.Label.Type.New)
+  def isBestseller: Boolean = isLabeled(Template.State.Label.Type.Bestseller)
+
+  private def isLabeled(label: Template.State.Label.Type): Boolean = states
+    .collectFirst {
+      case Template.State.Label(items)                     => items.contains(label)
+      case Template.State.MobileContainer(footerContainer) => footerContainer.isLabeled(label)
+    }
+    .getOrElse(false)
+}
 
 private[ozon] object Template {
 

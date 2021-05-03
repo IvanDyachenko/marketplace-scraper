@@ -36,8 +36,7 @@ object Handle {
 
   private final class Impl[F[_]: Sync: Clock: HttpClient: HttpClient.Handling] extends Handle[F] {
     def handle(command: Command): F[Result] = command match {
-      case Command.HandleOzonRequest(_, request) =>
-        HttpClient[F].send[Raw](request).attempt >>= (_.traverse(Event.ozonRequestHandled[F]))
+      case Command.HandleOzonRequest(_, request) => HttpClient[F].send[Raw](request).attempt >>= (_.traverse(Event.ozonRequestHandled[F]))
     }
   }
 

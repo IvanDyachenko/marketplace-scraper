@@ -71,6 +71,14 @@ object Item {
       }
   }
 
+  private def addToCart(availability: Availability, template: Template): Option[AddToCart] =
+    availability match {
+      case Availability.PreOrder        => Some(AddToCart.Unavailable)
+      case Availability.CannotBeShipped => Some(AddToCart.Unavailable)
+      case Availability.OutOfStock      => Some(AddToCart.With(0, 0))
+      case Availability.InStock         => AddToCart(template)
+    }
+
   implicit val circeDecoder: Decoder[Item] = Decoder.instance[Item] { (c: HCursor) =>
     lazy val i = c.downField("cellTrackingInfo")
 
@@ -112,15 +120,9 @@ object Item {
       .addField[Boolean]("isAdult")
       .addField[Boolean]("isAlcohol")
       .buildReader { (info, template, isAdult, isAlcohol) =>
-        val addToCart = Availability.from(info.availability) match {
-          case Availability.PreOrder        => AddToCart.Unavailable
-          case Availability.CannotBeShipped => AddToCart.Unavailable
-          case Availability.OutOfStock      => AddToCart.With(0, 0)
-          case Availability.InStock         =>
-            AddToCart(template).getOrElse {
-              val message = s"Decoded value of 'templateState' object doesn't contain description of the 'add to cart' action: ${template.logShow}."
-              ReaderError.wrongJson(message)(FieldName.apply("templateState"))
-            }
+        val addToCart = Item.addToCart(Availability.from(info.availability), template).getOrElse {
+          val message = s"Decoded value of 'templateState' object doesn't contain description of the 'add to cart' action: ${template.logShow}."
+          ReaderError.wrongJson(message)(FieldName.apply("templateState"))
         }
 
         Item(

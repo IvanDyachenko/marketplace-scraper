@@ -31,6 +31,7 @@ private[ozon] object Template {
 
       case object Unknown         extends Type
       case object Action          extends Type
+      case object Label           extends Type
       case object TextSmall       extends Type
       case object MobileContainer extends Type
     }
@@ -74,6 +75,35 @@ private[ozon] object Template {
           }
     }
 
+    @derive(loggable, decoder, tethysReader)
+    final case class Label(items: List[Label.Type]) extends State
+
+    object Label {
+      sealed abstract class Type(override val entryName: String) extends EnumEntry with Product with Serializable
+
+      object Type extends Enum[Type] with CatsEnum[Type] with LoggableEnum[Type] {
+        val values = findValues
+
+        case object Unknown    extends Type("???")
+        case object New        extends Type("Новинка")
+        case object Bestseller extends Type("Бестселлер")
+
+        implicit val circeDecoder: Decoder[Type] =
+          Decoder.forProduct1[Type, Option[String]]("title") { titleOpt =>
+            val entryName = titleOpt.getOrElse(Type.Unknown.entryName)
+            Type.withNameInsensitiveOption(entryName).getOrElse(Type.Unknown)
+          }
+
+        implicit val jsonReader: JsonReader[Type] =
+          JsonReader.builder
+            .addField[Option[String]]("title")
+            .buildReader { titleOpt =>
+              val entryName = titleOpt.getOrElse(Type.Unknown.entryName)
+              Type.withNameInsensitiveOption(entryName).getOrElse(Type.Unknown)
+            }
+      }
+    }
+
     @derive(loggable)
     sealed trait TextSmall extends State
 
@@ -110,6 +140,7 @@ private[ozon] object Template {
         stateType   <- c.get[Type]("type").orElse(Type.Unknown.asRight)
         stateDecoder = stateType match {
                          case Type.Action          => Decoder[Action]
+                         case Type.Label           => Decoder[Label]
                          case Type.TextSmall       => Decoder[TextSmall]
                          case Type.MobileContainer => Decoder[MobileContainer]
                          case Type.Unknown         => Decoder.const(State.Unknown)
@@ -120,11 +151,15 @@ private[ozon] object Template {
 
     implicit val jsonReader: JsonReader[State] =
       JsonReader.builder.addField[Option[String]]("type").selectReader { typeOpt =>
-        Type.withNameOption(typeOpt.getOrElse(Type.Unknown.entryName)) match {
-          case Some(Type.Action)          => JsonReader[Action]
-          case Some(Type.TextSmall)       => JsonReader[TextSmall]
-          case Some(Type.MobileContainer) => JsonReader[MobileContainer]
-          case _                          => JsonReader[Unknown.type]
+        val entryName = typeOpt.getOrElse(Type.Unknown.entryName)
+        val stateType = Type.withNameOption(entryName).getOrElse(Type.Unknown)
+
+        stateType match {
+          case Type.Action          => JsonReader[Action]
+          case Type.Label           => JsonReader[Label]
+          case Type.TextSmall       => JsonReader[TextSmall]
+          case Type.MobileContainer => JsonReader[MobileContainer]
+          case Type.Unknown         => JsonReader[Unknown.type]
         }
       }
   }

@@ -198,6 +198,70 @@ class TemplateSpec extends AnyFlatSpec with Matchers with EitherValues with Opti
     state should be(Template.State.TextSmall.PremiumPriority)
   }
 
+  it should "decode Template.State.Label.Type.New from a valid JSON (circe)" in {
+    val stateRawJson =
+      """
+        |{
+        |  "title": "Новинка",
+        |  "isSelected": false,
+        |  "color": null,
+        |  "textColor": "ozAccentSecondary"
+        |}
+      """.stripMargin
+
+    val state = decode[Template.State.Label.Type](stateRawJson).value
+
+    state should be(Template.State.Label.Type.New)
+  }
+
+  it should "decode Template.State.Label.Type.New from a valid JSON (tethys)" in {
+    val stateRawJson =
+      """
+        |{
+        |  "title": "Новинка",
+        |  "isSelected": false,
+        |  "color": null,
+        |  "textColor": "ozAccentSecondary"
+        |}
+      """.stripMargin
+
+    val state = stateRawJson.jsonAs[Template.State.Label.Type].value
+
+    state should be(Template.State.Label.Type.New)
+  }
+
+  it should "decode Template.State.Label.Type.Bestseller from a valid JSON (circe)" in {
+    val stateRawJson =
+      """
+        |{
+        |  "title": "Бестселлер",
+        |  "isSelected": false,
+        |  "color": null,
+        |  "textColor": "ozOrange"
+        |}
+      """.stripMargin
+
+    val state = decode[Template.State.Label.Type](stateRawJson).value
+
+    state should be(Template.State.Label.Type.Bestseller)
+  }
+
+  it should "decode Template.State.Label.Type.Bestseller from a valid JSON (tethys)" in {
+    val stateRawJson =
+      """
+        |{
+        |  "title": "Бестселлер",
+        |  "isSelected": false,
+        |  "color": null,
+        |  "textColor": "ozOrange"
+        |}
+      """.stripMargin
+
+    val state = stateRawJson.jsonAs[Template.State.Label.Type].value
+
+    state should be(Template.State.Label.Type.Bestseller)
+  }
+
   it should "decode Template from a valid JSON (tethys)" in {
     val templateRawJson =
       """

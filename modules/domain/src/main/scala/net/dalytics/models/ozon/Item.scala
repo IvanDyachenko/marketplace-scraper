@@ -84,12 +84,14 @@ object Item {
 
     for {
       availability <- i.get[Short]("availability")
-      addToCart    <- Availability.from(availability) match {
-                        case Availability.PreOrder        => AddToCart.Unavailable.asRight[DecodingFailure]
-                        case Availability.InStock         => c.as[AddToCart]
-                        case Availability.OutOfStock      => AddToCart.With(0, 0).asRight[DecodingFailure]
-                        case Availability.CannotBeShipped => AddToCart.Unavailable.asRight[DecodingFailure]
-                      }
+      template     <- c.get[Template]("templateState")
+      addToCart     = Item
+                        .addToCart(Availability.from(availability), template)
+                        .fold[Decoder.Result[AddToCart]] {
+                          val message =
+                            s"Decoded value of 'templateState' object doesn't contain description of the 'add to cart' action: ${template.logShow}."
+                          Left(DecodingFailure(message, c.history))
+                        }(_.asRight)
       item         <- (
                         i.get[Item.Id]("id"),
                         i.get[Int]("index"),
@@ -103,7 +105,7 @@ object Item {
                         Right(availability),
                         i.get[Short]("availableInDays"),
                         i.get[MarketplaceSeller.Id]("marketplaceSellerId"),
-                        Right(addToCart),
+                        addToCart,
                         c.get[Boolean]("isAdult"),
                         c.get[Boolean]("isAlcohol"),
                         i.get[Boolean]("isSupermarket"),

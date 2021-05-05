@@ -21,12 +21,13 @@ private[ozon] final case class Template(states: List[Template.State]) {
   def isNew: Boolean        = isLabeled(Template.State.Label.Type.New)
   def isBestseller: Boolean = isLabeled(Template.State.Label.Type.Bestseller)
 
-  private def isLabeled(label: Template.State.Label.Type): Boolean = states
-    .collectFirst {
-      case Template.State.Label(items)                     => items.contains(label)
-      case Template.State.MobileContainer(footerContainer) => footerContainer.isLabeled(label)
-    }
-    .getOrElse(false)
+  private def isLabeled(label: Template.State.Label.Type): Boolean =
+    states
+      .collectFirst {
+        case Template.State.Label(items) if items.contains(label)                   => true
+        case Template.State.MobileContainer(content, _) if content.isLabeled(label) => true
+      }
+      .getOrElse(false)
 }
 
 private[ozon] object Template {
@@ -143,7 +144,7 @@ private[ozon] object Template {
     }
 
     @derive(loggable, decoder, tethysReader)
-    final case class MobileContainer(footerContainer: Template) extends State
+    final case class MobileContainer(contentContainer: Template, footerContainer: Template) extends State
 
     implicit val circeDecoder: Decoder[State] = Decoder.instance[State] { (c: HCursor) =>
       for {

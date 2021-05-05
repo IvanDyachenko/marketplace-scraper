@@ -37,7 +37,9 @@ final case class Item(
   isAlcohol: Boolean,
   isSupermarket: Boolean,
   isPersonalized: Boolean,
-  isPromotedProduct: Boolean
+  isPromotedProduct: Boolean,
+  isNew: Boolean,
+  isBestseller: Boolean
 )
 
 object Item {
@@ -110,7 +112,9 @@ object Item {
                         c.get[Boolean]("isAlcohol"),
                         i.get[Boolean]("isSupermarket"),
                         i.get[Boolean]("isPersonalized"),
-                        i.get[Boolean]("isPromotedProduct")
+                        i.get[Boolean]("isPromotedProduct"),
+                        Right(template.isNew),
+                        Right(template.isBestseller)
                       ).mapN(apply)
     } yield item
   }
@@ -145,7 +149,9 @@ object Item {
           isAlcohol,
           info.isSupermarket,
           info.isPersonalized,
-          info.isPromotedProduct
+          info.isPromotedProduct,
+          template.isNew,
+          template.isBestseller
         )
       }
 
@@ -168,6 +174,8 @@ object Item {
       field("isAlcohol", f(_).isAlcohol),
       field("isSupermarket", f(_).isSupermarket),
       field("isPersonalized", f(_).isPersonalized),
-      field("isPromotedProduct", f(_).isPromotedProduct)
+      field("isPromotedProduct", f(_).isPromotedProduct),
+      field("isNew", f(_).isNew),
+      field("isBestseller", f(_).isBestseller)
     ).mapN(apply)
 }

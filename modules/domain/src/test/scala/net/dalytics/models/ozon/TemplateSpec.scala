@@ -8,6 +8,8 @@ import io.circe.parser.decode
 import tethys._
 import tethys.jackson._
 
+import Template.State._
+
 class TemplateSpec extends AnyFlatSpec with Matchers with EitherValues with OptionValues {
 
   it should "decode Template.State.Action.Redirect from a valid JSON (circe)" in {
@@ -27,9 +29,9 @@ class TemplateSpec extends AnyFlatSpec with Matchers with EitherValues with Opti
         |}
       """.stripMargin
 
-    val state = decode[Template.State.Action](stateRawJson).value
+    val state = decode[Action](stateRawJson).value
 
-    state should be(Template.State.Action.Redirect)
+    state should be(Action.Redirect)
   }
 
   it should "decode Template.State.Action.Redirect from a valid JSON (tethys)" in {
@@ -49,9 +51,9 @@ class TemplateSpec extends AnyFlatSpec with Matchers with EitherValues with Opti
         |}
       """.stripMargin
 
-    val state = stateRawJson.jsonAs[Template.State.Action].value
+    val state = stateRawJson.jsonAs[Action].value
 
-    state should be(Template.State.Action.Redirect)
+    state should be(Action.Redirect)
   }
 
   it should "decode Template.State.Action.UniversalAction from a valid JSON (tethys)" in {
@@ -91,9 +93,9 @@ class TemplateSpec extends AnyFlatSpec with Matchers with EitherValues with Opti
         |}
       """.stripMargin
 
-    val state = stateRawJson.jsonAs[Template.State.Action].value
+    val state = stateRawJson.jsonAs[Action].value
 
-    state should be(Template.State.Action.UniversalAction(Button.AddToCartWithQuantity(1, 2)))
+    state should be(Action.UniversalAction(Button.AddToCartWithQuantity(1, 2)))
   }
 
   it should "decode Template.State.Action.AddToCartWithCount from a valid JSON (tethys)" in {
@@ -113,9 +115,9 @@ class TemplateSpec extends AnyFlatSpec with Matchers with EitherValues with Opti
         |}
       """.stripMargin
 
-    val state = stateRawJson.jsonAs[Template.State.Action].value
+    val state = stateRawJson.jsonAs[Action].value
 
-    state should be(Template.State.Action.AddToCartWithCount(1, 51))
+    state should be(Action.AddToCartWithCount(1, 51))
   }
 
   it should "decode Template.State.TextSmall.NotDelivered from a valid JSON (circe)" in {
@@ -133,9 +135,9 @@ class TemplateSpec extends AnyFlatSpec with Matchers with EitherValues with Opti
         |}
       """.stripMargin
 
-    val state = decode[Template.State.TextSmall](stateRawJson).value
+    val state = decode[TextSmall](stateRawJson).value
 
-    state should be(Template.State.TextSmall.NotDelivered)
+    state should be(TextSmall.NotDelivered)
   }
 
   it should "decode Template.State.TextSmall.NotDelivered from a valid JSON (tethys)" in {
@@ -153,9 +155,9 @@ class TemplateSpec extends AnyFlatSpec with Matchers with EitherValues with Opti
         |}
       """.stripMargin
 
-    val state = stateRawJson.jsonAs[Template.State.TextSmall].value
+    val state = stateRawJson.jsonAs[TextSmall].value
 
-    state should be(Template.State.TextSmall.NotDelivered)
+    state should be(TextSmall.NotDelivered)
   }
 
   it should "decode Template.State.TextSmall.PremiumPriority from a valid JSON (circe)" in {
@@ -173,9 +175,9 @@ class TemplateSpec extends AnyFlatSpec with Matchers with EitherValues with Opti
         |}
       """.stripMargin
 
-    val state = decode[Template.State.TextSmall](stateRawJson).value
+    val state = decode[TextSmall](stateRawJson).value
 
-    state should be(Template.State.TextSmall.PremiumPriority)
+    state should be(TextSmall.PremiumPriority)
   }
 
   it should "decode Template.State.TextSmall.PremiumPriority from a valid JSON (tethys)" in {
@@ -193,9 +195,73 @@ class TemplateSpec extends AnyFlatSpec with Matchers with EitherValues with Opti
         |}
       """.stripMargin
 
-    val state = stateRawJson.jsonAs[Template.State.TextSmall].value
+    val state = stateRawJson.jsonAs[TextSmall].value
 
-    state should be(Template.State.TextSmall.PremiumPriority)
+    state should be(TextSmall.PremiumPriority)
+  }
+
+  it should "decode Template.State.Label.Type.New from a valid JSON (circe)" in {
+    val stateRawJson =
+      """
+        |{
+        |  "title": "Новинка",
+        |  "isSelected": false,
+        |  "color": null,
+        |  "textColor": "ozAccentSecondary"
+        |}
+      """.stripMargin
+
+    val state = decode[Label.Type](stateRawJson).value
+
+    state should be(Label.Type.New)
+  }
+
+  it should "decode Template.State.Label.Type.New from a valid JSON (tethys)" in {
+    val stateRawJson =
+      """
+        |{
+        |  "title": "Новинка",
+        |  "isSelected": false,
+        |  "color": null,
+        |  "textColor": "ozAccentSecondary"
+        |}
+      """.stripMargin
+
+    val state = stateRawJson.jsonAs[Label.Type].value
+
+    state should be(Label.Type.New)
+  }
+
+  it should "decode Template.State.Label.Type.Bestseller from a valid JSON (circe)" in {
+    val stateRawJson =
+      """
+        |{
+        |  "title": "Бестселлер",
+        |  "isSelected": false,
+        |  "color": null,
+        |  "textColor": "ozOrange"
+        |}
+      """.stripMargin
+
+    val state = decode[Label.Type](stateRawJson).value
+
+    state should be(Label.Type.Bestseller)
+  }
+
+  it should "decode Template.State.Label.Type.Bestseller from a valid JSON (tethys)" in {
+    val stateRawJson =
+      """
+        |{
+        |  "title": "Бестселлер",
+        |  "isSelected": false,
+        |  "color": null,
+        |  "textColor": "ozOrange"
+        |}
+      """.stripMargin
+
+    val state = stateRawJson.jsonAs[Label.Type].value
+
+    state should be(Label.Type.Bestseller)
   }
 
   it should "decode Template from a valid JSON (tethys)" in {
@@ -323,6 +389,19 @@ class TemplateSpec extends AnyFlatSpec with Matchers with EitherValues with Opti
         |    }
         |  },
         |  {
+        |    "type": "label",
+        |    "id": "label",
+        |    "components": null,
+        |    "items": [
+        |      {
+        |        "title": "Бестселлер",
+        |        "isSelected": false,
+        |        "color": null,
+        |        "textColor": "ozOrange"
+        |      }
+        |    ]
+        |  },
+        |  {
         |    "type": "textSmall",
         |    "id": "deliveryInfo",
         |    "components": null,
@@ -373,6 +452,19 @@ class TemplateSpec extends AnyFlatSpec with Matchers with EitherValues with Opti
         |            "theme": "STYLE_TYPE_MEDIUM"
         |          }
         |        }
+        |      },
+        |      {
+        |        "type": "label",
+        |        "id": "label",
+        |        "components": null,
+        |        "items": [
+        |          {
+        |            "title": "Новинка",
+        |            "isSelected": false,
+        |            "color": null,
+        |            "textColor": "ozAccentSecondary"
+        |          }
+        |        ]
         |      },
         |      {
         |        "type": "title",
@@ -478,24 +570,39 @@ class TemplateSpec extends AnyFlatSpec with Matchers with EitherValues with Opti
     template should be(
       Template(
         List(
-          Template.State.Unknown,
-          Template.State.Unknown,
-          Template.State.Unknown,
-          Template.State.Unknown,
-          Template.State.Unknown,
-          Template.State.Action.Unknown,
-          Template.State.Action.UniversalAction(Button.AddToCartWithQuantity(1, 1)),
-          Template.State.TextSmall.Unknown,
-          Template.State.MobileContainer(
+          Unknown,
+          Unknown,
+          Unknown,
+          Unknown,
+          Unknown,
+          Action.Unknown,
+          Action.UniversalAction(Button.AddToCartWithQuantity(1, 1)),
+          Label(List(Label.Type.Bestseller)),
+          TextSmall.Unknown,
+          MobileContainer(
             Template(
               List(
-                Template.State.Action.UniversalAction(Button.AddToCartWithQuantity(1, 25)),
-                Template.State.TextSmall.Unknown
+                Unknown,
+                Unknown,
+                Label(List(Label.Type.New)),
+                Unknown,
+                Unknown,
+                TextSmall.Unknown,
+                Action.Unknown
+              )
+            ),
+            Template(
+              List(
+                Action.UniversalAction(Button.AddToCartWithQuantity(1, 25)),
+                TextSmall.Unknown
               )
             )
           )
         )
       )
     )
+
+    template.isNew shouldBe true
+    template.isBestseller shouldBe true
   }
 }

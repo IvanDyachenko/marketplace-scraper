@@ -25,6 +25,6 @@ object Price {
   type Percent = Percent.Type
 
   private[models] def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => Price): FreeApplicative[Codec.Field[A, *], Price] =
-    (field("priceBase", f(_).price), field("priceFinal", f(_).finalPrice), field("pricePercentDiscount", f(_).discount))
-      .mapN(apply)
+    field("priceDiscount", f(_).discount / 100) *>
+      (field("priceBase", f(_).price), field("priceFinal", f(_).finalPrice), field("pricePercentDiscount", f(_).discount)).mapN(apply)
 }

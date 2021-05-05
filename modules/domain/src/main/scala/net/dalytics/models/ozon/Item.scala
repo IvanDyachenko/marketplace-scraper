@@ -38,10 +38,9 @@ final case class Item(
   isSupermarket: Boolean,
   isPersonalized: Boolean,
   isPromotedProduct: Boolean,
-  freeRest: Int
-) {
-  def isAvailable: Boolean = Item.Availability.from(availability) == Item.Availability.InStock
-}
+  isNew: Boolean,
+  isBestseller: Boolean
+)
 
 object Item {
   object Id extends TaggedType[Long] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedTethys with LiftedVulcanCodec
@@ -74,17 +73,27 @@ object Item {
       }
   }
 
+  private def addToCart(availability: Availability, template: Template): Option[AddToCart] =
+    availability match {
+      case Availability.PreOrder        => Some(AddToCart.Unavailable)
+      case Availability.CannotBeShipped => Some(AddToCart.Unavailable)
+      case Availability.OutOfStock      => Some(AddToCart.With(0, 0))
+      case Availability.InStock         => AddToCart(template)
+    }
+
   implicit val circeDecoder: Decoder[Item] = Decoder.instance[Item] { (c: HCursor) =>
     lazy val i = c.downField("cellTrackingInfo")
 
     for {
       availability <- i.get[Short]("availability")
-      addToCart    <- Availability.from(availability) match {
-                        case Availability.PreOrder        => AddToCart.Unavailable.asRight[DecodingFailure]
-                        case Availability.InStock         => c.as[AddToCart]
-                        case Availability.OutOfStock      => AddToCart.With(0, 0).asRight[DecodingFailure]
-                        case Availability.CannotBeShipped => AddToCart.Unavailable.asRight[DecodingFailure]
-                      }
+      template     <- c.get[Template]("templateState")
+      addToCart     = Item
+                        .addToCart(Availability.from(availability), template)
+                        .fold[Decoder.Result[AddToCart]] {
+                          val message =
+                            s"Decoded value of 'templateState' object doesn't contain description of the 'add to cart' action: ${template.logShow}."
+                          Left(DecodingFailure(message, c.history))
+                        }(_.asRight)
       item         <- (
                         i.get[Item.Id]("id"),
                         i.get[Int]("index"),
@@ -98,13 +107,14 @@ object Item {
                         Right(availability),
                         i.get[Short]("availableInDays"),
                         i.get[MarketplaceSeller.Id]("marketplaceSellerId"),
-                        Right(addToCart),
+                        addToCart,
                         c.get[Boolean]("isAdult"),
                         c.get[Boolean]("isAlcohol"),
                         i.get[Boolean]("isSupermarket"),
                         i.get[Boolean]("isPersonalized"),
                         i.get[Boolean]("isPromotedProduct"),
-                        i.get[Int]("freeRest")
+                        Right(template.isNew),
+                        Right(template.isBestseller)
                       ).mapN(apply)
     } yield item
   }
@@ -116,15 +126,9 @@ object Item {
       .addField[Boolean]("isAdult")
       .addField[Boolean]("isAlcohol")
       .buildReader { (info, template, isAdult, isAlcohol) =>
-        val addToCart = Availability.from(info.availability) match {
-          case Availability.PreOrder        => AddToCart.Unavailable
-          case Availability.CannotBeShipped => AddToCart.Unavailable
-          case Availability.OutOfStock      => AddToCart.With(0, 0)
-          case Availability.InStock         =>
-            AddToCart(template).getOrElse {
-              val message = s"Decoded value of 'templateState' object doesn't contain description of the 'add to cart' action: ${template.logShow}."
-              ReaderError.wrongJson(message)(FieldName.apply("templateState"))
-            }
+        val addToCart = Item.addToCart(Availability.from(info.availability), template).getOrElse {
+          val message = s"Decoded value of 'templateState' object doesn't contain description of the 'add to cart' action: ${template.logShow}."
+          ReaderError.wrongJson(message)(FieldName.apply("templateState"))
         }
 
         Item(
@@ -146,12 +150,13 @@ object Item {
           info.isSupermarket,
           info.isPersonalized,
           info.isPromotedProduct,
-          info.freeRest
+          template.isNew,
+          template.isBestseller
         )
       }
 
   private[models] def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => Item): FreeApplicative[Codec.Field[A, *], Item] =
-    field("isAvailable", f(_).isAvailable) *> (
+    (
       field("itemId", f(_).id),
       field("itemIndex", f(_).index),
       field("itemType", f(_).`type`),
@@ -170,6 +175,7 @@ object Item {
       field("isSupermarket", f(_).isSupermarket),
       field("isPersonalized", f(_).isPersonalized),
       field("isPromotedProduct", f(_).isPromotedProduct),
-      field("freeRest", f(_).freeRest)
+      field("isNew", f(_).isNew),
+      field("isBestseller", f(_).isBestseller)
     ).mapN(apply)
 }

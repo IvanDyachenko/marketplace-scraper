@@ -17,7 +17,18 @@ import enumeratum.EnumEntry.LowerCamelcase
 import net.dalytics.syntax._
 
 @derive(loggable)
-private[ozon] final case class Template(states: List[Template.State])
+private[ozon] final case class Template(states: List[Template.State]) {
+  def isNew: Boolean        = isLabeled(Template.State.Label.Type.New)
+  def isBestseller: Boolean = isLabeled(Template.State.Label.Type.Bestseller)
+
+  private def isLabeled(label: Template.State.Label.Type): Boolean =
+    states
+      .collectFirst {
+        case Template.State.Label(items) if items.contains(label)                   => true
+        case Template.State.MobileContainer(content, _) if content.isLabeled(label) => true
+      }
+      .getOrElse(false)
+}
 
 private[ozon] object Template {
 
@@ -31,6 +42,7 @@ private[ozon] object Template {
 
       case object Unknown         extends Type
       case object Action          extends Type
+      case object Label           extends Type
       case object TextSmall       extends Type
       case object MobileContainer extends Type
     }
@@ -74,6 +86,35 @@ private[ozon] object Template {
           }
     }
 
+    @derive(loggable, decoder, tethysReader)
+    final case class Label(items: List[Label.Type]) extends State
+
+    object Label {
+      sealed abstract class Type(override val entryName: String) extends EnumEntry with Product with Serializable
+
+      object Type extends Enum[Type] with CatsEnum[Type] with LoggableEnum[Type] {
+        val values = findValues
+
+        case object Unknown    extends Type("???")
+        case object New        extends Type("Новинка")
+        case object Bestseller extends Type("Бестселлер")
+
+        implicit val circeDecoder: Decoder[Type] =
+          Decoder.forProduct1[Type, Option[String]]("title") { titleOpt =>
+            val entryName = titleOpt.getOrElse(Type.Unknown.entryName)
+            Type.withNameInsensitiveOption(entryName).getOrElse(Type.Unknown)
+          }
+
+        implicit val jsonReader: JsonReader[Type] =
+          JsonReader.builder
+            .addField[Option[String]]("title")
+            .buildReader { titleOpt =>
+              val entryName = titleOpt.getOrElse(Type.Unknown.entryName)
+              Type.withNameInsensitiveOption(entryName).getOrElse(Type.Unknown)
+            }
+      }
+    }
+
     @derive(loggable)
     sealed trait TextSmall extends State
 
@@ -103,13 +144,14 @@ private[ozon] object Template {
     }
 
     @derive(loggable, decoder, tethysReader)
-    final case class MobileContainer(footerContainer: Template) extends State
+    final case class MobileContainer(contentContainer: Template, footerContainer: Template) extends State
 
     implicit val circeDecoder: Decoder[State] = Decoder.instance[State] { (c: HCursor) =>
       for {
         stateType   <- c.get[Type]("type").orElse(Type.Unknown.asRight)
         stateDecoder = stateType match {
                          case Type.Action          => Decoder[Action]
+                         case Type.Label           => Decoder[Label]
                          case Type.TextSmall       => Decoder[TextSmall]
                          case Type.MobileContainer => Decoder[MobileContainer]
                          case Type.Unknown         => Decoder.const(State.Unknown)
@@ -120,11 +162,15 @@ private[ozon] object Template {
 
     implicit val jsonReader: JsonReader[State] =
       JsonReader.builder.addField[Option[String]]("type").selectReader { typeOpt =>
-        Type.withNameOption(typeOpt.getOrElse(Type.Unknown.entryName)) match {
-          case Some(Type.Action)          => JsonReader[Action]
-          case Some(Type.TextSmall)       => JsonReader[TextSmall]
-          case Some(Type.MobileContainer) => JsonReader[MobileContainer]
-          case _                          => JsonReader[Unknown.type]
+        val entryName = typeOpt.getOrElse(Type.Unknown.entryName)
+        val stateType = Type.withNameOption(entryName).getOrElse(Type.Unknown)
+
+        stateType match {
+          case Type.Action          => JsonReader[Action]
+          case Type.Label           => JsonReader[Label]
+          case Type.TextSmall       => JsonReader[TextSmall]
+          case Type.MobileContainer => JsonReader[MobileContainer]
+          case Type.Unknown         => JsonReader[Unknown.type]
         }
       }
   }

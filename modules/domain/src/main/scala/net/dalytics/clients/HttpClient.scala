@@ -99,10 +99,10 @@ object HttpClient extends ContextEmbed[HttpClient] {
                            else http4sClientI
                          }
                          .map(GZip())
-      //                .map { http4sClientI =>
-      //                  val retryPolicy = recklesslyRetryPolicy[I](httpConfig.requestMaxDelayBetweenAttempts, httpConfig.requestMaxTotalAttempts)
-      //                  Retry(retryPolicy)(http4sClientI)
-      //                }
+      //                 .map { http4sClientI =>
+      //                   val retryPolicy = recklesslyRetryPolicy[I](httpConfig.requestMaxDelayBetweenAttempts, httpConfig.requestMaxTotalAttempts)
+      //                   Retry(retryPolicy)(http4sClientI)
+      //                 }
       httpClientF   <- Resource.eval(logs.forService[HttpClient[F]].map(_ => new Impl[F](httpConfig)(translateHttp4sClient[I, F](http4sClientI))))
     } yield httpClientF
 

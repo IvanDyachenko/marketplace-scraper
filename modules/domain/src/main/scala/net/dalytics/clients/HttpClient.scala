@@ -10,18 +10,21 @@ import tofu.syntax.monadic._
 import derevo.derive
 import tofu.logging.derivation.loggable
 import cats.FlatMap
+import cats.data.EitherT
 import cats.effect.{ConcurrentEffect, Resource, Sync}
 import tofu.{Execute, Handle, Raise}
 import tofu.lift.Unlift
 import tofu.higherKind.Embed
 import tofu.data.derived.ContextEmbed
 import tofu.logging.Logs
-import org.http4s.{DecodeFailure, Request => Http4sRequest, Status, EntityDecoder}
+import tethys.JsonReader
+import org.http4s.{DecodeFailure, EntityDecoder, MalformedMessageBodyFailure, Request => Http4sRequest, Status}
 import org.http4s.client.{Client, ConnectionFailure}
 import org.http4s.client.blaze.BlazeClientBuilder
 import org.http4s.client.middleware.{GZip, Logger}
 
 import net.dalytics.config.HttpConfig
+import net.dalytics.models.Raw
 
 trait HttpClient[F[_]] {
   def send[Res: EntityDecoder[F, *]](request: Http4sRequest[F]): F[Res]
@@ -77,6 +80,11 @@ object HttpClient extends ContextEmbed[HttpClient] {
             )
             .raise[F, Res]
         }
+  }
+
+  def entityDecoder[F[_]: Sync, R](implicit jsonReader: JsonReader[R]): EntityDecoder[F, R] = EntityDecoder[F, Raw].flatMapR { raw =>
+    val result = raw.jsonAs[R].left.map(error => MalformedMessageBodyFailure(error.getMessage))
+    EitherT.fromEither(result)
   }
 
   implicit val embed: Embed[HttpClient] = new Embed[HttpClient] {

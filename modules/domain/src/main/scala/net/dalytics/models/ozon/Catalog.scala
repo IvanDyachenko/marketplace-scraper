@@ -22,11 +22,11 @@ object Catalog {
   object Name extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedTethys with LiftedVulcanCodec
   type Name = Name.Type
 
-  private[this] final case class Shared(page: Page, catalog: Shared.Catalog) {
+  final case class Shared(page: Page, catalog: Shared.Catalog) {
     def category: Category = catalog.category
   }
 
-  private[this] object Shared {
+  object Shared {
     @derive(tethysReader)
     private[Shared] final case class Catalog(category: Category)
 

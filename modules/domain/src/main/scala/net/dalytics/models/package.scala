@@ -1,13 +1,16 @@
 package net.dalytics
 
 import java.time.Instant
+import java.nio.charset.StandardCharsets.UTF_8
 
 import cats.Show
 import cats.effect.Sync
 import tofu.logging.Loggable
 import vulcan.Codec
-import tethys.JsonReader
 import io.circe.{Decoder, Encoder}
+import tethys._
+import tethys.jackson._
+import tethys.readers.ReaderError
 import org.http4s.EntityDecoder
 import supertagged.TaggedType
 
@@ -37,6 +40,10 @@ package object models {
   }
 
   object Raw extends TaggedType[Array[Byte]] {
+    implicit final class Ops(private val value: Type) extends AnyVal {
+      def jsonAs[R: JsonReader]: Either[ReaderError, R] = new String(value, UTF_8).jsonAs[R]
+    }
+
     implicit val loggable: Loggable[Type]                          = Loggable.empty
     implicit val vulcanCodec: Codec[Type]                          = Codec.bytes.asInstanceOf[Codec[Type]]
     implicit def entityDecoder[F[_]: Sync]: EntityDecoder[F, Type] = EntityDecoder.byteArrayDecoder[F].asInstanceOf[EntityDecoder[F, Type]]

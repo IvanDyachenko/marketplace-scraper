@@ -7,13 +7,12 @@ import tofu.syntax.logging._
 import cats.syntax.traverse._
 import cats.{~>, Functor, Monad}
 import cats.free.Cofree
-import cats.effect.{Concurrent, Resource, Sync}
+import cats.effect.{Concurrent, Resource}
 import tofu.logging.{Logging, Logs}
 import fs2.Stream
 import tofu.lift.Lift
 import tofu.fs2.LiftStream
-import io.circe.Decoder
-import org.http4s.circe.jsonOf
+import tethys.JsonReader
 import supertagged.postfix._
 
 import net.dalytics.marshalling._
@@ -91,9 +90,9 @@ object OzonApi {
       get[Result](request).map(_ >>= (_.soldOutResultsV2))
     }
 
-    private def get[R](request: Request)(implicit decoder: Decoder[R]): F[Option[R]] =
+    private def get[R](request: Request)(implicit jsonReader: JsonReader[R]): F[Option[R]] =
       HttpClient[F]
-        .send[R](request)(jsonOf(Sync[F], decoder))
+        .send[R](request)(HttpClient.entityDecoder[F, R])
         .recoverWith[HttpClientError] { case error: HttpClientError =>
           error"${error} was thrown while attempting to execute ${request}" *> error.raise[F, R]
         }

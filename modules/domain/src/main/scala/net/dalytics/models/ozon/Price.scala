@@ -16,6 +16,7 @@ import net.dalytics.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedTethy
 final case class Price(price: Price.Value, finalPrice: Price.Value, discount: Price.Percent)
 
 object Price {
+  // ToDo: Use BigDecimal instead of Double
   object Value extends TaggedType[Double] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedTethys with LiftedVulcanCodec
   type Value = Value.Type
 

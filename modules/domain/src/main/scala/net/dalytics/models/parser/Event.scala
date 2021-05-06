@@ -18,7 +18,7 @@ sealed trait ParserEvent extends Event {
 object ParserEvent {
 
   @derive(loggable)
-  final case class OzonSellerListItemParsed private (created: Timestamp, timestamp: Timestamp, item: ozon.MarketplaceSeller) extends ParserEvent {
+  final case class OzonSellerListItemParsed(created: Timestamp, timestamp: Timestamp, item: ozon.MarketplaceSeller) extends ParserEvent {
     override val key: Option[Event.Key] = Some(item.id.show @@ Event.Key)
   }
 
@@ -50,7 +50,7 @@ object ParserEvent {
   }
 
   @derive(loggable)
-  final case class OzonCategorySearchResultsV2ItemParsed private (
+  final case class OzonCategorySearchResultsV2ItemParsed(
     created: Timestamp,
     timestamp: Timestamp,
     page: ozon.Page,
@@ -103,7 +103,7 @@ object ParserEvent {
   }
 
   @derive(loggable)
-  final case class OzonCategorySoldOutResultsV2ItemParsed private (
+  final case class OzonCategorySoldOutResultsV2ItemParsed(
     created: Timestamp,
     timestamp: Timestamp,
     page: ozon.Page,

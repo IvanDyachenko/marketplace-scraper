@@ -1,8 +1,8 @@
 package net.dalytics.services
 
 import scala.util.control.NoStackTrace
+import java.nio.charset.StandardCharsets.UTF_8
 
-import cats.syntax.show._
 import cats.syntax.traverse._
 import cats.Monad
 import cats.effect.{Clock, Resource}
@@ -14,9 +14,11 @@ import tofu.higherKind.derived.representableK
 import tofu.logging.derivation.loggable
 import tofu.logging.{Logging, Logs}
 import tofu.{Handle, Raise}
-import io.circe.{Decoder, Json}
+import tethys.JsonReader
+import tethys._
+import tethys.jackson._
 
-import net.dalytics.models.ozon
+import net.dalytics.models.{ozon, Raw}
 import net.dalytics.models.parser.{ParserEvent => Event, ParserCommand => Command}
 
 @derive(representableK)
@@ -65,8 +67,8 @@ object Parse {
         })
     }
 
-    private def parse[R: Decoder](data: Json): F[Either[ParsingError, R]] =
-      data.as[R].left.map(failure => ParsingError.decodingError(failure.show)).pure[F]
+    private def parse[R: JsonReader](raw: Raw): F[Either[ParsingError, R]] =
+      new String(raw, UTF_8).jsonAs[R].left.map(failure => ParsingError.decodingError(failure.getMessage)).pure[F]
   }
 
   def make[

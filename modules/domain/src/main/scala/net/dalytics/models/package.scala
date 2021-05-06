@@ -4,10 +4,14 @@ import java.time.Instant
 import java.nio.charset.StandardCharsets.UTF_8
 
 import cats.Show
+import cats.effect.Sync
 import tofu.logging.Loggable
-import vulcan.{AvroError, Codec}
-import io.circe.{Decoder, Encoder, Json}
-import io.circe.parser.decode
+import vulcan.Codec
+import io.circe.{Decoder, Encoder}
+import tethys._
+import tethys.jackson._
+import tethys.readers.ReaderError
+import org.http4s.EntityDecoder
 import supertagged.TaggedType
 
 package object models {
@@ -34,6 +38,17 @@ package object models {
     object Key extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedVulcanCodec
     type Key = Key.Type
   }
+
+  object Raw extends TaggedType[Array[Byte]] {
+    implicit final class Ops(private val value: Type) extends AnyVal {
+      def jsonAs[R: JsonReader]: Either[ReaderError, R] = new String(value, UTF_8).jsonAs[R]
+    }
+
+    implicit val loggable: Loggable[Type]                          = Loggable.empty
+    implicit val vulcanCodec: Codec[Type]                          = Codec.bytes.asInstanceOf[Codec[Type]]
+    implicit def entityDecoder[F[_]: Sync]: EntityDecoder[F, Type] = EntityDecoder.byteArrayDecoder[F].asInstanceOf[EntityDecoder[F, Type]]
+  }
+  type Raw = Raw.Type
 
   trait LiftedOrdered {
     type Raw
@@ -64,15 +79,17 @@ package object models {
     implicit def circeDecoder(implicit raw: Decoder[Raw]): Decoder[Type] = raw.asInstanceOf[Decoder[Type]]
   }
 
+  trait LiftedTethys {
+    type Raw
+    type Type
+
+    implicit def jsonReader(implicit raw: JsonReader[Raw]): JsonReader[Type] = raw.asInstanceOf[JsonReader[Type]]
+  }
+
   trait LiftedVulcanCodec {
     type Raw
     type Type
 
     implicit def vulcanCodec(implicit raw: Codec[Raw]): Codec[Type] = raw.asInstanceOf[Codec[Type]]
   }
-
-  implicit val jsonLoggable: Loggable[Json] = Loggable.empty
-  implicit val jsonVulcanCodec: Codec[Json] = Codec.bytes.imapError { bytes =>
-    decode[Json](new String(bytes, UTF_8)).left.map(err => AvroError(err.getMessage))
-  }(_.noSpaces.getBytes(UTF_8))
 }

@@ -3,8 +3,10 @@ package net.dalytics.models.ozon
 import cats.implicits._
 import derevo.derive
 import derevo.circe.decoder
+import derevo.tethys.tethysReader
 import tofu.logging.derivation.loggable
 import io.circe.{Decoder, HCursor}
+import tethys.JsonReader
 
 @derive(loggable)
 sealed trait SearchFilters {
@@ -13,7 +15,7 @@ sealed trait SearchFilters {
   def values: List[T]
 }
 
-@derive(loggable, decoder)
+@derive(loggable, decoder, tethysReader)
 final case class BrandFilters(values: List[BrandFilter]) extends SearchFilters {
   type T = BrandFilter
 }
@@ -28,4 +30,9 @@ object SearchFilters {
       searchFilters <- decoder(c)
     } yield searchFilters
   }
+
+  implicit val jsonReader: JsonReader[SearchFilters] =
+    JsonReader.builder
+      .addField[SearchFilter.Key]("key")
+      .selectReader { case SearchFilter.Key.Brand => JsonReader[BrandFilters] }
 }

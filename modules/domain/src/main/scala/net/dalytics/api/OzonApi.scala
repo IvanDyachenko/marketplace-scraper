@@ -12,7 +12,7 @@ import tofu.logging.{Logging, Logs}
 import fs2.Stream
 import tofu.lift.Lift
 import tofu.fs2.LiftStream
-import io.circe.Decoder
+import tethys.JsonReader
 import supertagged.postfix._
 
 import net.dalytics.marshalling._
@@ -51,7 +51,7 @@ object OzonApi {
         Cofree
           .unfold[Stream[F, *], Category](_) { cat =>
             val ids = cat.children.keys.toList
-            Stream.emits(ids).covary[F].parEvalMapUnordered(128)(category).collect { case Some(subcat) => subcat }
+            Stream.emits(ids).covary[F].parEvalMapUnordered(Int.MaxValue)(category).collect { case Some(subcat) => subcat }
           }
           .pure[F]
       ))
@@ -90,9 +90,9 @@ object OzonApi {
       get[Result](request).map(_ >>= (_.soldOutResultsV2))
     }
 
-    private def get[R: Decoder](request: Request): F[Option[R]] =
+    private def get[R](request: Request)(implicit jsonReader: JsonReader[R]): F[Option[R]] =
       HttpClient[F]
-        .send[R](request)
+        .send[R](request)(HttpClient.entityDecoder[F, R])
         .recoverWith[HttpClientError] { case error: HttpClientError =>
           error"${error} was thrown while attempting to execute ${request}" *> error.raise[F, R]
         }

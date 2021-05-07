@@ -22,7 +22,7 @@ package object marshalling {
         Host(host.value),
         Connection(CaseInsensitiveString("Keep-Alive")),
         Accept(MediaType.application.json),
-        `User-Agent`(AgentProduct("OzonStore", Some("430")))
+        `User-Agent`(AgentProduct("OzonStore", Some("463")))
       )
 
     val uri: Uri = {

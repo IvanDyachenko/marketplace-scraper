@@ -5,14 +5,18 @@ import cats.free.FreeApplicative
 import derevo.derive
 import tofu.logging.derivation.loggable
 import tofu.logging.LoggableEnum
+import tofu.syntax.loggable._
 import vulcan.Codec
 import vulcan.generic.AvroNamespace
 import io.circe.{Decoder, DecodingFailure, HCursor}
+import tethys.JsonReader
+import tethys.readers.{FieldName, ReaderError}
+import tethys.enumeratum.TethysEnum
 import enumeratum.{CatsEnum, CirceEnum, Enum, EnumEntry, VulcanEnum}
 import enumeratum.EnumEntry.Lowercase
 import supertagged.TaggedType
 
-import net.dalytics.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcanCodec}
+import net.dalytics.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedTethys, LiftedVulcanCodec}
 
 @derive(loggable)
 final case class Item(
@@ -34,19 +38,17 @@ final case class Item(
   isSupermarket: Boolean,
   isPersonalized: Boolean,
   isPromotedProduct: Boolean,
-  freeRest: Int
-) {
-  def isAvailable: Boolean = Item.Availability.from(availability) == Item.Availability.InStock
-}
+  isNew: Boolean,
+  isBestseller: Boolean
+)
 
 object Item {
-
-  object Id extends TaggedType[Long] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec
+  object Id extends TaggedType[Long] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedTethys with LiftedVulcanCodec
   type Id = Id.Type
 
   @AvroNamespace("ozon.models.item")
   sealed trait Type extends EnumEntry with Lowercase with Product with Serializable
-  object Type       extends Enum[Type] with CatsEnum[Type] with CirceEnum[Type] with LoggableEnum[Type] with VulcanEnum[Type] {
+  object Type       extends Enum[Type] with CatsEnum[Type] with CirceEnum[Type] with TethysEnum[Type] with VulcanEnum[Type] with LoggableEnum[Type] {
     val values = findValues
 
     case object SKU extends Type
@@ -54,7 +56,7 @@ object Item {
 
   @AvroNamespace("ozon.models.item")
   sealed abstract class Availability extends EnumEntry
-  object Availability                extends Enum[Availability] with CirceEnum[Availability] with VulcanEnum[Availability] {
+  object Availability                extends Enum[Availability] with CirceEnum[Availability] with TethysEnum[Availability] with VulcanEnum[Availability] {
     val values = findValues
 
     case object InStock         extends Availability
@@ -71,17 +73,27 @@ object Item {
       }
   }
 
+  private def addToCart(availability: Availability, template: Template): Option[AddToCart] =
+    availability match {
+      case Availability.PreOrder        => Some(AddToCart.Unavailable)
+      case Availability.CannotBeShipped => Some(AddToCart.Unavailable)
+      case Availability.OutOfStock      => Some(AddToCart.With(0, 0))
+      case Availability.InStock         => AddToCart(template)
+    }
+
   implicit val circeDecoder: Decoder[Item] = Decoder.instance[Item] { (c: HCursor) =>
     lazy val i = c.downField("cellTrackingInfo")
 
     for {
       availability <- i.get[Short]("availability")
-      addToCart    <- Availability.from(availability) match {
-                        case Availability.PreOrder        => AddToCart.Unavailable.asRight[DecodingFailure]
-                        case Availability.InStock         => c.as[AddToCart]
-                        case Availability.OutOfStock      => AddToCart.With(0, 0).asRight[DecodingFailure]
-                        case Availability.CannotBeShipped => AddToCart.Unavailable.asRight[DecodingFailure]
-                      }
+      template     <- c.get[Template]("templateState")
+      addToCart     = Item
+                        .addToCart(Availability.from(availability), template)
+                        .fold[Decoder.Result[AddToCart]] {
+                          val message =
+                            s"Decoded value of 'templateState' object doesn't contain description of the 'add to cart' action: ${template.logShow}."
+                          Left(DecodingFailure(message, c.history))
+                        }(_.asRight)
       item         <- (
                         i.get[Item.Id]("id"),
                         i.get[Int]("index"),
@@ -95,19 +107,56 @@ object Item {
                         Right(availability),
                         i.get[Short]("availableInDays"),
                         i.get[MarketplaceSeller.Id]("marketplaceSellerId"),
-                        Right(addToCart),
+                        addToCart,
                         c.get[Boolean]("isAdult"),
                         c.get[Boolean]("isAlcohol"),
                         i.get[Boolean]("isSupermarket"),
                         i.get[Boolean]("isPersonalized"),
                         i.get[Boolean]("isPromotedProduct"),
-                        i.get[Int]("freeRest")
+                        Right(template.isNew),
+                        Right(template.isBestseller)
                       ).mapN(apply)
     } yield item
   }
 
+  implicit val tethysReader: JsonReader[Item] =
+    JsonReader.builder
+      .addField[CellTrackingInfo]("cellTrackingInfo")
+      .addField[Template]("templateState")
+      .addField[Boolean]("isAdult")
+      .addField[Boolean]("isAlcohol")
+      .buildReader { (info, template, isAdult, isAlcohol) =>
+        val addToCart = Item.addToCart(Availability.from(info.availability), template).getOrElse {
+          val message = s"Decoded value of 'templateState' object doesn't contain description of the 'add to cart' action: ${template.logShow}."
+          ReaderError.wrongJson(message)(FieldName.apply("templateState"))
+        }
+
+        Item(
+          info.itemId,
+          info.itemIndex,
+          info.itemType,
+          info.itemTitle,
+          info.brand,
+          info.price,
+          info.rating,
+          info.categoryPath,
+          info.delivery,
+          info.availability,
+          info.availableInDays,
+          info.marketplaceSellerId,
+          addToCart,
+          isAdult,
+          isAlcohol,
+          info.isSupermarket,
+          info.isPersonalized,
+          info.isPromotedProduct,
+          template.isNew,
+          template.isBestseller
+        )
+      }
+
   private[models] def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(f: A => Item): FreeApplicative[Codec.Field[A, *], Item] =
-    field("isAvailable", f(_).isAvailable) *> (
+    (
       field("itemId", f(_).id),
       field("itemIndex", f(_).index),
       field("itemType", f(_).`type`),
@@ -126,6 +175,7 @@ object Item {
       field("isSupermarket", f(_).isSupermarket),
       field("isPersonalized", f(_).isPersonalized),
       field("isPromotedProduct", f(_).isPromotedProduct),
-      field("freeRest", f(_).freeRest)
+      field("isNew", f(_).isNew),
+      field("isBestseller", f(_).isBestseller)
     ).mapN(apply)
 }

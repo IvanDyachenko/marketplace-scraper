@@ -13,7 +13,6 @@ sealed trait EnricherEvent extends Event {
 }
 
 object EnricherEvent {
-
   @derive(loggable)
   final case class OzonCategoryResultsV2ItemEnriched(
     created: Timestamp,

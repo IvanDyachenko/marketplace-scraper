@@ -95,7 +95,7 @@ private[ozon] object Template {
       object Type extends Enum[Type] with CatsEnum[Type] with LoggableEnum[Type] {
         val values = findValues
 
-        case object Unknown    extends Type("???")
+        case object Unknown    extends Type("")
         case object New        extends Type("Новинка")
         case object Bestseller extends Type("Бестселлер")
 

@@ -31,7 +31,6 @@ object Button {
   final case class AddToCartWithQuantity(quantity: Int, maxItems: Int) extends Button
 
   object AddToCartWithQuantity {
-
     @derive(decoder, tethysReader)
     private[this] final case class Action(quantity: Int) extends AnyVal
     private[this] object Action

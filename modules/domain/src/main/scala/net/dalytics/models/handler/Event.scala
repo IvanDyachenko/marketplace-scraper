@@ -14,7 +14,6 @@ import net.dalytics.models.{Event, Raw, Timestamp}
 sealed trait HandlerEvent extends Event
 
 object HandlerEvent {
-
   @derive(loggable)
   final case class OzonRequestHandled(created: Timestamp, @unembed @masked(MaskMode.Erase) raw: Raw) extends HandlerEvent
 

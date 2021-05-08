@@ -11,7 +11,6 @@ import net.dalytics.models.{Command, Raw, Timestamp}
 sealed trait ParserCommand extends Command
 
 object ParserCommand {
-
   @derive(loggable)
   final case class ParseOzonResponse(created: Timestamp, @unembed @masked(MaskMode.Erase) response: Raw) extends ParserCommand
 

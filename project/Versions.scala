@@ -26,7 +26,7 @@ object Versions {
   lazy val logback = "1.2.3"
 
   lazy val betterMonadicFor = "0.3.1"
-  lazy val kindProjector    = "0.11.3"
+  lazy val kindProjector    = "0.13.0"
 
   lazy val scalactic               = "3.2.8"
   lazy val scalatest               = "3.2.8"

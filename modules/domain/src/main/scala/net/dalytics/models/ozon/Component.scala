@@ -29,8 +29,8 @@ object Component {
     implicit val jsonReader: JsonReader[Unknown.type] = JsonReader.builder.addField[String]("stateId").buildReader(_ => Unknown)
   }
 
-  //@derive(loggable)
-  //final case class UWidgetSKU(stateId: Component.StateId) extends Component
+//@derive(loggable)
+//final case class UWidgetSKU(stateId: Component.StateId) extends Component
 
   @derive(loggable, tethysReader)
   final case class SellerList(stateId: Component.StateId) extends Component
@@ -47,11 +47,14 @@ object Component {
   implicit val circeDecoderConfig: Configuration = Configuration(Predef.identity, _.decapitalize, false, Some("component"))
   implicit val circeDecoder: Decoder[Component]  = deriveConfiguredDecoder[Component]
 
-  implicit val jsonReader: JsonReader[Component] = JsonReader.builder.addField[String]("component").selectReader {
-    case "sellerList"       => JsonReader[SellerList]
-    case "categoryMenu"     => JsonReader[CategoryMenu]
-    case "searchResultsV2"  => JsonReader[SearchResultsV2]
-    case "soldOutResultsV2" => JsonReader[SoldOutResultsV2]
-    case _                  => JsonReader[Unknown.type]
-  }
+  implicit val jsonReader: JsonReader[Component] =
+    JsonReader.builder
+      .addField[String]("component")
+      .selectReader {
+        case "sellerList"       => JsonReader[SellerList]
+        case "categoryMenu"     => JsonReader[CategoryMenu]
+        case "searchResultsV2"  => JsonReader[SearchResultsV2]
+        case "soldOutResultsV2" => JsonReader[SoldOutResultsV2]
+        case _                  => JsonReader[Unknown.type]
+      }
 }

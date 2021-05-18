@@ -18,7 +18,7 @@ object Versions {
   lazy val monitoringInterceptors = "6.1.1"
   lazy val http4s                 = "0.21.22"
   lazy val http4sBlazeClient      = "0.21.22"
-  lazy val doobie                 = "0.13.2"
+  lazy val doobie                 = "0.13.3"
   lazy val clickhouseJDBC         = "0.3.1"
   lazy val pureconfig             = "0.14.1"
 

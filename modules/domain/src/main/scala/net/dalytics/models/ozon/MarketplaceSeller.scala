@@ -6,16 +6,23 @@ import derevo.derive
 import derevo.circe.decoder
 import tofu.logging.derivation.loggable
 import vulcan.Codec
+import tethys.JsonReader
 import supertagged.TaggedType
 
-import net.dalytics.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedVulcanCodec}
+import net.dalytics.models.{LiftedCats, LiftedCirce, LiftedLoggable, LiftedTethys, LiftedVulcanCodec}
 
 @derive(loggable, decoder)
 final case class MarketplaceSeller(id: MarketplaceSeller.Id, title: String, subtitle: String)
 
 object MarketplaceSeller {
-  object Id extends TaggedType[Long] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedVulcanCodec
+  object Id extends TaggedType[Long] with LiftedCats with LiftedLoggable with LiftedCirce with LiftedTethys with LiftedVulcanCodec
   type Id = Id.Type
+
+  implicit val jsonReader: JsonReader[MarketplaceSeller] = JsonReader.builder
+    .addField[MarketplaceSeller.Id]("id")
+    .addField[String]("title")
+    .addField[Option[String]]("subtitle")
+    .buildReader((id, title, subtitleOpt) => apply(id, title, subtitleOpt.getOrElse(title)))
 
   private[models] def vulcanCodecFieldFA[A](field: Codec.FieldBuilder[A])(
     f: A => MarketplaceSeller

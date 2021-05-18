@@ -16,22 +16,20 @@ sealed trait ParserEvent extends Event {
 }
 
 object ParserEvent {
-
   @derive(loggable)
-  final case class OzonSellerListItemParsed private (created: Timestamp, timestamp: Timestamp, item: ozon.MarketplaceSeller) extends ParserEvent {
+  final case class OzonSellerListItemParsed(created: Timestamp, timestamp: Timestamp, item: ozon.MarketplaceSeller) extends ParserEvent {
     override val key: Option[Event.Key] = Some(item.id.show @@ Event.Key)
   }
 
   object OzonSellerListItemParsed {
-    def apply[F[_]: Monad: Clock](timestamp: Timestamp, sellerList: ozon.SellerList): F[List[ParserEvent]] =
-      sellerList match {
-        case ozon.SellerList.Success(items) =>
-          for {
-            created <- Clock[F].instantNow.map(_ @@ Timestamp)
-            events   = items.map(OzonSellerListItemParsed(created, timestamp, _))
-          } yield events
-        case _                              => List.empty[ParserEvent].pure[F]
-      }
+    def apply[F[_]: Monad: Clock](timestamp: Timestamp, sellerList: ozon.SellerList): F[List[ParserEvent]] = sellerList match {
+      case ozon.SellerList.Success(items) =>
+        for {
+          created <- Clock[F].instantNow.map(_ @@ Timestamp)
+          events   = items.map(OzonSellerListItemParsed(created, timestamp, _))
+        } yield events
+      case _                              => List.empty[ParserEvent].pure[F]
+    }
 
     def apply[F[_]: Monad: Clock](timestamp: Timestamp, result: ozon.Result): F[List[ParserEvent]] =
       result.sellerList.fold(List.empty[ParserEvent].pure[F])(apply[F](timestamp, _))
@@ -50,7 +48,7 @@ object ParserEvent {
   }
 
   @derive(loggable)
-  final case class OzonCategorySearchResultsV2ItemParsed private (
+  final case class OzonCategorySearchResultsV2ItemParsed(
     created: Timestamp,
     timestamp: Timestamp,
     page: ozon.Page,
@@ -66,15 +64,14 @@ object ParserEvent {
       page: ozon.Page,
       category: ozon.Category,
       searchResultsV2: ozon.SearchResultsV2
-    ): F[List[ParserEvent]] =
-      searchResultsV2 match {
-        case ozon.SearchResultsV2.Success(items) =>
-          for {
-            created <- Clock[F].instantNow.map(_ @@ Timestamp)
-            events   = items.map(OzonCategorySearchResultsV2ItemParsed(created, timestamp, page, _, category))
-          } yield events
-        case _                                   => List.empty[ParserEvent].pure[F]
-      }
+    ): F[List[ParserEvent]] = searchResultsV2 match {
+      case ozon.SearchResultsV2.Success(items) =>
+        for {
+          created <- Clock[F].instantNow.map(_ @@ Timestamp)
+          events   = items.map(OzonCategorySearchResultsV2ItemParsed(created, timestamp, page, _, category))
+        } yield events
+      case _                                   => List.empty[ParserEvent].pure[F]
+    }
 
     def apply[F[_]: Monad: Clock](timestamp: Timestamp, result: ozon.Result): F[List[ParserEvent]] = {
       val opt = for {
@@ -103,7 +100,7 @@ object ParserEvent {
   }
 
   @derive(loggable)
-  final case class OzonCategorySoldOutResultsV2ItemParsed private (
+  final case class OzonCategorySoldOutResultsV2ItemParsed(
     created: Timestamp,
     timestamp: Timestamp,
     page: ozon.Page,
@@ -119,15 +116,14 @@ object ParserEvent {
       page: ozon.Page,
       category: ozon.Category,
       soldOutResultsV2: ozon.SoldOutResultsV2
-    ): F[List[ParserEvent]] =
-      soldOutResultsV2 match {
-        case ozon.SoldOutResultsV2.Success(items) =>
-          for {
-            created <- Clock[F].instantNow.map(_ @@ Timestamp)
-            events   = items.map(OzonCategorySoldOutResultsV2ItemParsed(created, timestamp, page, _, category))
-          } yield events
-        case _                                    => List.empty[ParserEvent].pure[F]
-      }
+    ): F[List[ParserEvent]] = soldOutResultsV2 match {
+      case ozon.SoldOutResultsV2.Success(items) =>
+        for {
+          created <- Clock[F].instantNow.map(_ @@ Timestamp)
+          events   = items.map(OzonCategorySoldOutResultsV2ItemParsed(created, timestamp, page, _, category))
+        } yield events
+      case _                                    => List.empty[ParserEvent].pure[F]
+    }
 
     def apply[F[_]: Monad: Clock](timestamp: Timestamp, result: ozon.Result): F[List[ParserEvent]] = {
       val opt = for {

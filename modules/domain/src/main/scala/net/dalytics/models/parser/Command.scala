@@ -2,19 +2,17 @@ package net.dalytics.models.parser
 
 import cats.implicits._
 import derevo.derive
-import tofu.logging.derivation.{loggable, masked, MaskMode}
-import io.circe.Json
+import tofu.logging.derivation.{loggable, masked, unembed, MaskMode}
 import vulcan.Codec
 
-import net.dalytics.models.{jsonLoggable, jsonVulcanCodec, Command, Timestamp}
+import net.dalytics.models.{Command, Raw, Timestamp}
 
 @derive(loggable)
 sealed trait ParserCommand extends Command
 
 object ParserCommand {
-
   @derive(loggable)
-  final case class ParseOzonResponse private (created: Timestamp, @masked(MaskMode.Erase) response: Json) extends ParserCommand
+  final case class ParseOzonResponse(created: Timestamp, @unembed @masked(MaskMode.Erase) response: Raw) extends ParserCommand
 
   object ParseOzonResponse {
     implicit val vulcanCodec: Codec[ParseOzonResponse] =

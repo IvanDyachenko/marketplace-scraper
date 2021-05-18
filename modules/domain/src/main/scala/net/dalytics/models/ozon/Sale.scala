@@ -15,7 +15,7 @@ object Sale {
   final object Unknown extends Sale
 
   @derive(loggable)
-  final case class Sold private (count: Int) extends Sale
+  final case class Sold(count: Int) extends Sale
 
   /** This method calculates number of sold items according to https://gitlab.com/dalytics/analytics/-/issues/26
     */

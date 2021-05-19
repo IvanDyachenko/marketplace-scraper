@@ -6,9 +6,9 @@ ThisBuild / scalaVersion   := "2.13.5"
 ThisBuild / homepage       := Some(url("https://github.com/ivandyachenko/marketplace-scraper"))
 ThisBuild / publish / skip := true
 
-lazy val `marketplace-domain` = (project in file("modules/domain"))
+lazy val `marketplace-common` = (project in file("modules/common"))
   .settings(
-    moduleName := "marketplace-domain",
+    moduleName := "marketplace-common",
     commonSettings,
     commonDependencies,
     compilerOptions,
@@ -23,7 +23,7 @@ lazy val `marketplace-parser` = (project in file("modules/parser"))
     compilerOptions,
     compilerDependencies
   )
-  .dependsOn(`marketplace-domain` % "test->test;compile->compile")
+  .dependsOn(`marketplace-common` % "test->test;compile->compile")
   .enablePlugins(DockerPlugin)
   .enablePlugins(AshScriptPlugin)
   .enablePlugins(JavaAppPackaging)
@@ -51,7 +51,7 @@ lazy val `marketplace-handler` = (project in file("modules/handler"))
     compilerOptions,
     compilerDependencies
   )
-  .dependsOn(`marketplace-domain` % "test->test;compile->compile")
+  .dependsOn(`marketplace-common` % "test->test;compile->compile")
   .enablePlugins(DockerPlugin)
   .enablePlugins(AshScriptPlugin)
   .enablePlugins(JavaAppPackaging)
@@ -99,7 +99,7 @@ lazy val `marketplace-scheduler` = (project in file("modules/scheduler"))
     compilerOptions,
     compilerDependencies
   )
-  .dependsOn(`marketplace-domain` % "test->test;compile->compile")
+  .dependsOn(`marketplace-common` % "test->test;compile->compile")
   .enablePlugins(DockerPlugin)
   .enablePlugins(AshScriptPlugin)
   .enablePlugins(JavaAppPackaging)
@@ -147,7 +147,7 @@ lazy val `marketplace-enricher` = (project in file("modules/enricher"))
     compilerOptions,
     compilerDependencies
   )
-  .dependsOn(`marketplace-domain` % "test->test;compile->compile")
+  .dependsOn(`marketplace-common` % "test->test;compile->compile")
   .enablePlugins(DockerPlugin)
   .enablePlugins(AshScriptPlugin)
   .enablePlugins(JavaAppPackaging)
@@ -173,7 +173,7 @@ lazy val `marketplace-scraper` = (project in file("."))
     skip in publish := true
   )
   .aggregate(
-    `marketplace-domain`,
+    `marketplace-common`,
     `marketplace-parser`,
     `marketplace-handler`,
     `marketplace-scheduler`,

@@ -4,7 +4,7 @@ import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.kstream.{KStream, Reducer, ValueMapper}
 import compstak.kafkastreams4s.{Codec => Codec4s, SerdeHelpers => Serde4s, STable => KTable4s}
 
-final case class KStream4s[HK[_]: Codec4s, K: HK, HV[_]: Codec4s, V: HV](val toKStream: KStream[K, V]) {
+final case class KStream4s[HK[_]: Codec4s, K: HK, HV[_]: Codec4s, V: HV](toKStream: KStream[K, V]) {
   def collect[V2: HV](pf: PartialFunction[V, V2]): KStream4s[HK, K, HV, V2] =
     mapFilter(pf.lift)
 

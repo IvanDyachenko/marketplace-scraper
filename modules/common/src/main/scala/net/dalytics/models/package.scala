@@ -20,17 +20,10 @@ package object models {
   type Timestamp = Timestamp.Type
 
   trait Command {
-    def key: Option[Command.Key] = None
     def created: Timestamp
   }
 
-  object Command {
-    object Key extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedVulcanCodec
-    type Key = Key.Type
-  }
-
   trait Event {
-    def key: Option[Event.Key] = None
     def created: Timestamp
   }
 

@@ -14,9 +14,8 @@ import fs2.Stream
 import fs2.kafka.{KafkaConsumer, KafkaProducer, ProducerRecord, ProducerRecords}
 
 import net.dalytics.config.Config
-import net.dalytics.context.MessageContext
 import net.dalytics.services.Handle
-import net.dalytics.models.{Command, Event}
+import net.dalytics.context.MessageContext
 import net.dalytics.models.handler.{HandlerCommand, HandlerEvent}
 
 @derive(representableK)
@@ -32,11 +31,11 @@ object Handler {
     F[_]: WithRun[*[_], I, MessageContext]
   ](config: Config)(
     handle: Handle[F],
-    producerOfEvents: KafkaProducer[I, Option[Event.Key], HandlerEvent],
-    consumerOfCommands: KafkaConsumer[I, Option[Command.Key], HandlerCommand]
+    consumer: KafkaConsumer[I, Unit, HandlerCommand],
+    producer: KafkaProducer[I, Unit, HandlerEvent]
   ) extends Handler[Stream[I, *]] {
     def run: Stream[I, Unit] =
-      consumerOfCommands.partitionsMapStream
+      consumer.partitionsMapStream
         .map { assignments =>
           val numberOfAssignedPartitionsPerTopic = assignments.keySet.groupMapReduce(_.topic)(_ => 1)(_ + _)
 
@@ -60,11 +59,11 @@ object Handler {
               }
               .collect { case (eventOption, offset) =>
                 val events  = List(eventOption).flatten
-                val records = events.map(event => ProducerRecord(config.kafkaProducerConfig.topic("events"), event.key, event))
+                val records = events.map(event => ProducerRecord(config.kafkaProducerConfig.topic("events"), (), event))
 
                 ProducerRecords(records, offset)
               }
-              .evalMap(producerOfEvents.produce)
+              .evalMap(producer.produce)
               .parEvalMap(config.kafkaProducerConfig.parallelism)(identity)
               .void
           //  .map(_.passthrough)
@@ -83,13 +82,13 @@ object Handler {
     S[_]: LiftStream[*[_], I]
   ](config: Config)(
     handle: Handle[F],
-    producerOfEvents: KafkaProducer[I, Option[Event.Key], HandlerEvent],
-    consumerOfCommands: KafkaConsumer[I, Option[Command.Key], HandlerCommand]
+    consumer: KafkaConsumer[I, Unit, HandlerCommand],
+    producer: KafkaProducer[I, Unit, HandlerEvent]
   ): Resource[I, Handler[S]] =
     Resource.eval {
       Stream
         .eval {
-          val impl: Handler[Stream[I, *]] = new Impl[I, F](config)(handle, producerOfEvents, consumerOfCommands)
+          val impl: Handler[Stream[I, *]] = new Impl[I, F](config)(handle, consumer, producer)
 
           impl.pure[I]
         }

@@ -13,7 +13,7 @@ import fs2.kafka.{KafkaProducer, ProducerRecord, ProducerRecords}
 import supertagged.postfix._
 
 import net.dalytics.config.{ApiRateLimitsConfig, Config, OzonApiRateLimitsConfig, TaskConfig, TasksConfig}
-import net.dalytics.models.{ozon, Command}
+import net.dalytics.models.ozon
 import net.dalytics.models.handler.HandlerCommand
 import net.dalytics.api.{OzonApi, WildBerriesApi}
 
@@ -29,11 +29,11 @@ object Scheduler {
     I[_]: Monad: Concurrent
   ](config: Config)(
     commands: Stream[I, HandlerCommand],
-    producer: KafkaProducer[I, Option[Command.Key], HandlerCommand]
+    producer: KafkaProducer[I, Unit, HandlerCommand]
   ) extends Scheduler[Stream[I, *]] {
     def run: Stream[I, Unit] =
       commands
-        .map(command => ProducerRecord(config.kafkaProducerConfig.topic("commands"), command.key, command))
+        .map(command => ProducerRecord(config.kafkaProducerConfig.topic("commands"), (), command))
         .evalMap(record => producer.produce(ProducerRecords.one(record)))
         .parEvalMap(config.kafkaProducerConfig.parallelism)(identity)
         .map(_.passthrough)
@@ -44,7 +44,7 @@ object Scheduler {
     S[_]: LiftStream[*[_], I]
   ](config: Config)(
     commands: Stream[I, HandlerCommand],
-    producer: KafkaProducer[I, Option[Command.Key], HandlerCommand]
+    producer: KafkaProducer[I, Unit, HandlerCommand]
   ): Resource[I, Scheduler[S]] =
     Resource.eval {
       Stream

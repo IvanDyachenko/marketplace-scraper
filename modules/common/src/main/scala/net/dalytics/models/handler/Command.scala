@@ -15,9 +15,7 @@ sealed trait HandlerCommand extends Command
 
 object HandlerCommand {
   @derive(loggable)
-  final case class HandleOzonRequest(created: Timestamp, @unembed request: ozon.Request) extends HandlerCommand {
-    override val key: Option[Command.Key] = Some(request.url.path @@ Command.Key)
-  }
+  final case class HandleOzonRequest(created: Timestamp, @unembed request: ozon.Request) extends HandlerCommand
 
   def handleOzonRequest[F[_]: FlatMap: Clock](request: ozon.Request): F[HandlerCommand] =
     for {

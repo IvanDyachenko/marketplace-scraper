@@ -8,10 +8,9 @@ import fs2.kafka.vulcan.SchemaRegistryClientSettings
 import tofu.fs2Instances._
 
 import net.dalytics.config.Config
-import net.dalytics.models.Command
-import net.dalytics.models.handler.HandlerCommand
 import net.dalytics.clients.{HttpClient, KafkaClient}
 import net.dalytics.api.{OzonApi, WildBerriesApi}
+import net.dalytics.models.handler.HandlerCommand
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -36,7 +35,7 @@ object Main extends TaskApp {
                                                     config.tasksConfig,
                                                     config.apiRateLimitsConfig
                                                   )(wbApi, ozonApi)
-      producer                                 <- KafkaClient.makeProducer[AppI, Command.Key, HandlerCommand](
+      producer                                 <- KafkaClient.makeProducer[AppI, Unit, HandlerCommand](
                                                     config.kafkaConfig,
                                                     config.kafkaProducerConfig
                                                   )(schemaRegistryClient)

@@ -16,7 +16,7 @@ import fs2.kafka.{KafkaConsumer, KafkaProducer, ProducerRecord, ProducerRecords}
 import net.dalytics.config.Config
 import net.dalytics.services.Handle
 import net.dalytics.context.MessageContext
-import net.dalytics.models.handler.{HandlerCommand, HandlerEvent}
+import net.dalytics.models.handler.{HandlerCommand => Command, HandlerEvent => Event}
 
 @derive(representableK)
 trait Handler[S[_]] {
@@ -31,8 +31,8 @@ object Handler {
     F[_]: WithRun[*[_], I, MessageContext]
   ](config: Config)(
     handle: Handle[F],
-    consumer: KafkaConsumer[I, Unit, HandlerCommand],
-    producer: KafkaProducer[I, Unit, HandlerEvent]
+    consumer: KafkaConsumer[I, Unit, Command],
+    producer: KafkaProducer[I, Unit, Event]
   ) extends Handler[Stream[I, *]] {
     def run: Stream[I, Unit] =
       consumer.partitionsMapStream
@@ -59,7 +59,13 @@ object Handler {
               }
               .collect { case (eventOption, offset) =>
                 val events  = List(eventOption).flatten
-                val records = events.map(event => ProducerRecord(config.kafkaProducerConfig.topic("events"), (), event))
+                val records = events.map { event =>
+                  val topic = event match {
+                    case _: Event.OzonRequestHandled => config.kafkaProducerConfig.topic("events-ozon")
+                  }
+
+                  ProducerRecord(topic, (), event)
+                }
 
                 ProducerRecords(records, offset)
               }
@@ -82,8 +88,8 @@ object Handler {
     S[_]: LiftStream[*[_], I]
   ](config: Config)(
     handle: Handle[F],
-    consumer: KafkaConsumer[I, Unit, HandlerCommand],
-    producer: KafkaProducer[I, Unit, HandlerEvent]
+    consumer: KafkaConsumer[I, Unit, Command],
+    producer: KafkaProducer[I, Unit, Event]
   ): Resource[I, Handler[S]] =
     Resource.eval {
       Stream

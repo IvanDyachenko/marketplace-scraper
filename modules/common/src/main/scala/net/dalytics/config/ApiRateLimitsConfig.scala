@@ -7,14 +7,14 @@ import pureconfig.ConfigSource
 import pureconfig.module.catseffect.syntax._
 
 @derive(pureconfigReader)
+final case class ApiRateLimitsConfig(ozon: OzonApiRateLimitsConfig)
+
+@derive(pureconfigReader)
 final case class OzonApiRateLimitsConfig(
   searchFilters: Int,
   searchPage: Int,
   soldOutPage: Int
 )
-
-@derive(pureconfigReader)
-final case class ApiRateLimitsConfig(ozon: OzonApiRateLimitsConfig)
 
 object ApiRateLimitsConfig {
   lazy val load: ApiRateLimitsConfig = ConfigSource.default.at("api-rate-limits").loadOrThrow[ApiRateLimitsConfig]

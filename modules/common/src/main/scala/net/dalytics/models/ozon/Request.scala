@@ -41,8 +41,7 @@ object Request {
 
   object GetSellerList {
     implicit val vulcanCodec: Codec[GetSellerList] = Codec.record[GetSellerList](name = "GetSellerList", namespace = "ozon.models") { field =>
-      field("host", _.host) *> field("path", _.path) *> field("url", _.url) *>
-        field("page", _.onPage).map(apply)
+      field("host", _.host) *> field("path", _.path) *> field("url", _.url) *> field("page", _.onPage).map(apply)
     }
   }
 
@@ -52,10 +51,10 @@ object Request {
   }
 
   @derive(loggable)
-  final case class GetCategorySearchFilterValues(categoryId: Category.Id, withSearchFilterKey: SearchFilter.Key) extends Request {
+  final case class GetCategorySearchFilterValues(categoryId: Category.Id, bySearchFilterKey: SearchFilter.Key) extends Request {
     override val path            = "/composer-api.bx/_action/getSearchFilterValues"
     override val url             = Url(s"/modal/filters/category/${categoryId.show}")
-    override val searchFilterKey = Some(withSearchFilterKey)
+    override val searchFilterKey = Some(bySearchFilterKey)
   }
 
   @derive(loggable)
@@ -102,7 +101,7 @@ object Request {
   }
 
   @AvroNamespace("ozon.models.request")
-  final case class Url(path: String) extends AnyVal
+  private[Request] final case class Url(path: String) extends AnyVal
 
   object Url {
     implicit val queryParam = new QueryParam[Url] with QueryParamEncoder[Url] {
@@ -110,7 +109,7 @@ object Request {
       def encode(url: Url): QueryParameterValue = QueryParameterValue(url.show)
     }
 
-    implicit val show: Show[Url]            = Show.show(_.path)
+    implicit val show: Show[Url]            = Show.catsShowForString.contramap(_.path)
     implicit val circeEncoder: Encoder[Url] = Encoder.encodeString.contramap(_.path)
     implicit val vulcanCodec: Codec[Url]    = Codec.derive[Url]
   }
@@ -132,7 +131,7 @@ object Request {
   type SoldOutPage = SoldOutPage.Type
 
   @derive(loggable)
-  case class LayoutContainer private (name: LayoutContainer.Name)
+  case class LayoutContainer(name: LayoutContainer.Name)
 
   object LayoutContainer {
     sealed trait Name extends EnumEntry with Snakecase with Product with Serializable
@@ -159,8 +158,7 @@ object Request {
   type LayoutPageIndex = LayoutPageIndex.Type
 
   implicit val circeEncoder: Encoder[Request] = Encoder.forProduct2("url", "key")(request => (request.url, request.searchFilterKey))
-
-  implicit val vulcanCodec: Codec[Request] = Codec.union[Request] { alt =>
+  implicit val vulcanCodec: Codec[Request]    = Codec.union[Request] { alt =>
     alt[GetSellerList] |+| alt[GetCategorySearchResultsV2] |+| alt[GetCategorySoldOutResultsV2]
   }
 }

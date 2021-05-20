@@ -53,13 +53,17 @@ object Parser {
             )
           }
           .map { case (events, offset) =>
-            val records = events.map {
-              case event: Event.OzonSellerListItemParsed               =>
-                ProducerRecord(config.kafkaProducerConfig.topic("results-ozon-seller-list-items"), event.key, event)
-              case event: Event.OzonCategorySearchResultsV2ItemParsed  =>
-                ProducerRecord(config.kafkaProducerConfig.topic("results-ozon-category-search-results-v2-items"), event.key, event)
-              case event: Event.OzonCategorySoldOutResultsV2ItemParsed =>
-                ProducerRecord(config.kafkaProducerConfig.topic("results-ozon-category-sold-out-results-v2-items"), event.key, event)
+            val records = events.map { event =>
+              val topic = event match {
+                case _: Event.OzonSellerListItemParsed               =>
+                  config.kafkaProducerConfig.topic("results-ozon-seller-list-items")
+                case _: Event.OzonCategorySearchResultsV2ItemParsed  =>
+                  config.kafkaProducerConfig.topic("results-ozon-category-search-results-v2-items")
+                case _: Event.OzonCategorySoldOutResultsV2ItemParsed =>
+                  config.kafkaProducerConfig.topic("results-ozon-category-sold-out-results-v2-items")
+              }
+
+              ProducerRecord(topic, event.key, event)
             }
 
             ProducerRecords(records, offset)

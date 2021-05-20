@@ -40,9 +40,10 @@ object Request {
   }
 
   object GetSellerList {
-    implicit val vulcanCodec: Codec[GetSellerList] = Codec.record[GetSellerList](name = "GetSellerList", namespace = "ozon.models") { field =>
-      field("host", _.host) *> field("path", _.path) *> field("url", _.url) *> field("page", _.onPage).map(apply)
-    }
+    implicit val vulcanCodec: Codec[GetSellerList] =
+      Codec.record[GetSellerList](name = "GetSellerList", namespace = "ozon.models") { field =>
+        field("host", _.host) *> field("path", _.path) *> field("url", _.url) *> field("page", _.onPage).map(apply)
+      }
   }
 
   @derive(loggable)

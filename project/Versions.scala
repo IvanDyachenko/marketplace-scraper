@@ -5,7 +5,7 @@ object Versions {
   lazy val tofu                   = "0.10.1"
   lazy val derevo                 = "0.12.2"
   lazy val supertagged            = "2.0-RC2"
-  lazy val enumeratum             = "1.6.1"
+  lazy val enumeratum             = "1.7.0"
   lazy val circe                  = "0.14.1"
   lazy val circeDerivation        = "0.13.0-M5"
   lazy val tethys                 = "0.24.0"

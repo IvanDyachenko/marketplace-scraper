@@ -10,7 +10,7 @@ object Versions {
   lazy val circeDerivation        = "0.13.0-M5"
   lazy val tethys                 = "0.24.0"
   lazy val vulkan                 = "1.3.0"
-  lazy val fs2                    = "2.5.8"
+  lazy val fs2                    = "2.5.9"
   lazy val fs2Kafka               = "1.7.0"
   lazy val kafkaStreams           = "6.2.0-ce"
   lazy val kafkaStreams4s         = "0.15.0"

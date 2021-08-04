@@ -2,7 +2,7 @@ package net.dalytics
 
 import cats.tagless.syntax.functorK._
 import cats.Monad
-import cats.effect.{Clock, Concurrent, Resource, Timer}
+import cats.effect.{Clock, Concurrent, Resource}
 import tofu.syntax.embed._
 import tofu.syntax.monadic._
 import derevo.derive
@@ -16,6 +16,7 @@ import net.dalytics.config.{ApiRateLimitsConfig, Config, OzonApiRateLimitsConfig
 import net.dalytics.models.{ozon, Command}
 import net.dalytics.models.handler.HandlerCommand
 import net.dalytics.api.{OzonApi, WildBerriesApi}
+import cats.effect.Temporal
 
 @derive(representableK)
 trait Scheduler[S[_]] {
@@ -58,7 +59,7 @@ object Scheduler {
         .pure[I]
     }
 
-  def makeCommands[F[_]: Concurrent: Timer](tasksConfig: TasksConfig, apiRateLimitsConfig: ApiRateLimitsConfig)(
+  def makeCommands[F[_]: Concurrent: Temporal](tasksConfig: TasksConfig, apiRateLimitsConfig: ApiRateLimitsConfig)(
     wbApi: WildBerriesApi[F, Stream[F, *]],
     ozonApi: OzonApi[F, Stream[F, *]]
   ): Stream[F, HandlerCommand] =

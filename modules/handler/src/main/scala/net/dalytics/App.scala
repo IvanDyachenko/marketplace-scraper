@@ -1,7 +1,7 @@
 package net.dalytics
 
 import monix.eval.{Task, TaskApp}
-import cats.effect.{Blocker, ExitCode, Resource}
+import cats.effect.{ExitCode, Resource}
 import tofu.env.Env
 import tofu.logging.Logs
 import fs2.Stream
@@ -29,7 +29,7 @@ object Main extends TaskApp {
 
   private def init: Resource[Task, Handler[AppS]] =
     for {
-      implicit0(blocker: Blocker)              <- Blocker[AppI]
+      implicit0(blocker: Blocker)              <- Resource.unit[AppI]
       cfg                                      <- Resource.eval(Config.make[AppI])
       implicit0(httpClientF: HttpClient[AppF]) <- HttpClient.make[AppI, AppF](cfg.httpConfig)
       schemaRegistryClient                     <- Resource.eval(SchemaRegistryClientSettings[AppI](cfg.schemaRegistryConfig.url).createSchemaRegistryClient)

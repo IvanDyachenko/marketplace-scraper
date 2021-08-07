@@ -2,7 +2,7 @@ package net.dalytics.config
 
 import scala.concurrent.duration.FiniteDuration
 
-import cats.effect.{Blocker, ContextShift, Sync}
+import cats.effect.Sync
 import derevo.derive
 import derevo.pureconfig.pureconfigReader
 import pureconfig.{ConfigFieldMapping, ConfigReader, ConfigSource, ConvertHelpers, KebabCase, PascalCase}
@@ -21,7 +21,7 @@ object TasksConfig {
 
   lazy val load: TasksConfig = ConfigSource.default.loadOrThrow[TasksConfig]
 
-  def loadF[F[_]: Sync: ContextShift](implicit blocker: Blocker): F[TasksConfig] =
+  def loadF[F[_]: Sync: ContextShift]: F[TasksConfig] =
     ConfigSource.default.loadF[F, TasksConfig](blocker)
 }
 

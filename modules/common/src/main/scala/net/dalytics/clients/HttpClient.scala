@@ -20,7 +20,7 @@ import tofu.logging.Logs
 import tethys.JsonReader
 import org.http4s.{DecodeFailure, EntityDecoder, MalformedMessageBodyFailure, Request => Http4sRequest, Status}
 import org.http4s.client.{Client, ConnectionFailure}
-import org.http4s.client.blaze.BlazeClientBuilder
+import org.http4s.blaze.client.BlazeClientBuilder
 import org.http4s.client.middleware.{GZip, Logger}
 
 import net.dalytics.config.HttpConfig

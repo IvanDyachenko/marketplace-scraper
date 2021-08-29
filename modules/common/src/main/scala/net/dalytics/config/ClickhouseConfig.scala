@@ -1,6 +1,6 @@
 package net.dalytics.config
 
-import cats.effect.{Blocker, ContextShift, Sync}
+import cats.effect.Sync
 import derevo.derive
 import derevo.pureconfig.pureconfigReader
 import pureconfig.ConfigSource
@@ -12,6 +12,6 @@ final case class ClickhouseConfig(url: String, user: String, pass: String, threa
 object ClickhouseConfig {
   lazy val load: ClickhouseConfig = ConfigSource.default.at("clickhouse").loadOrThrow[ClickhouseConfig]
 
-  def loadF[F[_]: Sync: ContextShift](implicit blocker: Blocker): F[ClickhouseConfig] =
+  def loadF[F[_]: Sync: ContextShift]: F[ClickhouseConfig] =
     ConfigSource.default.at("clickhouse").loadF[F, ClickhouseConfig](blocker)
 }

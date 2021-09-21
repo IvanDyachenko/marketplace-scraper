@@ -8,7 +8,7 @@ object Versions {
   lazy val enumeratum             = "1.7.0"
   lazy val circe                  = "0.14.1"
   lazy val circeDerivation        = "0.13.0-M5"
-  lazy val tethys                 = "0.24.0"
+  lazy val tethys                 = "0.25.0"
   lazy val vulkan                 = "1.3.0"
   lazy val fs2                    = "2.5.9"
   lazy val fs2Kafka               = "1.8.0"

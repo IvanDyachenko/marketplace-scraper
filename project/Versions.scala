@@ -12,7 +12,7 @@ object Versions {
   lazy val vulkan                 = "1.3.0"
   lazy val fs2                    = "2.5.10"
   lazy val fs2Kafka               = "1.8.0"
-  lazy val kafkaStreams           = "6.2.1-ce"
+  lazy val kafkaStreams           = "7.0.0-ce"
   lazy val kafkaStreams4s         = "0.15.0"
   lazy val kafkaStreamsAvroSerde  = "6.2.1"
   lazy val monitoringInterceptors = "6.2.1"

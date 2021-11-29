@@ -1,6 +1,6 @@
 object Versions {
   lazy val monix                  = "3.4.0"
-  lazy val catsCore               = "2.6.1"
+  lazy val catsCore               = "2.7.0"
   lazy val catsEffect             = "2.5.4"
   lazy val tofu                   = "0.10.1"
   lazy val derevo                 = "0.12.2"

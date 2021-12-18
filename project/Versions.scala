@@ -14,8 +14,8 @@ object Versions {
   lazy val fs2Kafka               = "1.8.0"
   lazy val kafkaStreams           = "7.0.1-ce"
   lazy val kafkaStreams4s         = "0.15.0"
-  lazy val kafkaStreamsAvroSerde  = "7.0.0"
-  lazy val monitoringInterceptors = "7.0.0"
+  lazy val kafkaStreamsAvroSerde  = "7.0.1"
+  lazy val monitoringInterceptors = "7.0.1"
   lazy val http4s                 = "0.21.31"
   lazy val http4sBlazeClient      = "0.21.31"
   lazy val doobie                 = "0.13.4"
@@ -23,7 +23,7 @@ object Versions {
   lazy val pureconfig             = "0.14.1"
 
   lazy val slf4j   = "1.7.32"
-  lazy val logback = "1.2.7"
+  lazy val logback = "1.2.8"
 
   lazy val betterMonadicFor = "0.3.1"
   lazy val kindProjector    = "0.13.2"

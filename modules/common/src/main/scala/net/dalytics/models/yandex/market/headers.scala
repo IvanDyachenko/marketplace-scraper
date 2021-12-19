@@ -5,7 +5,7 @@ package headers {
   import org.http4s.syntax.string._
   import org.http4s.{Header, HeaderKey, ParseFailure, ParseResult}
   import org.http4s.util.Writer
-import org.typelevel.ci.{ CIString, _ }
+  import org.typelevel.ci.{CIString, _}
 
   final case class `X-Region-Id`(geoId: Region.GeoId) extends Header.Raw.Parsed {
     def key                                      = `X-Region-Id`

@@ -1,6 +1,6 @@
 object Versions {
   lazy val monix                  = "3.4.0"
-  lazy val catsCore               = "2.6.1"
+  lazy val catsCore               = "2.7.0"
   lazy val catsEffect             = "2.5.4"
   lazy val tofu                   = "0.10.1"
   lazy val derevo                 = "0.12.2"
@@ -11,11 +11,11 @@ object Versions {
   lazy val tethys                 = "0.25.0"
   lazy val vulkan                 = "1.3.0"
   lazy val fs2                    = "2.5.10"
-  lazy val fs2Kafka               = "2.2.0"
-  lazy val kafkaStreams           = "7.0.0-ce"
+  lazy val fs2Kafka               = "1.8.0"
+  lazy val kafkaStreams           = "7.0.1-ce"
   lazy val kafkaStreams4s         = "0.15.0"
-  lazy val kafkaStreamsAvroSerde  = "7.0.0"
-  lazy val monitoringInterceptors = "7.0.0"
+  lazy val kafkaStreamsAvroSerde  = "7.0.1"
+  lazy val monitoringInterceptors = "7.0.1"
   lazy val http4s                 = "0.21.31"
   lazy val http4sBlazeClient      = "0.21.31"
   lazy val doobie                 = "0.13.4"
@@ -23,7 +23,7 @@ object Versions {
   lazy val pureconfig             = "0.14.1"
 
   lazy val slf4j   = "1.7.32"
-  lazy val logback = "1.2.6"
+  lazy val logback = "1.2.8"
 
   lazy val betterMonadicFor = "0.3.1"
   lazy val kindProjector    = "0.13.2"

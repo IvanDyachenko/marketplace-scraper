@@ -23,7 +23,7 @@ object Versions {
   lazy val pureconfig             = "0.14.1"
 
   lazy val slf4j   = "1.7.32"
-  lazy val logback = "1.2.9"
+  lazy val logback = "1.2.10"
 
   lazy val betterMonadicFor = "0.3.1"
   lazy val kindProjector    = "0.13.2"

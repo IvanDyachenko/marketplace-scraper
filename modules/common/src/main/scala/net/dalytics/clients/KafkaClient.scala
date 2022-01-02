@@ -4,7 +4,7 @@ import java.util.Properties
 import scala.reflect.ClassTag
 
 import tofu.syntax.monadic._
-import cats.effect.{ConcurrentEffect, ContextShift, Resource, Sync, Timer}
+import cats.effect.{ConcurrentEffect, Resource, Sync}
 import org.apache.kafka.streams.StreamsConfig
 import org.apache.kafka.streams.errors.LogAndFailExceptionHandler
 import org.apache.kafka.streams.processor.TimestampExtractor
@@ -17,6 +17,7 @@ import fs2.kafka.vulcan.{avroDeserializer, avroSerializer, AvroSettings}
 import vulcan.{Codec => VulcanCodec}
 
 import net.dalytics.config.{KafkaConfig, KafkaConsumerConfig, KafkaProducerConfig, KafkaStreamsConfig, SchemaRegistryConfig}
+import cats.effect.Temporal
 
 object KafkaClient {
 
@@ -57,7 +58,7 @@ object KafkaClient {
     KafkaProducer.resource[F, Option[K], V](producerSettings)
   }
 
-  def makeConsumer[F[_]: ContextShift: ConcurrentEffect: Timer, K: VulcanCodec, V: VulcanCodec](
+  def makeConsumer[F[_]: ContextShift: ConcurrentEffect: Temporal, K: VulcanCodec, V: VulcanCodec](
     kafkaConfig: KafkaConfig,
     kafkaConsumerConfig: KafkaConsumerConfig
   )(schemaRegistryClient: SchemaRegistryClient): Resource[F, KafkaConsumer[F, Option[K], V]] = {

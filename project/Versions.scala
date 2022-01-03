@@ -20,7 +20,7 @@ object Versions {
   lazy val http4sBlazeClient      = "0.21.31"
   lazy val doobie                 = "0.13.4"
   lazy val clickhouseJDBC         = "0.3.2"
-  lazy val pureconfig             = "0.14.1"
+  lazy val pureconfig             = "0.17.1"
 
   lazy val slf4j   = "1.7.32"
   lazy val logback = "1.2.10"

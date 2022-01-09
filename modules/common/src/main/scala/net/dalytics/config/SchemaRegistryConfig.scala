@@ -1,6 +1,6 @@
 package net.dalytics.config
 
-import cats.effect.{Blocker, ContextShift, Sync}
+import cats.effect.Sync
 import derevo.derive
 import derevo.pureconfig.pureconfigReader
 import pureconfig.ConfigSource
@@ -14,6 +14,6 @@ final case class SchemaRegistryConfig(
 object SchemaRegistryConfig {
   lazy val load: SchemaRegistryConfig = ConfigSource.default.at("schema-registry").loadOrThrow[SchemaRegistryConfig]
 
-  def loadF[F[_]: Sync: ContextShift](implicit blocker: Blocker): F[SchemaRegistryConfig] =
+  def loadF[F[_]: Sync: ContextShift]: F[SchemaRegistryConfig] =
     ConfigSource.default.at("schema-registry").loadF[F, SchemaRegistryConfig](blocker)
 }

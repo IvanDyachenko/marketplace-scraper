@@ -22,7 +22,7 @@ object Versions {
   lazy val clickhouseJDBC         = "0.3.2"
   lazy val pureconfig             = "0.14.1"
 
-  lazy val slf4j   = "1.7.32"
+  lazy val slf4j   = "1.7.33"
   lazy val logback = "1.2.10"
 
   lazy val betterMonadicFor = "0.3.1"

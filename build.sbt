@@ -2,7 +2,7 @@
 import com.typesafe.sbt.packager.docker.Cmd
 
 ThisBuild / organization   := "net.dalytics"
-ThisBuild / scalaVersion   := "2.13.7"
+ThisBuild / scalaVersion   := "2.13.8"
 ThisBuild / homepage       := Some(url("https://github.com/ivandyachenko/marketplace-scraper"))
 ThisBuild / publish / skip := true
 

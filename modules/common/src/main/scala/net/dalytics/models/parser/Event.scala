@@ -6,19 +6,24 @@ import cats.effect.Clock
 import derevo.derive
 import tofu.logging.derivation.loggable
 import vulcan.Codec
+import supertagged.TaggedType
 import supertagged.postfix._
 
-import net.dalytics.models.{ozon, Event, Timestamp}
+import net.dalytics.models.{ozon, Event, LiftedCats, LiftedLoggable, LiftedVulcanCodec, Timestamp}
 
 @derive(loggable)
 sealed trait ParserEvent extends Event {
+  def key: ParserEvent.Key
   def timestamp: Timestamp
 }
 
 object ParserEvent {
+  object Key extends TaggedType[String] with LiftedCats with LiftedLoggable with LiftedVulcanCodec
+  type Key = Key.Type
+
   @derive(loggable)
   final case class OzonSellerListItemParsed(created: Timestamp, timestamp: Timestamp, item: ozon.MarketplaceSeller) extends ParserEvent {
-    override val key: Option[Event.Key] = Some(item.id.show @@ Event.Key)
+    val key: Key = item.id.show @@ Key
   }
 
   object OzonSellerListItemParsed {
@@ -35,10 +40,7 @@ object ParserEvent {
       result.sellerList.fold(List.empty[ParserEvent].pure[F])(apply[F](timestamp, _))
 
     implicit val vulcanCodec: Codec[OzonSellerListItemParsed] =
-      Codec.record[OzonSellerListItemParsed](
-        name = "OzonSellerListItemParsed",
-        namespace = "parser.events"
-      ) { field =>
+      Codec.record[OzonSellerListItemParsed](name = "OzonSellerListItemParsed", namespace = "parser.events") { field =>
         (
           field("_created", _.created),
           field("timestamp", _.timestamp),
@@ -55,7 +57,7 @@ object ParserEvent {
     item: ozon.Item,
     category: ozon.Category
   ) extends ParserEvent {
-    override val key: Option[Event.Key] = Some(item.id.show @@ Event.Key)
+    val key: Key = item.id.show @@ Key
   }
 
   object OzonCategorySearchResultsV2ItemParsed {
@@ -107,7 +109,7 @@ object ParserEvent {
     item: ozon.Item,
     category: ozon.Category
   ) extends ParserEvent {
-    override val key: Option[Event.Key] = Some(item.id.show @@ Event.Key)
+    val key: Key = item.id.show @@ Key
   }
 
   object OzonCategorySoldOutResultsV2ItemParsed {

@@ -10,7 +10,6 @@ import tofu.fs2Instances._
 
 import net.dalytics.config.Config
 import net.dalytics.context.MessageContext
-import net.dalytics.models.{Command, Event}
 import net.dalytics.models.handler.{HandlerCommand, HandlerEvent}
 import net.dalytics.clients.{HttpClient, KafkaClient}
 import net.dalytics.services.Handle
@@ -34,18 +33,14 @@ object Main extends TaskApp {
       implicit0(httpClientF: HttpClient[AppF]) <- HttpClient.make[AppI, AppF](cfg.httpConfig)
       schemaRegistryClient                     <- Resource.eval(SchemaRegistryClientSettings[AppI](cfg.schemaRegistryConfig.url).createSchemaRegistryClient)
       handle                                   <- Handle.make[AppI, AppF]
-      producerOfEvents                         <- KafkaClient.makeProducer[AppI, Event.Key, HandlerEvent](
-                                                    cfg.kafkaConfig,
-                                                    cfg.kafkaProducerConfig
-                                                  )(schemaRegistryClient)
-      consumerOfCommands                       <- KafkaClient.makeConsumer[AppI, Command.Key, HandlerCommand](
+      consumer                                 <- KafkaClient.makeConsumer[AppI, Unit, HandlerCommand](
                                                     cfg.kafkaConfig,
                                                     cfg.kafkaConsumerConfig
                                                   )(schemaRegistryClient)
-      handler                                  <- Handler.make[AppI, AppF, AppS](cfg)(
-                                                    handle,
-                                                    producerOfEvents,
-                                                    consumerOfCommands
-                                                  )
+      producer                                 <- KafkaClient.makeProducer[AppI, Unit, HandlerEvent](
+                                                    cfg.kafkaConfig,
+                                                    cfg.kafkaProducerConfig
+                                                  )(schemaRegistryClient)
+      handler                                  <- Handler.make[AppI, AppF, AppS](cfg)(handle, consumer, producer)
     } yield handler
 }

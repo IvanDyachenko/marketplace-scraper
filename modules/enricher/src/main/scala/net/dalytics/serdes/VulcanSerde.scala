@@ -3,7 +3,7 @@ package net.dalytics.serdes
 import java.nio.ByteBuffer
 
 import tofu.syntax.monadic._
-import cats.Monad
+import cats.FlatMap
 import org.apache.kafka.common.serialization.{Deserializer, Serde, Serializer}
 import io.confluent.kafka.schemaregistry.avro.AvroSchema
 import fs2.kafka.vulcan.AvroSettings
@@ -20,7 +20,7 @@ final class VulcanSerde[A](private val codec: VulcanCodec[A]) extends AnyVal {
     * @param isKey
     * @return
     */
-  def using[F[_]: Monad](avroSettings: AvroSettings[F])(isKey: Boolean): F[Serde[A]] = {
+  def using[F[_]: FlatMap](avroSettings: AvroSettings[F])(isKey: Boolean): F[Serde[A]] = {
     val createSerializer: Boolean => F[Serializer[A]] =
       avroSettings.createAvroSerializer(_).map { case (kafkaAvroSerializer, _) =>
         new Serializer[A] {

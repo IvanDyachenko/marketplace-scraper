@@ -9,11 +9,10 @@ import fs2.kafka.vulcan.SchemaRegistryClientSettings
 import tofu.fs2Instances._
 
 import net.dalytics.config.Config
-import net.dalytics.context.MessageContext
-import net.dalytics.models.{Command, Event}
-import net.dalytics.models.parser.{ParserCommand, ParserEvent}
 import net.dalytics.clients.KafkaClient
 import net.dalytics.services.Parse
+import net.dalytics.context.MessageContext
+import net.dalytics.models.parser.{ParserCommand => Command, ParserEvent => Event}
 
 object Main extends TaskApp {
 
@@ -31,18 +30,14 @@ object Main extends TaskApp {
       cfg                         <- Resource.eval(Config.make[AppI])
       schemaRegistryClient        <- Resource.eval(SchemaRegistryClientSettings[AppI](cfg.schemaRegistryConfig.url).createSchemaRegistryClient)
       parse                       <- Parse.make[AppI, AppF]
-      producerOfEvents            <- KafkaClient.makeProducer[AppI, Event.Key, ParserEvent](
-                                       cfg.kafkaConfig,
-                                       cfg.kafkaProducerConfig
-                                     )(schemaRegistryClient)
-      consumerOfCommands          <- KafkaClient.makeConsumer[AppI, Command.Key, ParserCommand.ParseOzonResponse](
+      consumer                    <- KafkaClient.makeConsumer[AppI, Unit, Command.ParseOzonResponse](
                                        cfg.kafkaConfig,
                                        cfg.kafkaConsumerConfig
                                      )(schemaRegistryClient)
-      parser                      <- Parser.make[AppI, AppF, AppS](cfg)(
-                                       parse,
-                                       producerOfEvents,
-                                       consumerOfCommands
-                                     )
+      producer                    <- KafkaClient.makeProducer[AppI, Event.Key, Event](
+                                       cfg.kafkaConfig,
+                                       cfg.kafkaProducerConfig
+                                     )(schemaRegistryClient)
+      parser                      <- Parser.make[AppI, AppF, AppS](cfg)(parse, consumer, producer)
     } yield parser
 }

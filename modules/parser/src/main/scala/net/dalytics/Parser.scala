@@ -16,8 +16,7 @@ import fs2.kafka.{commitBatchWithin, CommittableOffset, KafkaConsumer, KafkaProd
 import net.dalytics.config.Config
 import net.dalytics.context.MessageContext
 import net.dalytics.services.Parse
-import net.dalytics.models.{Command, Event}
-import net.dalytics.models.parser.{ParserCommand, ParserEvent}
+import net.dalytics.models.parser.{ParserCommand => Command, ParserEvent => Event}
 
 @derive(representableK)
 trait Parser[S[_]] {
@@ -32,11 +31,11 @@ object Parser {
     F[_]: Applicative: WithRun[*[_], I, MessageContext]
   ](config: Config)(
     parse: Parse[F],
-    producerOfEvents: KafkaProducer[I, Option[Event.Key], ParserEvent],
-    consumerOfCommands: KafkaConsumer[I, Option[Command.Key], ParserCommand.ParseOzonResponse]
+    consumer: KafkaConsumer[I, Unit, Command.ParseOzonResponse],
+    producer: KafkaProducer[I, Event.Key, Event]
   ) extends Parser[Stream[I, *]] {
     def run: Stream[I, Unit] =
-      consumerOfCommands.partitionedStream.map { partition =>
+      consumer.partitionedStream.map { partition =>
         partition
           .parEvalMap(config.kafkaConsumerConfig.maxConcurrentPerTopic) { committable =>
             val offset  = committable.offset
@@ -50,22 +49,26 @@ object Parser {
             )
 
             runContext(parse.handle(command))(context).map(
-              _.toOption.fold[(List[ParserEvent], CommittableOffset[I])](List.empty -> offset)(_ -> offset)
+              _.toOption.fold[(List[Event], CommittableOffset[I])](List.empty -> offset)(_ -> offset)
             )
           }
           .map { case (events, offset) =>
-            val records = events.map {
-              case event: ParserEvent.OzonSellerListItemParsed               =>
-                ProducerRecord(config.kafkaProducerConfig.topic("results-ozon-seller-list-items"), event.key, event)
-              case event: ParserEvent.OzonCategorySearchResultsV2ItemParsed  =>
-                ProducerRecord(config.kafkaProducerConfig.topic("results-ozon-category-search-results-v2-items"), event.key, event)
-              case event: ParserEvent.OzonCategorySoldOutResultsV2ItemParsed =>
-                ProducerRecord(config.kafkaProducerConfig.topic("results-ozon-category-sold-out-results-v2-items"), event.key, event)
+            val records = events.map { event =>
+              val topic = event match {
+                case _: Event.OzonSellerListItemParsed               =>
+                  config.kafkaProducerConfig.topic("results-ozon-seller-list-items")
+                case _: Event.OzonCategorySearchResultsV2ItemParsed  =>
+                  config.kafkaProducerConfig.topic("results-ozon-category-search-results-v2-items")
+                case _: Event.OzonCategorySoldOutResultsV2ItemParsed =>
+                  config.kafkaProducerConfig.topic("results-ozon-category-sold-out-results-v2-items")
+              }
+
+              ProducerRecord(topic, event.key, event)
             }
 
             ProducerRecords(records, offset)
           }
-          .evalMap(producerOfEvents.produce)
+          .evalMap(producer.produce)
           .parEvalMap(config.kafkaProducerConfig.parallelism)(identity)
           .map(_.passthrough)
           .through(commitBatchWithin(config.kafkaConsumerConfig.commitEveryNOffsets, config.kafkaConsumerConfig.commitTimeWindow))
@@ -78,13 +81,13 @@ object Parser {
     S[_]: LiftStream[*[_], I]
   ](config: Config)(
     parse: Parse[F],
-    producerOfEvents: KafkaProducer[I, Option[Event.Key], ParserEvent],
-    consumerOfCommands: KafkaConsumer[I, Option[Command.Key], ParserCommand.ParseOzonResponse]
+    consumer: KafkaConsumer[I, Unit, Command.ParseOzonResponse],
+    producer: KafkaProducer[I, Event.Key, Event]
   ): Resource[I, Parser[S]] =
     Resource.eval {
       Stream
         .eval {
-          val impl: Parser[Stream[I, *]] = new Impl[I, F](config)(parse, producerOfEvents, consumerOfCommands)
+          val impl: Parser[Stream[I, *]] = new Impl[I, F](config)(parse, consumer, producer)
 
           impl.pure[I]
         }

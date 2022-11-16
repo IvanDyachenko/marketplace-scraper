@@ -51,7 +51,6 @@ object HttpClient extends ContextEmbed[HttpClient] {
   type Handling[F[_]] = Handle[F, HttpClientError]
 
   class Impl[F[_]: Sync: Handle[*[_], TimeoutException]: Handle[*[_], DecodeFailure]](cfg: HttpConfig)(client: Client[F]) extends HttpClient[F] {
-
     def send[Res](request: Http4sRequest[F])(implicit decoder: EntityDecoder[F, Res]): F[Res] =
       client
         .run(request)
@@ -87,12 +86,6 @@ object HttpClient extends ContextEmbed[HttpClient] {
     EitherT.fromEither(result)
   }
 
-  implicit val embed: Embed[HttpClient] = new Embed[HttpClient] {
-    def embed[F[_]: FlatMap](ft: F[HttpClient[F]]): HttpClient[F] = new HttpClient[F] {
-      def send[Res: EntityDecoder[F, *]](request: Http4sRequest[F]): F[Res] = ft >>= (_.send(request))
-    }
-  }
-
   def apply[F[_]](implicit ev: HttpClient[F]): ev.type = ev
 
   def make[
@@ -121,7 +114,7 @@ object HttpClient extends ContextEmbed[HttpClient] {
   private def buildHttp4sClient[F[_]: Execute: ConcurrentEffect](httpConfig: HttpConfig): Resource[F, Client[F]] =
     Resource.eval(Execute[F].executionContext) >>= (
       BlazeClientBuilder[F](_)
-        .withTcpNoDelay(true) // Disable Nagle's algorithm.
+        .withTcpNoDelay(true)
         .withSocketReuseAddress(true)
         .withCheckEndpointAuthentication(false)
         .withBufferSize(httpConfig.bufferSize)
@@ -136,4 +129,10 @@ object HttpClient extends ContextEmbed[HttpClient] {
 
 //  private def recklesslyRetryPolicy[F[_]](maxWait: Duration, maxRetry: Int): RetryPolicy[F] =
 //    RetryPolicy(RetryPolicy.exponentialBackoff(maxWait = maxWait, maxRetry = maxRetry), (_, result) => RetryPolicy.recklesslyRetriable(result))
+
+  implicit val embed: Embed[HttpClient] = new Embed[HttpClient] {
+    def embed[F[_]: FlatMap](ft: F[HttpClient[F]]): HttpClient[F] = new HttpClient[F] {
+      def send[Res: EntityDecoder[F, *]](request: Http4sRequest[F]): F[Res] = ft >>= (_.send(request))
+    }
+  }
 }

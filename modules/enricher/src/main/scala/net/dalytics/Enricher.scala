@@ -13,7 +13,6 @@ import fs2.kafka.vulcan.AvroSettings
 import compstak.kafkastreams4s.Platform
 
 import net.dalytics.config.Config
-import net.dalytics.models.Event
 import net.dalytics.models.parser.ParserEvent
 import net.dalytics.models.enricher.EnricherEvent
 import net.dalytics.clients.KafkaClient
@@ -40,13 +39,16 @@ object Enricher {
       val streamsBuilder: StreamsBuilder = new StreamsBuilder
 
       for {
-        implicit0(eventKeySerde: Serde[Event.Key])                                            <- VulcanSerde[Event.Key].using(avroSettings)(true)
-        implicit0(parserEventSerde: Serde[ParserEvent])                                       <- VulcanSerde[ParserEvent].using(avroSettings)(false)
+        implicit0(parserEventKeySerde: Serde[ParserEvent.Key]) <- VulcanSerde[ParserEvent.Key].using(avroSettings)(true)
+        implicit0(parserEventSerde: Serde[ParserEvent])        <- VulcanSerde[ParserEvent].using(avroSettings)(false)
+
+        enricherEventKeySerde                                                                 <-
+          VulcanSerde[EnricherEvent.Key].using(avroSettings)(true)
         implicit0(enricherEventSerde: Serde[EnricherEvent.OzonCategoryResultsV2ItemEnriched]) <-
           VulcanSerde[EnricherEvent.OzonCategoryResultsV2ItemEnriched].using(avroSettings)(false)
 
         _ <- Sync[F].delay {
-               KStream4sVulcan[Event.Key, ParserEvent](streamsBuilder, cfg.kafkaStreamsConfig.sourceTopics)
+               KStream4sVulcan[ParserEvent.Key, ParserEvent](streamsBuilder, cfg.kafkaStreamsConfig.sourceTopics)
                  .collect {
                    case ParserEvent.OzonCategorySearchResultsV2ItemParsed(created, timestamp, page, item, category)  =>
                      EnricherEvent.OzonCategoryResultsV2ItemEnriched(created, timestamp, page, item, category)
@@ -55,10 +57,10 @@ object Enricher {
                  }
                  .reduceByKey(_ aggregate _)
                  .toKTable
-                 .toStream((_, event) => event.key.get)
+                 .toStream((_, event) => event.key)
                  .to(
                    cfg.kafkaStreamsConfig.sinkTopic,
-                   Produced.`with`[Event.Key, EnricherEvent.OzonCategoryResultsV2ItemEnriched](eventKeySerde, enricherEventSerde)
+                   Produced.`with`[EnricherEvent.Key, EnricherEvent.OzonCategoryResultsV2ItemEnriched](enricherEventKeySerde, enricherEventSerde)
                  )
              }
 
